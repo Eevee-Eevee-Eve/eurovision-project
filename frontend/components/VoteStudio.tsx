@@ -251,26 +251,32 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   }
 
   function updateNote(code: string, patch: Partial<ActNote>) {
-    const previous = notes[code] || { tone: null, text: "" };
-    const nextEntry: ActNote = {
-      tone: patch.tone !== undefined ? patch.tone : previous.tone,
-      text: patch.text !== undefined ? patch.text : previous.text,
-    };
-    const nextNotes = { ...notes };
+    setNotes((current) => {
+      const previous = current[code] || { tone: null, text: "" };
+      const nextEntry: ActNote = {
+        tone: patch.tone !== undefined ? patch.tone : previous.tone,
+        text: patch.text !== undefined ? patch.text : previous.text,
+      };
+      const nextNotes = { ...current };
 
-    if (!hasNote(nextEntry)) {
-      delete nextNotes[code];
-    } else {
-      nextNotes[code] = nextEntry;
-    }
+      if (!hasNote(nextEntry)) {
+        delete nextNotes[code];
+      } else {
+        nextNotes[code] = nextEntry;
+      }
 
-    persistNotes(nextNotes);
+      saveNotes(roomSlug, stageKey, nextNotes);
+      return nextNotes;
+    });
   }
 
   function clearNote(code: string) {
-    const nextNotes = { ...notes };
-    delete nextNotes[code];
-    persistNotes(nextNotes);
+    setNotes((current) => {
+      const nextNotes = { ...current };
+      delete nextNotes[code];
+      saveNotes(roomSlug, stageKey, nextNotes);
+      return nextNotes;
+    });
   }
 
   useEffect(() => {
@@ -470,34 +476,40 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
             return (
               <article key={act.code} className="show-card flex h-full flex-col p-4">
-                <ActPoster act={act} mode="hero" contentDensity="compact" />
+                <button
+                  type="button"
+                  onClick={() => setSelectedActCode(act.code)}
+                  className="flex flex-1 flex-col text-left"
+                >
+                  <ActPoster act={act} mode="hero" contentDensity="compact" />
 
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <span className="show-chip text-xs text-arenaBeam">{getCountryName(act.code, act.country)}</span>
-                  <span className="show-chip text-xs text-white">
-                    {text.rankingLabel} {getCurrentPlaceLabel(act.code)}
-                  </span>
-                  {finalContext ? (
-                    <span className="show-chip text-xs text-arenaMuted">{finalContext}</span>
-                  ) : null}
-                  {hasNote(note) ? <span className="show-chip text-xs text-arenaBeam">{text.savedBadge}</span> : null}
-                </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="show-chip text-xs text-arenaBeam">{getCountryName(act.code, act.country)}</span>
+                    <span className="show-chip text-xs text-white">
+                      {text.rankingLabel} {getCurrentPlaceLabel(act.code)}
+                    </span>
+                    {finalContext ? (
+                      <span className="show-chip text-xs text-arenaMuted">{finalContext}</span>
+                    ) : null}
+                    {hasNote(note) ? <span className="show-chip text-xs text-arenaBeam">{text.savedBadge}</span> : null}
+                  </div>
 
-                <div className="mt-5 flex flex-1 flex-col">
-                  <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
-                    {text.aboutArtist}
-                  </p>
-                  <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(act)}</p>
-                  {facts.length ? (
-                    <div className="mt-4 grid gap-2">
-                      {facts.map((fact) => (
-                        <p key={`${act.code}-${fact}`} className="text-sm leading-7 text-arenaMuted">
-                          {fact}
-                        </p>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
+                  <div className="mt-5 flex flex-1 flex-col">
+                    <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
+                      {text.aboutArtist}
+                    </p>
+                    <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(act)}</p>
+                    {facts.length ? (
+                      <div className="mt-4 grid gap-2">
+                        {facts.map((fact) => (
+                          <p key={`${act.code}-${fact}`} className="text-sm leading-7 text-arenaMuted">
+                            {fact}
+                          </p>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </button>
 
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button
