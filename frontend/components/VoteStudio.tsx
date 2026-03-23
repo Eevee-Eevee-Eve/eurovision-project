@@ -881,34 +881,83 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       <BottomSheet open={Boolean(selectedAct)} onClose={() => setSelectedActCode(null)}>
         {selectedAct ? (
           <div className="grid gap-5">
-            <ActPoster act={selectedAct} mode="hero" contentDensity="compact" />
+            <div className="grid gap-4 md:grid-cols-[7rem_1fr] md:items-start">
+              <div className="mx-auto md:mx-0">
+                <ActPoster act={selectedAct} mode="card" />
+              </div>
 
-            <div className="flex flex-wrap gap-2">
-              <span className="show-chip text-xs text-arenaBeam">
-                {getCountryName(selectedAct.code, selectedAct.country)}
-              </span>
-              <span className="show-chip text-xs text-white">
-                {text.rankingLabel} {getCurrentPlaceLabel(selectedAct.code)}
-              </span>
-              {selectedAct.stageKey === "final" ? (
-                <span className="show-chip text-xs text-arenaMuted">
-                  {text.finalContextLabel}: {getActContext(selectedAct).value}
-                </span>
-              ) : null}
+              <div className="min-w-0">
+                <div className="flex flex-wrap gap-2">
+                  <span className="show-chip text-xs text-arenaBeam">
+                    {getCountryName(selectedAct.code, selectedAct.country)}
+                  </span>
+                  <span className="show-chip text-xs text-white">
+                    {text.rankingLabel} {getCurrentPlaceLabel(selectedAct.code)}
+                  </span>
+                  {selectedAct.stageKey === "final" ? (
+                    <span className="show-chip text-xs text-arenaMuted">
+                      {text.finalContextLabel}: {getActContext(selectedAct).value}
+                    </span>
+                  ) : null}
+                </div>
+
+                <h3 className="display-copy mt-4 text-3xl font-black leading-[0.92] text-white md:text-4xl">
+                  {selectedAct.artist}
+                </h3>
+                <p className="mt-2 text-base text-arenaMuted md:text-lg">{selectedAct.song}</p>
+                <p className="mt-4 text-sm leading-7 text-arenaMuted">{getActBlurb(selectedAct)}</p>
+              </div>
             </div>
 
             <div className="show-panel p-4">
-              <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.aboutArtist}</p>
-              <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(selectedAct)}</p>
-              {getActFacts(selectedAct).length ? (
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  {getActFacts(selectedAct).map((fact) => (
-                    <p key={`${selectedAct.code}-${fact}`} className="text-sm leading-7 text-arenaMuted">
-                      {fact}
-                    </p>
-                  ))}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.orderTitle}</p>
+                  <p className="mt-2 text-sm text-arenaMuted">{text.currentPlace} {getCurrentPlaceLabel(selectedAct.code)}</p>
                 </div>
-              ) : null}
+                {locked ? (
+                  <span className="show-chip text-xs text-amber-100">
+                    <Lock size={14} />
+                    {text.lockedState}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-[auto_auto_minmax(0,12rem)]">
+                <button
+                  type="button"
+                  className="arena-button-secondary px-5 py-3 text-sm"
+                  disabled={locked || rankingMap[selectedAct.code] === 1}
+                  onClick={() => persistRanking(moveCodeBy(ranking, selectedAct.code, -1))}
+                >
+                  <ArrowUp size={16} />
+                  {text.moveHigher}
+                </button>
+                <button
+                  type="button"
+                  className="arena-button-secondary px-5 py-3 text-sm"
+                  disabled={locked || rankingMap[selectedAct.code] === ranking.length}
+                  onClick={() => persistRanking(moveCodeBy(ranking, selectedAct.code, 1))}
+                >
+                  <ArrowDown size={16} />
+                  {text.moveLower}
+                </button>
+                <label className="grid gap-2 text-xs text-arenaMuted">
+                  <span className="label-copy uppercase tracking-[0.2em]">{text.choosePlace}</span>
+                  <select
+                    className="arena-input"
+                    value={rankingMap[selectedAct.code] || 1}
+                    disabled={locked}
+                    onChange={(event) => persistRanking(moveCodeToIndex(ranking, selectedAct.code, Number(event.target.value) - 1))}
+                  >
+                    {ranking.map((_, index) => (
+                      <option key={`${selectedAct.code}-sheet-${index + 1}`} value={index + 1}>
+                        #{index + 1}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
             </div>
 
             <div className="show-panel p-4">
@@ -966,54 +1015,18 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
             </div>
 
             <div className="show-panel p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.orderTitle}</p>
-                  <p className="mt-2 text-sm text-arenaMuted">{text.currentPlace} {getCurrentPlaceLabel(selectedAct.code)}</p>
+              <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.aboutArtist}</p>
+              {getActFacts(selectedAct).length ? (
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  {getActFacts(selectedAct).map((fact) => (
+                    <p key={`${selectedAct.code}-${fact}`} className="text-sm leading-7 text-arenaMuted">
+                      {fact}
+                    </p>
+                  ))}
                 </div>
-                {locked ? (
-                  <span className="show-chip text-xs text-amber-100">
-                    <Lock size={14} />
-                    {text.lockedState}
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="mt-4 grid gap-3 md:grid-cols-[auto_auto_minmax(0,12rem)]">
-                <button
-                  type="button"
-                  className="arena-button-secondary px-5 py-3 text-sm"
-                  disabled={locked || rankingMap[selectedAct.code] === 1}
-                  onClick={() => persistRanking(moveCodeBy(ranking, selectedAct.code, -1))}
-                >
-                  <ArrowUp size={16} />
-                  {text.moveHigher}
-                </button>
-                <button
-                  type="button"
-                  className="arena-button-secondary px-5 py-3 text-sm"
-                  disabled={locked || rankingMap[selectedAct.code] === ranking.length}
-                  onClick={() => persistRanking(moveCodeBy(ranking, selectedAct.code, 1))}
-                >
-                  <ArrowDown size={16} />
-                  {text.moveLower}
-                </button>
-                <label className="grid gap-2 text-xs text-arenaMuted">
-                  <span className="label-copy uppercase tracking-[0.2em]">{text.choosePlace}</span>
-                  <select
-                    className="arena-input"
-                    value={rankingMap[selectedAct.code] || 1}
-                    disabled={locked}
-                    onChange={(event) => persistRanking(moveCodeToIndex(ranking, selectedAct.code, Number(event.target.value) - 1))}
-                  >
-                    {ranking.map((_, index) => (
-                      <option key={`${selectedAct.code}-sheet-${index + 1}`} value={index + 1}>
-                        #{index + 1}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+              ) : (
+                <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(selectedAct)}</p>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-3">
