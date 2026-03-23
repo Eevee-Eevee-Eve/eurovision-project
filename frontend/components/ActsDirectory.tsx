@@ -303,25 +303,36 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
       <BottomSheet open={Boolean(selectedAct)} onClose={() => setSelectedActCode(null)}>
         {selectedAct ? (
           <div className="grid gap-5">
-            <ActPoster act={selectedAct} mode="hero" />
+            <div className="grid gap-4 md:grid-cols-[7rem_1fr] md:items-start">
+              <div className="mx-auto md:mx-0">
+                <ActPoster act={selectedAct} mode="card" />
+              </div>
 
-            <div className="flex flex-wrap gap-2">
-              <span className="show-chip text-xs text-arenaBeam">
-                {getCountryName(selectedAct.code, selectedAct.country)}
-              </span>
-              {hasPersonalRanking ? (
-                <span className="show-chip text-xs text-white">
-                  {text.currentPlace} #{rankingMap[selectedAct.code]}
-                </span>
-              ) : null}
-              {selectedAct.stageKey === "final" ? (
-                <span className="show-chip text-xs text-arenaMuted">{getActContext(selectedAct).value}</span>
-              ) : null}
+              <div className="min-w-0">
+                <div className="flex flex-wrap gap-2">
+                  <span className="show-chip text-xs text-arenaBeam">
+                    {getCountryName(selectedAct.code, selectedAct.country)}
+                  </span>
+                  {hasPersonalRanking ? (
+                    <span className="show-chip text-xs text-white">
+                      {text.currentPlace} #{rankingMap[selectedAct.code]}
+                    </span>
+                  ) : null}
+                  {selectedAct.stageKey === "final" ? (
+                    <span className="show-chip text-xs text-arenaMuted">{getActContext(selectedAct).value}</span>
+                  ) : null}
+                </div>
+
+                <h3 className="display-copy mt-4 text-3xl font-black leading-[0.92] text-white md:text-4xl">
+                  {selectedAct.artist}
+                </h3>
+                <p className="mt-2 text-base text-arenaMuted md:text-lg">{selectedAct.song}</p>
+                <p className="mt-4 text-sm leading-7 text-arenaMuted">{getActBlurb(selectedAct)}</p>
+              </div>
             </div>
 
             <div className="show-panel p-4">
               <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.aboutArtist}</p>
-              <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(selectedAct)}</p>
               {getAboutFacts(selectedAct).length ? (
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {getAboutFacts(selectedAct).map((fact) => (
@@ -330,7 +341,9 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
                     </p>
                   ))}
                 </div>
-              ) : null}
+              ) : (
+                <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(selectedAct)}</p>
+              )}
             </div>
 
             <div className="show-panel p-4">
