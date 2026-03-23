@@ -73,6 +73,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   const [lineupReady, setLineupReady] = useState(true);
   const [expectedEntries, setExpectedEntries] = useState(0);
   const [currentEntries, setCurrentEntries] = useState(0);
+  const [hasPersonalRanking, setHasPersonalRanking] = useState(false);
   const deferredQuery = useDeferredValue(query);
 
   const text = useMemo(() => (
@@ -275,6 +276,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   function persistRanking(nextRanking: string[]) {
     const normalized = normalizeRanking(acts, nextRanking);
     setRanking(normalized);
+    setHasPersonalRanking(true);
     if (acts.length) {
       saveRanking(roomSlug, stageKey, normalized);
     }
@@ -324,19 +326,25 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
   function getPlaceOptionLabel(rankIndex: number, currentCode: string) {
     const place = rankIndex + 1;
+    if (!hasPersonalRanking) {
+      return `#${place}`;
+    }
     const occupantCode = ranking[rankIndex];
     const occupant = acts.find((act) => act.code === occupantCode);
     if (!occupant) return `#${place}`;
+    const compactArtist = occupant.artist.length > 22
+      ? `${occupant.artist.slice(0, 22).trim()}...`
+      : occupant.artist;
 
     if (occupant.code === currentCode) {
       return language === "ru"
-        ? `#${place} — сейчас здесь`
-        : `#${place} — currently here`;
+        ? `#${place} - сейчас здесь`
+        : `#${place} - currently here`;
     }
 
     return language === "ru"
-      ? `#${place} — сейчас ${occupant.artist}`
-      : `#${place} — currently ${occupant.artist}`;
+      ? `#${place} - ${compactArtist}`
+      : `#${place} - ${compactArtist}`;
   }
 
   useEffect(() => {
@@ -385,22 +393,32 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 ? predictionPayload.value.ranking
                 : loadRanking(roomSlug, stageKey),
             );
+            const hasSavedRanking = predictionPayload.value.ranking.length > 0 || loadRanking(roomSlug, stageKey).length > 0;
             const baseline = normalized.length ? normalized : createDefaultRanking(actsPayload.acts);
             setRanking(baseline);
-            saveRanking(roomSlug, stageKey, baseline);
+            setHasPersonalRanking(hasSavedRanking);
+            if (hasSavedRanking) {
+              saveRanking(roomSlug, stageKey, baseline);
+            }
             setLocked(predictionPayload.value.locked);
           } else {
             const fallback = normalizeRanking(actsPayload.acts, loadRanking(roomSlug, stageKey));
             const baseline = fallback.length ? fallback : createDefaultRanking(actsPayload.acts);
             setRanking(baseline);
-            saveRanking(roomSlug, stageKey, baseline);
+            setHasPersonalRanking(loadRanking(roomSlug, stageKey).length > 0);
+            if (loadRanking(roomSlug, stageKey).length > 0) {
+              saveRanking(roomSlug, stageKey, baseline);
+            }
             setLocked(false);
           }
         } else {
           const fallback = normalizeRanking(actsPayload.acts, loadRanking(roomSlug, stageKey));
           const baseline = fallback.length ? fallback : createDefaultRanking(actsPayload.acts);
           setRanking(baseline);
-          saveRanking(roomSlug, stageKey, baseline);
+          setHasPersonalRanking(loadRanking(roomSlug, stageKey).length > 0);
+          if (loadRanking(roomSlug, stageKey).length > 0) {
+            saveRanking(roomSlug, stageKey, baseline);
+          }
           setLocked(false);
         }
       } catch (loadError) {
@@ -426,9 +444,11 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     const normalized = normalizeRanking(acts, ranking);
     if (!arraysEqual(normalized, ranking)) {
       setRanking(normalized);
-      saveRanking(roomSlug, stageKey, normalized);
+      if (hasPersonalRanking) {
+        saveRanking(roomSlug, stageKey, normalized);
+      }
     }
-  }, [acts, ranking, roomSlug, stageKey]);
+  }, [acts, hasPersonalRanking, ranking, roomSlug, stageKey]);
 
   useEffect(() => {
     const socket = createRoomSocket(roomSlug);
@@ -480,6 +500,8 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           ? text.submitDisabledClosed
           : !lineupReady
             ? text.submitDisabledLineup
+            : !hasPersonalRanking
+              ? (language === "ru" ? "Сначала расставь хотя бы несколько мест" : "Start building your ranking first")
             : null;
 
   async function handleSubmit() {
@@ -505,6 +527,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   }
 
   function getCurrentPlaceLabel(code: string) {
+    if (!hasPersonalRanking) return text.placeUnknown;
     const rank = rankingMap[code];
     return rank ? `#${rank}` : text.placeUnknown;
   }
@@ -545,9 +568,11 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     <span className="show-chip text-xs text-arenaBeam">{getCountryName(act.code, act.country)}</span>
-                    <span className="show-chip text-xs text-white">
-                      {text.rankingLabel} {getCurrentPlaceLabel(act.code)}
-                    </span>
+                    {hasPersonalRanking ? (
+                      <span className="show-chip text-xs text-white">
+                        {text.rankingLabel} {getCurrentPlaceLabel(act.code)}
+                      </span>
+                    ) : null}
                     {finalContext ? (
                       <span className="show-chip text-xs text-arenaMuted">{finalContext}</span>
                     ) : null}
@@ -624,9 +649,11 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   <div className="grid gap-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="show-chip text-xs text-arenaBeam">{getCountryName(act.code, act.country)}</span>
-                      <span className="show-chip text-xs text-white">
-                        {text.rankingLabel} {getCurrentPlaceLabel(act.code)}
-                      </span>
+                      {hasPersonalRanking ? (
+                        <span className="show-chip text-xs text-white">
+                          {text.rankingLabel} {getCurrentPlaceLabel(act.code)}
+                        </span>
+                      ) : null}
                       {act.stageKey === "final" ? (
                         <span className="show-chip text-xs text-arenaMuted">{getActContext(act).value}</span>
                       ) : null}
@@ -723,7 +750,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(act)}</p>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-[auto_auto_minmax(0,18rem)] lg:w-[28rem]">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,14rem)] xl:w-[34rem]">
                   <button
                     type="button"
                     className="arena-button-secondary px-4 py-3 text-sm"
@@ -742,14 +769,19 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                     <ArrowDown size={16} />
                     {text.moveLower}
                   </button>
-                  <label className="grid gap-2 text-xs text-arenaMuted">
+                  <label className="grid gap-2 text-xs text-arenaMuted sm:col-span-2 xl:col-span-1">
                     <span className="label-copy uppercase tracking-[0.2em]">{text.choosePlace}</span>
                     <select
                       className="arena-input"
-                      value={index + 1}
+                      value={hasPersonalRanking ? index + 1 : ""}
                       disabled={locked}
                       onChange={(event) => persistRanking(moveCodeToIndex(ranking, act.code, Number(event.target.value) - 1))}
                     >
+                      {!hasPersonalRanking ? (
+                        <option value="" disabled>
+                          {language === "ru" ? "Выбери место" : "Choose place"}
+                        </option>
+                      ) : null}
                       {ranking.map((_, rankingIndex) => (
                         <option key={`${act.code}-${rankingIndex + 1}`} value={rankingIndex + 1}>
                           {getPlaceOptionLabel(rankingIndex, act.code)}
@@ -951,9 +983,13 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   <span className="show-chip text-xs text-arenaBeam">
                     {getCountryName(selectedAct.code, selectedAct.country)}
                   </span>
-                  <span className="show-chip text-xs text-white">
-                    {text.rankingLabel} {getCurrentPlaceLabel(selectedAct.code)}
-                  </span>
+                  {hasPersonalRanking ? (
+                    <span className="show-chip text-xs text-white">
+                      {text.rankingLabel} {getCurrentPlaceLabel(selectedAct.code)}
+                    </span>
+                  ) : (
+                    <span className="show-chip text-xs text-arenaMuted">{text.placeUnknown}</span>
+                  )}
                   {selectedAct.stageKey === "final" ? (
                     <span className="show-chip text-xs text-arenaMuted">
                       {text.finalContextLabel}: {getActContext(selectedAct).value}
@@ -983,7 +1019,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 ) : null}
               </div>
 
-              <div className="mt-4 grid gap-3 md:grid-cols-[auto_auto_minmax(0,18rem)]">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,14rem)]">
                 <button
                   type="button"
                   className="arena-button-secondary px-5 py-3 text-sm"
@@ -1002,14 +1038,19 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   <ArrowDown size={16} />
                   {text.moveLower}
                 </button>
-                <label className="grid gap-2 text-xs text-arenaMuted">
+                <label className="grid gap-2 text-xs text-arenaMuted sm:col-span-2 xl:col-span-1">
                   <span className="label-copy uppercase tracking-[0.2em]">{text.choosePlace}</span>
                   <select
                     className="arena-input"
-                    value={rankingMap[selectedAct.code] || 1}
+                    value={hasPersonalRanking ? (rankingMap[selectedAct.code] || 1) : ""}
                     disabled={locked}
                     onChange={(event) => persistRanking(moveCodeToIndex(ranking, selectedAct.code, Number(event.target.value) - 1))}
                   >
+                    {!hasPersonalRanking ? (
+                      <option value="" disabled>
+                        {language === "ru" ? "Выбери место" : "Choose place"}
+                      </option>
+                    ) : null}
                     {ranking.map((_, index) => (
                       <option key={`${selectedAct.code}-sheet-${index + 1}`} value={index + 1}>
                         {getPlaceOptionLabel(index, selectedAct.code)}
