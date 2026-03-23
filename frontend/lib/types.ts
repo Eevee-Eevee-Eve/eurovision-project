@@ -3,6 +3,7 @@ export type BoardKey = "overall" | StageKey;
 export type UiLanguage = "ru" | "en";
 export type PublicDisplayMode = "full_name" | "first_name_last_initial" | "display_name";
 export type PasswordResetMode = "preview" | "email" | "disabled";
+export type ShowHighlightMode = "stage" | "current_act" | "results" | "players" | null;
 
 export interface AvatarTheme {
   primary: string;
@@ -20,9 +21,17 @@ export interface RoomSummary {
   defaultStage: StageKey;
 }
 
+export interface ShowState {
+  stageKey: StageKey;
+  currentActCode: string | null;
+  statusText: string | null;
+  highlightMode: ShowHighlightMode;
+}
+
 export interface RoomDetails extends RoomSummary {
   predictionWindows: Record<StageKey, boolean>;
   stages: StageKey[];
+  showState: ShowState;
   stageMeta?: Record<StageKey, {
     expectedEntries: number;
     currentEntries: number;
@@ -43,6 +52,7 @@ export interface ActEntry {
   artist: string;
   song: string;
   runningOrder: number | null;
+  seedOrder?: number;
   flagUrl: string;
   photoUrl?: string | null;
   profileUrl?: string | null;
@@ -62,6 +72,8 @@ export interface ActEntry {
     value: Record<UiLanguage, string>;
   } | null;
   blurbLocalized?: Record<UiLanguage, string> | null;
+  semiResult?: number | null;
+  semiResultLocalized?: Record<UiLanguage, string> | null;
   juryPoints?: number | null;
   telePoints?: number | null;
   totalPoints?: number | null;
@@ -199,6 +211,7 @@ export interface AdminSessionPayload {
 export interface AdminRoomSnapshot {
   roomSlug: string;
   predictionWindows: Record<StageKey, boolean>;
+  showState: ShowState;
   scoringProfile: string;
   scoringProfiles: Array<{
     key: string;

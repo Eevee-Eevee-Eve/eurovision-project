@@ -19,10 +19,11 @@ import {
   resetRoomState,
   restoreParticipant,
   toggleStageWindow,
+  updateAdminShowState,
   updateAdminScoring,
 } from "../lib/api";
 import { STAGE_OPTIONS } from "../lib/rooms";
-import type { ActEntry, AdminRoomSnapshot, AdminSessionPayload, AdminUserEntry, RoomSummary, StageKey } from "../lib/types";
+import type { ActEntry, AdminRoomSnapshot, AdminSessionPayload, AdminUserEntry, RoomSummary, ShowHighlightMode, StageKey } from "../lib/types";
 import { ActPoster } from "./ActPoster";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useLanguage } from "./LanguageProvider";
@@ -164,6 +165,9 @@ export function AdminControlRoom() {
   const [adminPassword, setAdminPassword] = useState("");
   const [loadingPanel, setLoadingPanel] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [showStatusDraft, setShowStatusDraft] = useState("");
+  const [showCurrentActCode, setShowCurrentActCode] = useState("");
+  const [showHighlightMode, setShowHighlightMode] = useState<ShowHighlightMode | "">("");
   const [statusText, setStatusText] = useState("");
   const [error, setError] = useState("");
 
@@ -302,6 +306,44 @@ export function AdminControlRoom() {
       return acc;
     }, {});
   }, [rankedRows]);
+  const showCopy = useMemo(() => (
+    language === "ru"
+      ? {
+          desk: "Эфирный сценарий",
+          deskText: "Здесь выбирается, что именно должно выделяться на большом экране во время шоу.",
+          statusLabel: "Статус в эфире",
+          currentActLabel: "Текущий артист",
+          highlightLabel: "Режим подсветки",
+          saved: "Эфирный сценарий обновлён.",
+          saveButton: "Обновить эфир",
+          none: "Без акцента",
+          stage: "Акцент на этапе",
+          currentAct: "Акцент на текущем артисте",
+          results: "Акцент на итогах",
+          players: "Акцент на таблице друзей",
+        }
+      : {
+          desk: "Show screen state",
+          deskText: "Choose what the projector should emphasize right now during the show.",
+          statusLabel: "On-air status",
+          currentActLabel: "Current act",
+          highlightLabel: "Highlight mode",
+          saved: "Show screen state updated.",
+          saveButton: "Update show",
+          none: "No highlight",
+          stage: "Highlight the stage",
+          currentAct: "Highlight the current act",
+          results: "Highlight results",
+          players: "Highlight players",
+        }
+  ), [language]);
+  const showHighlightOptions = useMemo<Array<{ value: ShowHighlightMode | ""; label: string }>>(() => [
+    { value: "", label: showCopy.none },
+    { value: "stage", label: showCopy.stage },
+    { value: "current_act", label: showCopy.currentAct },
+    { value: "results", label: showCopy.results },
+    { value: "players", label: showCopy.players },
+  ], [showCopy]);
 
   const loadPanelData = useCallback(async (preferPublished = false) => {
     if (!authenticated || !selectedRoom) {
@@ -395,6 +437,26 @@ export function AdminControlRoom() {
   useEffect(() => {
     void loadPanelData();
   }, [loadPanelData]);
+
+  useEffect(() => {
+    if (!snapshot?.showState) {
+      setShowStatusDraft("");
+      setShowCurrentActCode("");
+      setShowHighlightMode("");
+      return;
+    }
+
+    if (snapshot.showState.stageKey !== selectedStage) {
+      setShowStatusDraft("");
+      setShowCurrentActCode("");
+      setShowHighlightMode("");
+      return;
+    }
+
+    setShowStatusDraft(snapshot.showState.statusText || "");
+    setShowCurrentActCode(snapshot.showState.currentActCode || "");
+    setShowHighlightMode(snapshot.showState.highlightMode || "");
+  }, [selectedStage, snapshot]);
 
   useEffect(() => {
     if (!authenticated || !selectedRoom) {
@@ -534,6 +596,34 @@ export function AdminControlRoom() {
       } : current);
       setScoringProfiles(payload.scoringProfiles);
       setStatusText(copy.scoringSaved);
+    } catch (saveError) {
+      console.error(saveError);
+      setError(saveError instanceof Error ? saveError.message : copy.reloadFailed);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function handleShowStateSave() {
+    if (!selectedRoom) return;
+
+    setPendingAction("show-state");
+    setError("");
+    setStatusText("");
+    try {
+      const payload = await updateAdminShowState({
+        roomSlug: selectedRoom,
+        stageKey: selectedStage,
+        currentActCode: showCurrentActCode || null,
+        statusText: showStatusDraft.trim() || null,
+        highlightMode: showHighlightMode || null,
+      });
+
+      setSnapshot((current) => current ? {
+        ...current,
+        showState: payload.showState,
+      } : current);
+      setStatusText(showCopy.saved);
     } catch (saveError) {
       console.error(saveError);
       setError(saveError instanceof Error ? saveError.message : copy.reloadFailed);
@@ -823,6 +913,81 @@ export function AdminControlRoom() {
                     <p className="display-copy mt-3 text-4xl font-black">{item.value}</p>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div className="show-card p-5 md:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{showCopy.desk}</p>
+                  <h2 className="display-copy mt-3 text-3xl font-black">{getStageLabel(selectedStage)}</h2>
+                  <p className="mt-3 text-sm text-arenaMuted">{showCopy.deskText}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">
+                    {snapshot?.showState?.stageKey === selectedStage ? getStageLabel(snapshot.showState.stageKey) : getStageLabel(selectedStage)}
+                  </span>
+                  {snapshot?.showState?.statusText ? (
+                    <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-white">
+                      {snapshot.showState.statusText}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto]">
+                <label className="show-panel p-4">
+                  <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{showCopy.statusLabel}</p>
+                  <input
+                    className="arena-input mt-3"
+                    value={showStatusDraft}
+                    placeholder={language === "ru" ? "Например: Голосование открыто" : "For example: Voting is open"}
+                    onChange={(event) => setShowStatusDraft(event.target.value)}
+                  />
+                </label>
+
+                <label className="show-panel p-4">
+                  <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{showCopy.currentActLabel}</p>
+                  <select
+                    className="arena-input mt-3"
+                    value={showCurrentActCode}
+                    onChange={(event) => setShowCurrentActCode(event.target.value)}
+                  >
+                    <option value="">{language === "ru" ? "Без выбора" : "No act selected"}</option>
+                    {rows.map((row) => (
+                      <option key={`show-${row.code}`} value={row.code}>
+                        {row.country} - {row.artist}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="show-panel p-4">
+                  <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{showCopy.highlightLabel}</p>
+                  <select
+                    className="arena-input mt-3"
+                    value={showHighlightMode}
+                    onChange={(event) => setShowHighlightMode((event.target.value || "") as ShowHighlightMode | "")}
+                  >
+                    {showHighlightOptions.map((option) => (
+                      <option key={`highlight-${option.value || "none"}`} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    className="arena-button-primary h-12 w-full px-5 text-sm"
+                    disabled={pendingAction === "show-state"}
+                    onClick={() => void handleShowStateSave()}
+                  >
+                    <MonitorPlay size={16} />
+                    {showCopy.saveButton}
+                  </button>
+                </div>
               </div>
             </div>
 

@@ -88,6 +88,7 @@ const SCORING_PROFILES = {
   },
 };
 const DEFAULT_SCORING_PROFILE = 'balanced';
+const SHOW_HIGHLIGHT_MODES = new Set(['stage', 'current_act', 'results', 'players']);
 
 const LOCAL_ORIGINS = new Set([
   'http://localhost:3000',
@@ -121,9 +122,39 @@ function createStageBuckets(factory) {
   }, {});
 }
 
+function createDefaultShowState(stageKey = DEFAULT_STAGE) {
+  return {
+    stageKey,
+    currentActCode: null,
+    statusText: null,
+    highlightMode: 'stage',
+  };
+}
+
+function normalizeShowHighlightMode(value) {
+  if (value == null || value === '') {
+    return 'stage';
+  }
+  return SHOW_HIGHLIGHT_MODES.has(value) ? value : 'stage';
+}
+
+function normalizeShowStateShape(showState, fallbackStage = DEFAULT_STAGE) {
+  const stageKey = normalizeStage(showState?.stageKey) || fallbackStage;
+  const validCodes = new Set((ACTS_BY_STAGE[stageKey] || []).map((act) => act.code));
+  const currentActCode = sanitizeText(showState?.currentActCode, 8).toUpperCase();
+
+  return {
+    stageKey,
+    currentActCode: validCodes.has(currentActCode) ? currentActCode : null,
+    statusText: sanitizeText(showState?.statusText, 160) || null,
+    highlightMode: showState?.highlightMode === null ? null : normalizeShowHighlightMode(showState?.highlightMode),
+  };
+}
+
 function createRoomState() {
   return {
     predictionWindows: createStageBuckets(() => true),
+    showState: createDefaultShowState(),
     users: {},
     predictions: createStageBuckets(() => ({})),
     results: createStageBuckets(() => []),
@@ -154,6 +185,7 @@ function normalizeRoomStateShape(room) {
   if (!room.users || typeof room.users !== 'object') {
     room.users = {};
   }
+  room.showState = normalizeShowStateShape(room.showState, DEFAULT_STAGE);
   if (!room.predictions || typeof room.predictions !== 'object') {
     room.predictions = createStageBuckets(() => ({}));
   }
@@ -245,6 +277,13 @@ function normalizeRoomSlug(value, { allowDefault = false } = {}) {
 
 function getRoomState(roomSlug) {
   return roomStates[roomSlug];
+}
+
+function buildShowState(roomSlug) {
+  const room = getRoomState(roomSlug);
+  const fallbackStage = getRoomBySlug(roomSlug)?.defaultStage || DEFAULT_STAGE;
+  room.showState = normalizeShowStateShape(room.showState, fallbackStage);
+  return room.showState;
 }
 
 function normalizeStage(value) {
@@ -783,6 +822,7 @@ function buildAdminRoomSnapshot(roomSlug) {
   return {
     roomSlug,
     predictionWindows: getRoomPredictionWindows(room),
+    showState: buildShowState(roomSlug),
     scoringProfile: getScoringProfile(room.scoringProfile).key,
     scoringProfiles: getScoringProfilePayload(),
     participants: {
@@ -925,12 +965,17 @@ function emitResults(roomSlug, stageKey) {
   });
 }
 
-function emitRoomState(roomSlug) {
+function emitRoomMeta(roomSlug) {
   const room = getRoomState(roomSlug);
   io.to(roomSlug).emit('toggle', {
     roomSlug,
     predictionWindows: getRoomPredictionWindows(room),
+    showState: buildShowState(roomSlug),
   });
+}
+
+function emitRoomState(roomSlug) {
+  emitRoomMeta(roomSlug);
   emitLeaderboard(roomSlug);
   STAGE_KEYS.forEach((stage) => emitResults(roomSlug, stage));
 }
@@ -994,6 +1039,7 @@ io.on('connection', (socket) => {
   socket.emit('toggle', {
     roomSlug,
     predictionWindows: getRoomPredictionWindows(room),
+    showState: buildShowState(roomSlug),
   });
   socket.emit('leaderboardUpdate', buildLeaderboard(roomSlug));
   STAGE_KEYS.forEach((stage) => {
@@ -1405,6 +1451,7 @@ app.get('/api/room/:roomSlug', (req, res) => {
   return res.json({
     ...room,
     predictionWindows: getRoomPredictionWindows(stateForRoom),
+    showState: buildShowState(roomSlug),
     stages: STAGE_KEYS,
     stageMeta: STAGE_KEYS.reduce((acc, stage) => {
       acc[stage] = getStageLineupMeta(stage);
@@ -1426,6 +1473,7 @@ app.get('/api/status', (req, res) => {
   return res.json({
     roomSlug,
     predictionWindows: getRoomPredictionWindows(room),
+    showState: buildShowState(roomSlug),
     stages: STAGE_KEYS,
     stageMeta: STAGE_KEYS.reduce((acc, stage) => {
       acc[stage] = getStageLineupMeta(stage);
@@ -1648,12 +1696,7 @@ app.post('/api/toggle', requireAdmin, (req, res) => {
     : !room.predictionWindows[stageKey];
   room.predictionWindows[stageKey] = nextOpen;
   persistState();
-  io.to(roomSlug).emit('toggle', {
-    roomSlug,
-    stage: stageKey,
-    open: nextOpen,
-    predictionWindows: getRoomPredictionWindows(room),
-  });
+  emitRoomMeta(roomSlug);
 
   return res.json({
     roomSlug,
@@ -1675,6 +1718,35 @@ app.post('/api/reset', requireAdmin, (req, res) => {
   emitRoomState(roomSlug);
 
   return res.json({ ok: true, roomSlug });
+});
+
+app.post('/api/admin/show-state', requireAdmin, (req, res) => {
+  const roomSlug = normalizeRoomSlug(req.body.roomSlug || req.query.room);
+  const stageKey = normalizeStage(req.body.stageKey || req.body.stage || req.query.stage);
+
+  if (!roomSlug) {
+    return res.status(404).json({ error: 'Unknown room' });
+  }
+  if (!stageKey) {
+    return res.status(400).json({ error: 'Unknown stage' });
+  }
+
+  const room = getRoomState(roomSlug);
+  room.showState = normalizeShowStateShape({
+    ...room.showState,
+    stageKey,
+    currentActCode: req.body.currentActCode,
+    statusText: req.body.statusText,
+    highlightMode: req.body.highlightMode,
+  }, stageKey);
+
+  persistState();
+  emitRoomMeta(roomSlug);
+
+  return res.json({
+    roomSlug,
+    showState: buildShowState(roomSlug),
+  });
 });
 
 app.get('/api/admin/room-state', requireAdmin, (req, res) => {

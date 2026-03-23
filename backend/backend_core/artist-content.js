@@ -285,6 +285,38 @@ function buildFacts(entry, code) {
   };
 }
 
+function buildExpandedFacts(entry, code) {
+  const baseFacts = buildFacts(entry, code);
+  const halfFact = entry.half
+    ? {
+        en: `The act performs in the ${HALF_LABELS[entry.half].en.toLowerCase()} of ${STAGE_LABELS[entry.stage].en}.`,
+        ru: `Исполнитель выступает в ${HALF_LOCATIVE_LABELS[entry.half].ru} ${STAGE_GENITIVE_LABELS[entry.stage].ru}.`,
+      }
+    : null;
+
+  if (entry.stage === 'final') {
+    return {
+      en: [
+        ...baseFacts.en,
+        entry.autoQualifier === 'host'
+          ? 'This artist reaches the final automatically as the host-country representative.'
+          : 'This artist reaches the final automatically as a pre-qualified broadcaster.',
+      ],
+      ru: [
+        ...baseFacts.ru,
+        entry.autoQualifier === 'host'
+          ? 'Этот артист автоматически попадает в финал как представитель страны-хозяйки.'
+          : 'Этот артист автоматически попадает в финал как заранее квалифицированный участник.',
+      ],
+    };
+  }
+
+  return {
+    en: [...baseFacts.en, ...(halfFact ? [halfFact.en] : [])],
+    ru: [...baseFacts.ru, ...(halfFact ? [halfFact.ru] : [])],
+  };
+}
+
 function buildContexts(entry) {
   if (entry.stage === 'final') {
     return { final: buildFinalRoute(entry.autoQualifier) };
@@ -694,7 +726,7 @@ const ARTIST_CONTENT = Object.fromEntries(
       artist: entry.artist,
       song: entry.song,
       blurb: buildBlurb(entry, code),
-      facts: buildFacts(entry, code),
+      facts: buildExpandedFacts(entry, code),
       contexts: buildContexts(entry),
     },
   ]),

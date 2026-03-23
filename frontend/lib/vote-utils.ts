@@ -10,7 +10,11 @@ export const NOTE_TONES: { key: NoteTone; label: string; hint: string }[] = [
 export function createDefaultRanking(acts: ActEntry[]) {
   return acts
     .slice()
-    .sort((left, right) => left.runningOrder - right.runningOrder)
+    .sort((left, right) => {
+      const leftOrder = left.runningOrder ?? left.seedOrder ?? Number.MAX_SAFE_INTEGER;
+      const rightOrder = right.runningOrder ?? right.seedOrder ?? Number.MAX_SAFE_INTEGER;
+      return leftOrder - rightOrder || left.country.localeCompare(right.country, "en");
+    })
     .map((act) => act.code);
 }
 

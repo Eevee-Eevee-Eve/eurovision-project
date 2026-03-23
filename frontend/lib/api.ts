@@ -123,6 +123,20 @@ export async function updateAdminScoring(roomSlug: string, scoringProfile: strin
   });
 }
 
+export async function updateAdminShowState(payload: {
+  roomSlug: string;
+  stageKey: StageKey;
+  currentActCode: string | null;
+  statusText: string | null;
+  highlightMode: "stage" | "current_act" | "results" | "players" | null;
+}) {
+  return sendJson<{ roomSlug: string; showState: RoomDetails["showState"] }>("/api/admin/show-state", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function toggleStageWindow(roomSlug: string, stage: StageKey, open: boolean) {
   return sendJson<{ roomSlug: string; stage: StageKey; open: boolean; predictionWindows: Record<StageKey, boolean> }>("/api/toggle", {
     method: "POST",
