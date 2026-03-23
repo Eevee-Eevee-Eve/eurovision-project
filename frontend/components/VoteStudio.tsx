@@ -16,6 +16,7 @@ import type { ActEntry, ActNote, NoteTone, RoomDetails, StageKey } from "../lib/
 import {
   NOTE_TONES,
   createDefaultRanking,
+  getNoteTags,
   hasNote,
   moveCodeBy,
   moveCodeToIndex,
@@ -216,7 +217,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         }
   ), [language]);
 
-  const toneLabels = useMemo<Record<NoteTone, string>>(() => (
+  const toneLabelsLegacy = useMemo(() => (
     language === "ru"
       ? {
           favorite: "Фаворит",
@@ -231,6 +232,17 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           skip: "Skip",
         }
   ), [language]);
+
+  const noteTagLabels = {
+    favorite: language === "ru" ? "Р¤Р°РІРѕСЂРёС‚" : "Favorite",
+    winner: language === "ru" ? "РџРѕР±РµРґРёС‚РµР»СЊ" : "Winner",
+    vocals: language === "ru" ? "Р’РѕРєР°Р»" : "Vocals",
+    staging: language === "ru" ? "РќРѕРјРµСЂ" : "Staging",
+    song: language === "ru" ? "РџРµСЃРЅСЏ" : "Song",
+    energy: language === "ru" ? "Р­РЅРµСЂРіРёСЏ" : "Energy",
+    memorable: language === "ru" ? "Р—Р°РїРѕРјРЅРёР»РѕСЃСЊ" : "Memorable",
+    skip: language === "ru" ? "РњРёРјРѕ" : "Skip",
+  } satisfies Record<NoteTone, string>;
 
   const currentStageOpen = room?.predictionWindows[stageKey] ?? false;
   const selectedAct = acts.find((act) => act.code === selectedActCode) || null;
@@ -252,9 +264,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
   function updateNote(code: string, patch: Partial<ActNote>) {
     setNotes((current) => {
-      const previous = current[code] || { tone: null, text: "" };
+      const previous = current[code] || { tones: [], text: "" };
       const nextEntry: ActNote = {
-        tone: patch.tone !== undefined ? patch.tone : previous.tone,
+        tones: patch.tones !== undefined ? patch.tones : previous.tones,
         text: patch.text !== undefined ? patch.text : previous.text,
       };
       const nextNotes = { ...current };
@@ -268,6 +280,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       saveNotes(roomSlug, stageKey, nextNotes);
       return nextNotes;
     });
+  }
+
+  function toggleTone(code: string, toneKey: NoteTone) {
+    const currentTags = getNoteTags(notes[code]);
+    const nextTags = currentTags.includes(toneKey)
+      ? currentTags.filter((entry) => entry !== toneKey)
+      : [...currentTags, toneKey];
+    updateNote(code, { tones: nextTags });
   }
 
   function clearNote(code: string) {
@@ -582,14 +602,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                         <button
                           key={`${act.code}-${tone.key}`}
                           type="button"
-                          onClick={() => updateNote(act.code, { tone: note?.tone === tone.key ? null : tone.key })}
+                          onClick={() => toggleTone(act.code, tone.key)}
                           className={`rounded-full px-4 py-2 text-sm transition ${
-                            note?.tone === tone.key
+                            getNoteTags(note).includes(tone.key)
                               ? "bg-arenaSurfaceMax text-white shadow-glow"
                               : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
                           }`}
                         >
-                          <span className="label-copy uppercase tracking-[0.2em]">{toneLabels[tone.key]}</span>
+                          <span className="label-copy uppercase tracking-[0.2em]">{noteTagLabels[tone.key]}</span>
                         </button>
                       ))}
                     </div>
@@ -979,14 +999,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   <button
                     key={`${selectedAct.code}-${tone.key}`}
                     type="button"
-                    onClick={() => updateNote(selectedAct.code, { tone: notes[selectedAct.code]?.tone === tone.key ? null : tone.key })}
+                    onClick={() => toggleTone(selectedAct.code, tone.key)}
                     className={`rounded-full px-4 py-2 text-sm transition ${
-                      notes[selectedAct.code]?.tone === tone.key
+                      getNoteTags(notes[selectedAct.code]).includes(tone.key)
                         ? "bg-arenaSurfaceMax text-white shadow-glow"
                         : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
                     }`}
                   >
-                    <span className="label-copy uppercase tracking-[0.2em]">{toneLabels[tone.key]}</span>
+                    <span className="label-copy uppercase tracking-[0.2em]">{noteTagLabels[tone.key]}</span>
                   </button>
                 ))}
               </div>

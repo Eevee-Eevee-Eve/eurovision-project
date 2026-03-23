@@ -1,5 +1,16 @@
 import type { ActNote, StageKey, StoredUser } from "./types";
 
+const ALLOWED_NOTE_TONES = new Set([
+  "favorite",
+  "winner",
+  "vocals",
+  "staging",
+  "song",
+  "energy",
+  "memorable",
+  "skip",
+]);
+
 function safeJsonParse<T>(raw: string | null, fallback: T) {
   if (!raw) return fallback;
   try {
@@ -43,10 +54,27 @@ export function saveRanking(roomSlug: string, stageKey: StageKey, ranking: strin
 
 export function loadNotes(roomSlug: string, stageKey: StageKey) {
   if (typeof window === "undefined") return {};
-  return safeJsonParse<Record<string, ActNote>>(
+  const rawNotes = safeJsonParse<Record<string, Partial<ActNote>>>(
     window.localStorage.getItem(notesStorageKey(roomSlug, stageKey)),
     {},
   );
+
+  return Object.entries(rawNotes).reduce<Record<string, ActNote>>((acc, [code, note]) => {
+    const tones = Array.isArray(note?.tones)
+      ? note.tones.filter((tone): tone is ActNote["tones"][number] => typeof tone === "string" && ALLOWED_NOTE_TONES.has(tone))
+      : [];
+
+    if (typeof note?.tone === "string" && ALLOWED_NOTE_TONES.has(note.tone)) {
+      tones.push(note.tone);
+    }
+
+    acc[code] = {
+      tones: Array.from(new Set(tones)),
+      text: typeof note?.text === "string" ? note.text : "",
+    };
+
+    return acc;
+  }, {});
 }
 
 export function saveNotes(roomSlug: string, stageKey: StageKey, notes: Record<string, ActNote>) {
