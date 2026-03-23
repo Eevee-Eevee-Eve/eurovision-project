@@ -1,0 +1,347 @@
+{
+  "accounts": {
+    "26029526-8898-406d-ad5d-d67dc5bb0c38": {
+      "id": "26029526-8898-406d-ad5d-d67dc5bb0c38",
+      "email": "smoke-1774101101370@example.com",
+      "passwordSalt": "88f56506d74b1593277cd381511cb227",
+      "passwordHash": "b326fea7a949ffbee24c59ffc29a1647a1b8c37e0d89c5fa38ab23550f655fd11b8857124d9a9ff11b822ddc9883b9e1783603ef8e9feedbc3fde3f589363d35",
+      "firstName": "Smoke",
+      "lastName": "Test",
+      "displayName": "Smoke Pilot",
+      "emoji": "ST",
+      "avatarUrl": null,
+      "publicDisplayMode": "display_name",
+      "publicDisplayOptIn": true,
+      "consents": {
+        "policyVersion": "2026-03-21",
+        "privacyAcceptedAt": "2026-03-21T13:51:41.408Z",
+        "publicDisplayAcceptedAt": "2026-03-21T13:51:41.408Z"
+      },
+      "createdAt": "2026-03-21T13:51:41.408Z",
+      "updatedAt": "2026-03-21T13:51:41.408Z",
+      "lastLoginAt": "2026-03-21T13:51:41.408Z"
+    },
+    "a571fba7-3e2a-4160-b466-e0e30e08f5b0": {
+      "id": "a571fba7-3e2a-4160-b466-e0e30e08f5b0",
+      "email": "flow-1774101720095@example.com",
+      "passwordSalt": "8fb5de647a381d42608573dfc2820639",
+      "passwordHash": "6fd960cb06d8cca3ab17198edeaad2c07b5e7b8b85ebf55129fe6e0d8b4e818747acb59a95bef6aafa6dc67ccdae6dcefa3ccfdf005ea9a6967077bb87d47fe8",
+      "firstName": "Local",
+      "lastName": "Viewer",
+      "displayName": "Neon Pilot",
+      "emoji": "NP",
+      "avatarUrl": null,
+      "publicDisplayMode": "display_name",
+      "publicDisplayOptIn": true,
+      "consents": {
+        "policyVersion": "2026-03-21",
+        "privacyAcceptedAt": "2026-03-21T14:02:00.135Z",
+        "publicDisplayAcceptedAt": "2026-03-21T14:02:00.135Z"
+      },
+      "createdAt": "2026-03-21T14:02:00.135Z",
+      "updatedAt": "2026-03-21T14:02:00.143Z",
+      "lastLoginAt": "2026-03-21T14:02:00.135Z"
+    },
+    "8e8ef144-9532-4245-b62d-61720f317a9c": {
+      "id": "8e8ef144-9532-4245-b62d-61720f317a9c",
+      "email": "smoke-1774121343250@example.com",
+      "passwordSalt": "359cf45f84bfac83371bafa454e639d8",
+      "passwordHash": "7125cebf1031634d5c4c93b48947ac027b3a4276807a6efd7eb842de6259eaf8f24edbc7a00f50435f9629da6db669795317f868c48df8602696ca8bd8141565",
+      "firstName": "Smoke",
+      "lastName": "Runner",
+      "displayName": "Smoke Runner",
+      "emoji": "SR",
+      "avatarUrl": null,
+      "publicDisplayMode": "full_name",
+      "publicDisplayOptIn": true,
+      "consents": {
+        "policyVersion": "2026-03-21",
+        "privacyAcceptedAt": "2026-03-21T19:29:03.280Z",
+        "publicDisplayAcceptedAt": "2026-03-21T19:29:03.280Z"
+      },
+      "createdAt": "2026-03-21T19:29:03.280Z",
+      "updatedAt": "2026-03-21T19:29:03.280Z",
+      "lastLoginAt": "2026-03-21T19:29:03.280Z"
+    },
+    "7388399d-dff3-455f-9648-d5a67a5b8c32": {
+      "id": "7388399d-dff3-455f-9648-d5a67a5b8c32",
+      "email": "smoke-1774121383531@example.com",
+      "passwordSalt": "ab9912b84d65ed11980cf933890c9b35",
+      "passwordHash": "630eb83fc5c080f54a883c89833faad4ce8bab635cf170a162efe546e2f48de6592401d98b823b24d15db88b5e730e4e68df8eddd635e0669ba9ca39677cefc9",
+      "firstName": "Smoke",
+      "lastName": "Runner",
+      "displayName": "Smoke Runner",
+      "emoji": "SR",
+      "avatarUrl": null,
+      "publicDisplayMode": "full_name",
+      "publicDisplayOptIn": true,
+      "consents": {
+        "policyVersion": "2026-03-21",
+        "privacyAcceptedAt": "2026-03-21T19:29:43.563Z",
+        "publicDisplayAcceptedAt": "2026-03-21T19:29:43.563Z"
+      },
+      "createdAt": "2026-03-21T19:29:43.563Z",
+      "updatedAt": "2026-03-21T19:29:43.563Z",
+      "lastLoginAt": "2026-03-21T19:29:43.563Z"
+    },
+    "f91ae284-e1dd-408e-b805-16f74c7b69a2": {
+      "id": "f91ae284-e1dd-408e-b805-16f74c7b69a2",
+      "email": "smoke-102de355@example.com",
+      "passwordSalt": "8f07c86748a8f35eb26b73323b787fdd",
+      "passwordHash": "986b49d078d787d1bf7cf940e7f4e1f7eb2c3691da531cd7921c4255be2b2d8ee9df6aaac9166c1759bdab4920ca5940b8c39be3fdb579d1f99740bcda161dc1",
+      "firstName": "Smoke",
+      "lastName": "Tester",
+      "displayName": "Smoke Tester",
+      "emoji": "12",
+      "avatarUrl": null,
+      "publicDisplayMode": "full_name",
+      "publicDisplayOptIn": true,
+      "consents": {
+        "policyVersion": "2026-03-21",
+        "privacyAcceptedAt": "2026-03-21T20:06:29.181Z",
+        "publicDisplayAcceptedAt": "2026-03-21T20:06:29.181Z"
+      },
+      "createdAt": "2026-03-21T20:06:29.181Z",
+      "updatedAt": "2026-03-21T20:06:29.181Z",
+      "lastLoginAt": "2026-03-21T20:06:29.181Z"
+    },
+    "6051461b-2089-45ef-9d22-c1c7f8ad566c": {
+      "id": "6051461b-2089-45ef-9d22-c1c7f8ad566c",
+      "email": "smoke-2e2457f1@example.com",
+      "passwordSalt": "ee86ab2cd5cb99fc41246d7e087a3255",
+      "passwordHash": "c976c2c2c446663e16aa8d4a08bc83f712ee49c75607ce5096e66fb2334569ecd5fb34cead3c69c5e76eee29c4a0a9ab21a8ee0109ad17a0881065c21cf64ba4",
+      "firstName": "Smoke",
+      "lastName": "Tester",
+      "displayName": "Smoke Tester",
+      "emoji": "12",
+      "avatarUrl": null,
+      "publicDisplayMode": "full_name",
+      "publicDisplayOptIn": true,
+      "consents": {
+        "policyVersion": "2026-03-21",
+        "privacyAcceptedAt": "2026-03-21T20:07:05.749Z",
+        "publicDisplayAcceptedAt": "2026-03-21T20:07:05.749Z"
+      },
+      "createdAt": "2026-03-21T20:07:05.749Z",
+      "updatedAt": "2026-03-21T20:07:05.749Z",
+      "lastLoginAt": "2026-03-21T20:07:05.749Z"
+    }
+  },
+  "emailToAccountId": {
+    "smoke-1774101101370@example.com": "26029526-8898-406d-ad5d-d67dc5bb0c38",
+    "flow-1774101720095@example.com": "a571fba7-3e2a-4160-b466-e0e30e08f5b0",
+    "smoke-1774121343250@example.com": "8e8ef144-9532-4245-b62d-61720f317a9c",
+    "smoke-1774121383531@example.com": "7388399d-dff3-455f-9648-d5a67a5b8c32",
+    "smoke-102de355@example.com": "f91ae284-e1dd-408e-b805-16f74c7b69a2",
+    "smoke-2e2457f1@example.com": "6051461b-2089-45ef-9d22-c1c7f8ad566c"
+  },
+  "sessions": {
+    "d32b7fdfeaca74ddeb1b21fb1f817c256bccf640382ad33fa0f220d3f48c89d1": {
+      "accountId": "26029526-8898-406d-ad5d-d67dc5bb0c38",
+      "createdAt": "2026-03-21T13:51:41.408Z",
+      "expiresAt": "2026-04-20T13:51:41.408Z"
+    },
+    "f38560c56d83a26c616f4a27a5fb034517831731a35e542801e9afc6455d0159": {
+      "accountId": "a571fba7-3e2a-4160-b466-e0e30e08f5b0",
+      "createdAt": "2026-03-21T14:02:00.135Z",
+      "expiresAt": "2026-04-20T14:02:00.135Z"
+    },
+    "4f5381f17814e134d27a58a2caf5c5eeb87189a4e140bbf80f71721475d86d0b": {
+      "accountId": "8e8ef144-9532-4245-b62d-61720f317a9c",
+      "createdAt": "2026-03-21T19:29:03.281Z",
+      "expiresAt": "2026-04-20T19:29:03.281Z"
+    },
+    "bb23b005430225e1ddd5109cab3068676a9f123bcc747a51c55ff860ed02eafe": {
+      "accountId": "7388399d-dff3-455f-9648-d5a67a5b8c32",
+      "createdAt": "2026-03-21T19:29:43.563Z",
+      "expiresAt": "2026-04-20T19:29:43.563Z"
+    },
+    "9de619126c2fda5b5a1aa76c0b2160a6b069e80fd856baf34368eec461b9c7d6": {
+      "accountId": "f91ae284-e1dd-408e-b805-16f74c7b69a2",
+      "createdAt": "2026-03-21T20:06:29.182Z",
+      "expiresAt": "2026-04-20T20:06:29.182Z"
+    },
+    "8f32a81ffe9c7936ed560a743b8399a597810ff71bf40c690ab0006717acd6b9": {
+      "accountId": "6051461b-2089-45ef-9d22-c1c7f8ad566c",
+      "createdAt": "2026-03-21T20:07:05.749Z",
+      "expiresAt": "2026-04-20T20:07:05.749Z"
+    }
+  },
+  "adminSessions": {
+    "96159c68dee5d0b55ec72b761ea549495e9b98b3b308576d7b46742b4ae36869": {
+      "createdAt": "2026-03-21T19:29:03.191Z",
+      "expiresAt": "2026-03-22T07:29:03.191Z"
+    },
+    "208ac735c2b76fceb4ef468c17acefbae21336aba80e253a4293c8f44a61a034": {
+      "createdAt": "2026-03-21T19:29:43.498Z",
+      "expiresAt": "2026-03-22T07:29:43.499Z"
+    },
+    "77cd243921ddddef722dbcb34ae6c714f3fa25893a05fccbf71dfbe1e8ed4c03": {
+      "createdAt": "2026-03-21T20:06:29.104Z",
+      "expiresAt": "2026-03-22T08:06:29.104Z"
+    },
+    "d3f8d31310551ecfec36ec47dbfbfcfe201276a32224520035fea45b1a2def1b": {
+      "createdAt": "2026-03-21T20:07:05.685Z",
+      "expiresAt": "2026-03-22T08:07:05.685Z"
+    },
+    "90923e7dcad17e6fa80ef2de2ad477930a8039eb9a78a8bb834dca049e1f3ca8": {
+      "createdAt": "2026-03-21T20:12:19.953Z",
+      "expiresAt": "2026-03-22T08:12:19.953Z"
+    },
+    "a03c0ae31ec46eb0d7e3006491182eadd06149d72f32bb3d5e0fb424d539c835": {
+      "createdAt": "2026-03-21T20:35:02.716Z",
+      "expiresAt": "2026-03-22T08:35:02.716Z"
+    }
+  },
+  "passwordResets": {},
+  "roomStates": {
+    "neon-arena": {
+      "users": {
+        "26029526-8898-406d-ad5d-d67dc5bb0c38": {
+          "id": "26029526-8898-406d-ad5d-d67dc5bb0c38",
+          "firstName": "Smoke",
+          "lastName": "Test",
+          "displayName": "Smoke Pilot",
+          "name": "Smoke Pilot",
+          "emoji": "ST",
+          "avatarUrl": null,
+          "avatarTheme": {
+            "primary": "#5cf2ff",
+            "secondary": "#1760a5",
+            "initials": "SP"
+          }
+        },
+        "a571fba7-3e2a-4160-b466-e0e30e08f5b0": {
+          "id": "a571fba7-3e2a-4160-b466-e0e30e08f5b0",
+          "firstName": "Local",
+          "lastName": "Viewer",
+          "displayName": "Neon Pilot",
+          "name": "Neon Pilot",
+          "emoji": "NP",
+          "avatarUrl": null,
+          "avatarTheme": {
+            "primary": "#8ef0b1",
+            "secondary": "#0f7c73",
+            "initials": "NP"
+          }
+        },
+        "8e8ef144-9532-4245-b62d-61720f317a9c": {
+          "id": "8e8ef144-9532-4245-b62d-61720f317a9c",
+          "firstName": "Smoke",
+          "lastName": "Runner",
+          "displayName": "Smoke Runner",
+          "name": "Smoke Runner",
+          "emoji": "SR",
+          "avatarUrl": null,
+          "avatarTheme": {
+            "primary": "#ffd36c",
+            "secondary": "#ff7a59",
+            "initials": "SR"
+          }
+        },
+        "7388399d-dff3-455f-9648-d5a67a5b8c32": {
+          "id": "7388399d-dff3-455f-9648-d5a67a5b8c32",
+          "firstName": "Smoke",
+          "lastName": "Runner",
+          "displayName": "Smoke Runner",
+          "name": "Smoke Runner",
+          "emoji": "SR",
+          "avatarUrl": null,
+          "avatarTheme": {
+            "primary": "#5cf2ff",
+            "secondary": "#1760a5",
+            "initials": "SR"
+          }
+        },
+        "f91ae284-e1dd-408e-b805-16f74c7b69a2": {
+          "id": "f91ae284-e1dd-408e-b805-16f74c7b69a2",
+          "firstName": "Smoke",
+          "lastName": "Tester",
+          "displayName": "Smoke Tester",
+          "name": "Smoke Tester",
+          "emoji": "12",
+          "avatarUrl": null,
+          "avatarTheme": {
+            "primary": "#ff6ca8",
+            "secondary": "#7f5cff",
+            "initials": "ST"
+          }
+        }
+      },
+      "predictions": {
+        "semi1": {
+          "26029526-8898-406d-ad5d-d67dc5bb0c38": [
+            "GE",
+            "PT",
+            "HR",
+            "SE",
+            "FI",
+            "MD",
+            "GR",
+            "ME",
+            "EE",
+            "SM",
+            "PL",
+            "BE",
+            "LT",
+            "RS",
+            "IL"
+          ]
+        },
+        "semi2": {},
+        "final": {}
+      },
+      "results": {
+        "semi1": [
+          "GE",
+          "PT",
+          "HR"
+        ],
+        "semi2": [],
+        "final": []
+      },
+      "locks": {
+        "semi1": {
+          "26029526-8898-406d-ad5d-d67dc5bb0c38": true
+        },
+        "semi2": {},
+        "final": {}
+      },
+      "scores": {
+        "semi1": {
+          "26029526-8898-406d-ad5d-d67dc5bb0c38": 30
+        },
+        "semi2": {},
+        "final": {}
+      },
+      "predictionWindows": {
+        "semi1": true,
+        "semi2": true,
+        "final": true
+      },
+      "resultBreakdown": {
+        "semi1": {
+          "GE": {
+            "jury": 12,
+            "tele": 8,
+            "total": 20
+          },
+          "PT": {
+            "jury": 10,
+            "tele": 7,
+            "total": 17
+          },
+          "HR": {
+            "jury": 8,
+            "tele": 6,
+            "total": 14
+          }
+        },
+        "semi2": {},
+        "final": {}
+      },
+      "removedAccounts": {},
+      "scoringProfile": "balanced"
+    }
+  }
+}

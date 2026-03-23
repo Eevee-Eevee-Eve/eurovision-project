@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Евровидение у Морозовых 2026 — Пульт</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="/socket.io/socket.io.js"></script>
+  <script defer src="admin.js"></script>
+</head>
+<body class="admin-body">
+  <div class="admin-backdrop"></div>
+
+  <main class="admin-shell">
+    <section class="admin-hero">
+      <div>
+        <p class="eyebrow">Евровидение у Морозовых 2026</p>
+        <h1>Control Room</h1>
+        <p class="hero-copy">
+          Управление комнатой, отдельные окна голосования по этапам, scoring profile и
+          безопасный сброс участников без удаления аккаунтов.
+        </p>
+      </div>
+      <div class="hero-chip" id="sessionState">Admin session required</div>
+    </section>
+
+    <section class="panel-card" id="authCard">
+      <div class="panel-grid">
+        <label class="field">
+          <span>Admin key</span>
+          <input id="key" type="password" placeholder="Enter admin key" autocomplete="current-password" />
+        </label>
+        <div class="button-row">
+          <button id="login" class="primary-button" type="button">Войти</button>
+          <button id="logout" class="secondary-button" type="button">Выйти</button>
+        </div>
+      </div>
+      <p class="panel-copy">
+        После входа ключ не ходит в каждом запросе: админка работает через отдельную server-side session.
+      </p>
+    </section>
+
+    <section id="panel" class="admin-stack" hidden>
+      <section class="panel-card">
+        <div class="toolbar-grid">
+          <label class="field">
+            <span>Комната</span>
+            <select id="room"></select>
+          </label>
+          <label class="field">
+            <span>Этап</span>
+            <select id="stage">
+              <option value="semi1">Полуфинал 1</option>
+              <option value="semi2">Полуфинал 2</option>
+              <option value="final">Финал</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Scoring</span>
+            <select id="scoring"></select>
+          </label>
+          <div class="status-cluster">
+            <div id="windowStatus" class="status-pill muted">Стадия загружается</div>
+            <div id="roomStatus" class="status-pill">Комната не выбрана</div>
+          </div>
+        </div>
+        <p id="scoringDescription" class="panel-copy"></p>
+        <div class="button-row">
+          <button id="openStage" class="primary-button" type="button">Открыть этап</button>
+          <button id="closeStage" class="secondary-button" type="button">Закрыть этап</button>
+          <button id="reloadStage" class="ghost-button" type="button">Обновить данные</button>
+        </div>
+      </section>
+
+      <section class="stats-grid">
+        <article class="panel-card stat-card">
+          <p class="stat-label">Активные игроки</p>
+          <p id="activePlayers" class="stat-value">0</p>
+        </article>
+        <article class="panel-card stat-card">
+          <p class="stat-label">Скрытые / удалённые</p>
+          <p id="removedPlayers" class="stat-value">0</p>
+        </article>
+        <article class="panel-card stat-card">
+          <p class="stat-label">Отправили этап</p>
+          <p id="submittedPlayers" class="stat-value">0</p>
+        </article>
+        <article class="panel-card stat-card">
+          <p class="stat-label">Зафиксировали</p>
+          <p id="lockedPlayers" class="stat-value">0</p>
+        </article>
+        <article class="panel-card stat-card">
+          <p class="stat-label">Открыто результатов</p>
+          <p id="revealedResults" class="stat-value">0</p>
+        </article>
+        <article class="panel-card stat-card">
+          <p class="stat-label">Ожидается участников</p>
+          <p id="expectedActs" class="stat-value">0</p>
+        </article>
+      </section>
+
+      <section class="admin-split">
+        <article class="panel-card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Participant tools</p>
+              <h2>Сброс и управление доступом</h2>
+            </div>
+          </div>
+          <label class="field">
+            <span>Участник</span>
+            <select id="userList"></select>
+          </label>
+          <div class="button-row">
+            <button id="resetStageBtn" class="primary-button" type="button">Сбросить текущий этап</button>
+            <button id="resetAllBtn" class="secondary-button" type="button">Сбросить все этапы</button>
+          </div>
+          <div class="button-row">
+            <button id="removeBtn" class="ghost-button" type="button">Убрать из комнаты</button>
+            <button id="restoreBtn" class="ghost-button" type="button">Вернуть доступ</button>
+          </div>
+          <p class="panel-copy">
+            Сброс очищает ответы и открывает этап заново для выбранного участника. Удаление из комнаты
+            блокирует повторный вход, пока хост не восстановит доступ.
+          </p>
+        </article>
+
+        <article class="panel-card danger-card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Room reset</p>
+              <h2>Полный сброс комнаты</h2>
+            </div>
+          </div>
+          <p class="panel-copy">
+            Сотрёт ответы, результаты, статусы этапов и скрытых участников только в этой комнате.
+          </p>
+          <button id="resetRoom" class="danger-button" type="button">Полный сброс комнаты</button>
+        </article>
+      </section>
+
+      <section class="panel-card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Stage results</p>
+            <h2>Live ranking редактор</h2>
+          </div>
+          <div class="button-row">
+            <button id="publishResults" class="primary-button" type="button">Опубликовать ranking</button>
+            <button id="loadPublished" class="secondary-button" type="button">Загрузить опубликованное</button>
+          </div>
+        </div>
+        <p class="panel-copy">
+          Вводи жюри и телеголосование. Итог сохраняется на сервере вместе с breakdown, а ranking
+          публикуется в live-экраны и подсчёт очков.
+        </p>
+        <div class="table-wrap">
+          <table id="tbl">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Страна / артист</th>
+                <th>Жюри</th>
+                <th>Теле</th>
+                <th>Итог</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <p id="info" class="info-line"></p>
+  </main>
+</body>
+</html>

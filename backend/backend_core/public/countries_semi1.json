@@ -1,0 +1,17 @@
+[
+  { "code": "GE", "name": "Georgia" },
+  { "code": "PT", "name": "Portugal" },
+  { "code": "HR", "name": "Croatia" },
+  { "code": "SE", "name": "Sweden" },
+  { "code": "FI", "name": "Finland" },
+  { "code": "MD", "name": "Moldova" },
+  { "code": "GR", "name": "Greece" },
+  { "code": "ME", "name": "Montenegro" },
+  { "code": "EE", "name": "Estonia" },
+  { "code": "SM", "name": "San Marino" },
+  { "code": "PL", "name": "Poland" },
+  { "code": "BE", "name": "Belgium" },
+  { "code": "LT", "name": "Lithuania" },
+  { "code": "RS", "name": "Serbia" },
+  { "code": "IL", "name": "Israel" }
+]
