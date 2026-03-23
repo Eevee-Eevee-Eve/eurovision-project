@@ -1,0 +1,17 @@
+[
+  { "code": "AM", "name": "Armenia" },
+  { "code": "RO", "name": "Romania" },
+  { "code": "CH", "name": "Switzerland" },
+  { "code": "AZ", "name": "Azerbaijan" },
+  { "code": "LU", "name": "Luxembourg" },
+  { "code": "BG", "name": "Bulgaria" },
+  { "code": "CZ", "name": "Czechia" },
+  { "code": "AL", "name": "Albania" },
+  { "code": "DK", "name": "Denmark" },
+  { "code": "CY", "name": "Cyprus" },
+  { "code": "NO", "name": "Norway" },
+  { "code": "MT", "name": "Malta" },
+  { "code": "AU", "name": "Australia" },
+  { "code": "UA", "name": "Ukraine" },
+  { "code": "LV", "name": "Latvia" }
+]

@@ -1,0 +1,10 @@
+frontend/node_modules
+frontend/.next
+frontend/.env.local
+backend/backend_core/node_modules
+*.log
+deploy-secrets.local.env
+deploy-secrets.server.env
+.tmp_*
+.codex-temp-ref/
+eurovision_project_deploy.tar.gz

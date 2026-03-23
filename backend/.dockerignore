@@ -1,0 +1,4 @@
+backend_core/node_modules
+backend_core/data
+backend_core/public/uploads
+backend_core/npm-debug.log

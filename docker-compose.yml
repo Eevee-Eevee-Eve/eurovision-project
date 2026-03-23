@@ -1,0 +1,47 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: "4000"
+      ADMIN_KEY: "dev-admin-key"
+      ADMIN_EMAIL: "host@example.com"
+      ADMIN_PASSWORD: "change-me-now"
+      CLIENT_ORIGIN: "https://morozoveuroparty.ru"
+      APP_PUBLIC_URL: "https://morozoveuroparty.ru"
+      SMTP_HOST: ""
+      SMTP_PORT: "587"
+      SMTP_SECURE: "false"
+      SMTP_USER: ""
+      SMTP_PASS: ""
+      SMTP_FROM: "Neon Arena <no-reply@example.com>"
+    volumes:
+      - backend_data:/app/data
+      - backend_uploads:/app/public/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE: "https://api.morozoveuroparty.ru"
+        NEXT_PUBLIC_OPERATOR_NAME: "Neon Arena Host"
+        NEXT_PUBLIC_OPERATOR_CONTACT: "host@example.com"
+        NEXT_PUBLIC_DATA_REGION: "Russian Federation"
+        NEXT_PUBLIC_DATA_RETENTION: "Account data, ballots, and room standings are kept until the host resets the room or archives the season."
+        NEXT_PUBLIC_PUBLIC_DISPLAY_NOTICE: "Public scoreboards show only the selected public profile fields: public name, avatar, emoji badge, and room scores."
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_BASE: "https://api.morozoveuroparty.ru"
+      NEXT_PUBLIC_OPERATOR_NAME: "Neon Arena Host"
+      NEXT_PUBLIC_OPERATOR_CONTACT: "host@example.com"
+      NEXT_PUBLIC_DATA_REGION: "Russian Federation"
+      NEXT_PUBLIC_DATA_RETENTION: "Account data, ballots, and room standings are kept until the host resets the room or archives the season."
+      NEXT_PUBLIC_PUBLIC_DISPLAY_NOTICE: "Public scoreboards show only the selected public profile fields: public name, avatar, emoji badge, and room scores."
+    depends_on:
+      - backend
+
+volumes:
+  backend_data:
+  backend_uploads:
