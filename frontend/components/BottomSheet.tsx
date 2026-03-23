@@ -59,7 +59,7 @@ export function BottomSheet({
           />
           <div className="fixed inset-0 z-[90] flex items-end justify-center pointer-events-none md:items-center md:p-6">
             <motion.div
-              className="show-card pointer-events-auto w-full max-h-[88svh] overflow-y-auto overscroll-y-contain rounded-t-[2rem] rounded-b-none p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[0_-20px_60px_rgba(0,0,0,0.45)] md:max-h-[min(88vh,56rem)] md:max-w-4xl md:rounded-[2rem] md:p-6 md:shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+              className="show-card pointer-events-auto w-full max-h-[92svh] overflow-y-auto overscroll-y-contain rounded-t-[2rem] rounded-b-none p-5 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1.25rem))] shadow-[0_-20px_60px_rgba(0,0,0,0.45)] md:max-h-[min(92vh,58rem)] md:max-w-4xl md:rounded-[2rem] md:p-6 md:pb-8 md:shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
               initial={{ y: "100%", opacity: 0.92 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0.92 }}
@@ -68,12 +68,12 @@ export function BottomSheet({
               aria-modal="true"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="sticky top-0 z-10 -mx-5 -mt-5 mb-4 flex items-center justify-center bg-[linear-gradient(180deg,rgba(17,18,34,0.96),rgba(17,18,34,0.82),transparent)] px-5 pt-4 md:-mx-6 md:-mt-6 md:px-6 md:pt-5">
+              <div className="sticky top-0 z-10 -mx-5 -mt-5 mb-4 flex items-center justify-center bg-[linear-gradient(180deg,rgba(17,18,34,0.98),rgba(17,18,34,0.88),transparent)] px-5 pb-3 pt-4 md:-mx-6 md:-mt-6 md:px-6 md:pt-5">
                 <div className="mx-auto h-1.5 w-16 rounded-full bg-white/10" />
                 <button
                   type="button"
                   onClick={onClose}
-                  className="absolute right-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10 md:right-6"
+                  className="absolute right-5 top-3 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-[#23253b]/95 text-white shadow-[0_8px_24px_rgba(0,0,0,0.24)] transition hover:bg-[#2b2d46] hover:text-white focus:outline-none focus:ring-2 focus:ring-arenaBeam/40 md:right-6 md:top-4"
                   aria-label="Close details"
                 >
                   <X size={18} />

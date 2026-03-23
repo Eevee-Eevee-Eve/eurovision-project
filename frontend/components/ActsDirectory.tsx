@@ -95,12 +95,33 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
     memorable: language === "ru" ? "Р—Р°РїРѕРјРЅРёР»РѕСЃСЊ" : "Memorable",
     skip: language === "ru" ? "РќРµ РјРѕС‘" : "Skip",
   } as const;
+  const resolvedNoteTagLabels = language === "ru"
+    ? {
+        favorite: "Фаворит",
+        winner: "Победитель",
+        vocals: "Вокал",
+        staging: "Номер",
+        song: "Песня",
+        energy: "Энергия",
+        memorable: "Запомнилось",
+        skip: "Мимо",
+      }
+    : {
+        favorite: "Favorite",
+        winner: "Winner",
+        vocals: "Vocals",
+        staging: "Staging",
+        song: "Song",
+        energy: "Energy",
+        memorable: "Memorable",
+        skip: "Skip",
+      };
 
   function describeNote(note?: ActNote | null) {
     const selectedTags = getNoteTags(note);
     if (!note || (!note.text.trim() && !selectedTags.length)) return text.noNotesYet;
     if (note.text.trim()) return note.text.trim();
-    return selectedTags.map((tone) => noteTagLabels[tone]).join(", ") || text.noNotesYet;
+    return selectedTags.map((tone) => resolvedNoteTagLabels[tone]).join(", ") || text.noNotesYet;
   }
 
   function persistNotes(nextNotes: Record<string, ActNote>) {
@@ -385,19 +406,19 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
                     key={tone.key}
                     type="button"
                     onClick={() => toggleTone(selectedAct.code, tone.key)}
-                    className={`rounded-full px-4 py-2 text-sm transition ${
+                    className={`rounded-full px-3 py-1.5 text-[11px] transition ${
                       getNoteTags(notes[selectedAct.code]).includes(tone.key)
                         ? "bg-arenaSurfaceMax text-white shadow-glow"
                         : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
                     }`}
                   >
-                    <span className="label-copy uppercase tracking-[0.2em]">{noteTagLabels[tone.key]}</span>
+                    <span className="label-copy uppercase tracking-[0.14em]">{resolvedNoteTagLabels[tone.key]}</span>
                   </button>
                 ))}
               </div>
 
               <textarea
-                className="arena-input mt-4 min-h-28 resize-y"
+                className="arena-input mt-4 min-h-36 resize-y"
                 placeholder={text.noNotesYet}
                 value={notes[selectedAct.code]?.text || ""}
                 onChange={(event) => updateNote(selectedAct.code, { text: event.target.value })}
