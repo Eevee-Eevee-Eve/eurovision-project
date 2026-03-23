@@ -59,7 +59,7 @@ export function BottomSheet({
           />
           <div className="fixed inset-0 z-[90] flex items-end justify-center pointer-events-none md:items-center md:p-6">
             <motion.div
-              className="show-card pointer-events-auto w-full max-h-[92svh] overflow-y-auto overscroll-y-contain rounded-t-[2rem] rounded-b-none p-5 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1.25rem))] shadow-[0_-20px_60px_rgba(0,0,0,0.45)] md:max-h-[min(92vh,58rem)] md:max-w-4xl md:rounded-[2rem] md:p-6 md:pb-8 md:shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+              className="show-card pointer-events-auto w-full max-h-[92svh] overflow-y-auto overscroll-y-contain rounded-t-[2rem] rounded-b-none p-5 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1.25rem))] shadow-[0_-20px_60px_rgba(0,0,0,0.45)] md:max-h-[min(92vh,58rem)] md:max-w-[min(92vw,60rem)] md:rounded-[2rem] md:p-6 md:pb-8 md:shadow-[0_24px_80px_rgba(0,0,0,0.45)] xl:max-w-[min(88vw,72rem)]"
               initial={{ y: "100%", opacity: 0.92 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0.92 }}
