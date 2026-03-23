@@ -2,10 +2,33 @@ import type { ActEntry, ActNote, NoteTone } from "./types";
 
 export const NOTE_TONES: { key: NoteTone; label: string; hint: string }[] = [
   { key: "favorite", label: "Favorite", hint: "Strong contender" },
-  { key: "watch", label: "Watch", hint: "Keep an eye on this act" },
+  { key: "winner", label: "Winner", hint: "Feels like a winner" },
   { key: "vocals", label: "Vocals", hint: "Voice stood out" },
+  { key: "staging", label: "Staging", hint: "Staging stands out" },
+  { key: "song", label: "Song", hint: "Song sticks with me" },
+  { key: "energy", label: "Energy", hint: "Brings strong energy" },
+  { key: "memorable", label: "Memorable", hint: "Hard to forget" },
   { key: "skip", label: "Skip", hint: "Not landing for me" },
 ];
+
+export function getNoteTags(note?: ActNote | null): NoteTone[] {
+  if (!note) return [];
+
+  const tags = new Set<NoteTone>();
+  if (Array.isArray(note.tones)) {
+    note.tones.forEach((tone) => {
+      if (NOTE_TONES.some((entry) => entry.key === tone)) {
+        tags.add(tone);
+      }
+    });
+  }
+
+  if (note.tone && NOTE_TONES.some((entry) => entry.key === note.tone)) {
+    tags.add(note.tone);
+  }
+
+  return Array.from(tags);
+}
 
 export function createDefaultRanking(acts: ActEntry[]) {
   return acts
@@ -49,13 +72,16 @@ export function moveCodeBy(ranking: string[], code: string, delta: number) {
 }
 
 export function hasNote(note?: ActNote | null) {
-  return Boolean(note && (note.tone || note.text.trim()));
+  return Boolean(note && (getNoteTags(note).length || note.text.trim()));
 }
 
 export function getNoteSummary(note?: ActNote | null) {
   if (!hasNote(note)) return "No notes yet";
   if (note?.text.trim()) return note.text.trim();
-  return NOTE_TONES.find((tone) => tone.key === note?.tone)?.hint || "Noted";
+  const hints = getNoteTags(note)
+    .map((tone) => NOTE_TONES.find((entry) => entry.key === tone)?.hint)
+    .filter(Boolean);
+  return hints.join(", ") || "Noted";
 }
 
 export function getToneLabel(tone?: NoteTone | null) {

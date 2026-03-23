@@ -6,7 +6,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { fetchActs, fetchRoom } from "../lib/api";
 import { loadNotes, loadRanking, saveNotes } from "../lib/storage";
 import type { ActEntry, ActNote, RoomDetails, StageKey } from "../lib/types";
-import { hasNote, normalizeRanking, NOTE_TONES } from "../lib/vote-utils";
+import { getNoteTags, hasNote, normalizeRanking, NOTE_TONES } from "../lib/vote-utils";
 import { ActPoster } from "./ActPoster";
 import { BottomSheet } from "./BottomSheet";
 import { StageSwitch } from "./StageSwitch";
@@ -85,10 +85,22 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
         skip: "Skip",
       };
 
+  const noteTagLabels = {
+    favorite: language === "ru" ? "Р¤Р°РІРѕСЂРёС‚" : "Favorite",
+    winner: language === "ru" ? "РџРѕР±РµРґРёС‚РµР»СЊ" : "Winner",
+    vocals: language === "ru" ? "Р’РѕРєР°Р»" : "Vocals",
+    staging: language === "ru" ? "РќРѕРјРµСЂ" : "Staging",
+    song: language === "ru" ? "РџРµСЃРЅСЏ" : "Song",
+    energy: language === "ru" ? "Р­РЅРµСЂРіРёСЏ" : "Energy",
+    memorable: language === "ru" ? "Р—Р°РїРѕРјРЅРёР»РѕСЃСЊ" : "Memorable",
+    skip: language === "ru" ? "РќРµ РјРѕС‘" : "Skip",
+  } as const;
+
   function describeNote(note?: ActNote | null) {
-    if (!note || (!note.text.trim() && !note.tone)) return text.noNotesYet;
+    const selectedTags = getNoteTags(note);
+    if (!note || (!note.text.trim() && !selectedTags.length)) return text.noNotesYet;
     if (note.text.trim()) return note.text.trim();
-    return note.tone ? toneLabels[note.tone] : text.noNotesYet;
+    return selectedTags.map((tone) => noteTagLabels[tone]).join(", ") || text.noNotesYet;
   }
 
   function persistNotes(nextNotes: Record<string, ActNote>) {
@@ -98,9 +110,9 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
 
   function updateNote(code: string, patch: Partial<ActNote>) {
     setNotes((current) => {
-      const previous = current[code] || { tone: null, text: "" };
+      const previous = current[code] || { tones: [], text: "" };
       const nextEntry = {
-        tone: patch.tone !== undefined ? patch.tone : previous.tone,
+        tones: patch.tones !== undefined ? patch.tones : previous.tones,
         text: patch.text !== undefined ? patch.text : previous.text,
       };
       const nextNotes = { ...current };
@@ -113,6 +125,14 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
 
       return persistNotes(nextNotes);
     });
+  }
+
+  function toggleTone(code: string, toneKey: keyof typeof noteTagLabels) {
+    const currentTags = getNoteTags(notes[code]);
+    const nextTags = currentTags.includes(toneKey)
+      ? currentTags.filter((entry) => entry !== toneKey)
+      : [...currentTags, toneKey];
+    updateNote(code, { tones: nextTags });
   }
 
   function clearNote(code: string) {
@@ -364,18 +384,14 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
                   <button
                     key={tone.key}
                     type="button"
-                    onClick={() =>
-                      updateNote(selectedAct.code, {
-                        tone: notes[selectedAct.code]?.tone === tone.key ? null : tone.key,
-                      })
-                    }
+                    onClick={() => toggleTone(selectedAct.code, tone.key)}
                     className={`rounded-full px-4 py-2 text-sm transition ${
-                      notes[selectedAct.code]?.tone === tone.key
+                      getNoteTags(notes[selectedAct.code]).includes(tone.key)
                         ? "bg-arenaSurfaceMax text-white shadow-glow"
                         : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
                     }`}
                   >
-                    <span className="label-copy uppercase tracking-[0.2em]">{toneLabels[tone.key]}</span>
+                    <span className="label-copy uppercase tracking-[0.2em]">{noteTagLabels[tone.key]}</span>
                   </button>
                 ))}
               </div>

@@ -245,9 +245,18 @@ export interface AdminUserEntry {
   lockedStages: StageKey[];
 }
 
-export type NoteTone = "favorite" | "watch" | "vocals" | "skip";
+export type NoteTone =
+  | "favorite"
+  | "winner"
+  | "vocals"
+  | "staging"
+  | "song"
+  | "energy"
+  | "memorable"
+  | "skip";
 
 export interface ActNote {
-  tone: NoteTone | null;
+  tones: NoteTone[];
+  tone?: NoteTone | null;
   text: string;
 }
