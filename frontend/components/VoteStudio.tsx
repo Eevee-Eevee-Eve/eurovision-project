@@ -248,6 +248,29 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   const selectedAct = acts.find((act) => act.code === selectedActCode) || null;
   const rankingMap = useMemo(() => buildRankingMap(ranking), [ranking]);
   const noteCount = useMemo(() => Object.values(notes).filter((entry) => hasNote(entry)).length, [notes]);
+  const resolvedNoteTagLabels: Record<NoteTone, string> = useMemo(() => (
+    language === "ru"
+      ? {
+          favorite: "Фаворит",
+          winner: "Победитель",
+          vocals: "Вокал",
+          staging: "Номер",
+          song: "Песня",
+          energy: "Энергия",
+          memorable: "Запомнилось",
+          skip: "Мимо",
+        }
+      : {
+          favorite: "Favorite",
+          winner: "Winner",
+          vocals: "Vocals",
+          staging: "Staging",
+          song: "Song",
+          energy: "Energy",
+          memorable: "Memorable",
+          skip: "Skip",
+        }
+  ), [language]);
 
   function persistRanking(nextRanking: string[]) {
     const normalized = normalizeRanking(acts, nextRanking);
@@ -297,6 +320,23 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       saveNotes(roomSlug, stageKey, nextNotes);
       return nextNotes;
     });
+  }
+
+  function getPlaceOptionLabel(rankIndex: number, currentCode: string) {
+    const place = rankIndex + 1;
+    const occupantCode = ranking[rankIndex];
+    const occupant = acts.find((act) => act.code === occupantCode);
+    if (!occupant) return `#${place}`;
+
+    if (occupant.code === currentCode) {
+      return language === "ru"
+        ? `#${place} — сейчас здесь`
+        : `#${place} — currently here`;
+    }
+
+    return language === "ru"
+      ? `#${place} — сейчас ${occupant.artist}`
+      : `#${place} — currently ${occupant.artist}`;
   }
 
   useEffect(() => {
@@ -603,19 +643,19 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                           key={`${act.code}-${tone.key}`}
                           type="button"
                           onClick={() => toggleTone(act.code, tone.key)}
-                          className={`rounded-full px-4 py-2 text-sm transition ${
+                          className={`rounded-full px-3 py-1.5 text-[11px] transition ${
                             getNoteTags(note).includes(tone.key)
                               ? "bg-arenaSurfaceMax text-white shadow-glow"
                               : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
                           }`}
                         >
-                          <span className="label-copy uppercase tracking-[0.2em]">{noteTagLabels[tone.key]}</span>
+                          <span className="label-copy uppercase tracking-[0.14em]">{resolvedNoteTagLabels[tone.key]}</span>
                         </button>
                       ))}
                     </div>
 
                     <textarea
-                      className="arena-input min-h-28 resize-y"
+                      className="arena-input min-h-36 resize-y"
                       placeholder={text.notePlaceholder}
                       value={note?.text || ""}
                       onChange={(event) => updateNote(act.code, { text: event.target.value })}
@@ -683,7 +723,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(act)}</p>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-[auto_auto_minmax(0,10rem)] lg:w-[19rem]">
+                <div className="grid gap-3 md:grid-cols-[auto_auto_minmax(0,18rem)] lg:w-[28rem]">
                   <button
                     type="button"
                     className="arena-button-secondary px-4 py-3 text-sm"
@@ -712,7 +752,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                     >
                       {ranking.map((_, rankingIndex) => (
                         <option key={`${act.code}-${rankingIndex + 1}`} value={rankingIndex + 1}>
-                          #{rankingIndex + 1}
+                          {getPlaceOptionLabel(rankingIndex, act.code)}
                         </option>
                       ))}
                     </select>
@@ -943,7 +983,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 ) : null}
               </div>
 
-              <div className="mt-4 grid gap-3 md:grid-cols-[auto_auto_minmax(0,12rem)]">
+              <div className="mt-4 grid gap-3 md:grid-cols-[auto_auto_minmax(0,18rem)]">
                 <button
                   type="button"
                   className="arena-button-secondary px-5 py-3 text-sm"
@@ -972,7 +1012,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   >
                     {ranking.map((_, index) => (
                       <option key={`${selectedAct.code}-sheet-${index + 1}`} value={index + 1}>
-                        #{index + 1}
+                        {getPlaceOptionLabel(index, selectedAct.code)}
                       </option>
                     ))}
                   </select>
@@ -1000,19 +1040,19 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                     key={`${selectedAct.code}-${tone.key}`}
                     type="button"
                     onClick={() => toggleTone(selectedAct.code, tone.key)}
-                    className={`rounded-full px-4 py-2 text-sm transition ${
+                    className={`rounded-full px-3 py-1.5 text-[11px] transition ${
                       getNoteTags(notes[selectedAct.code]).includes(tone.key)
                         ? "bg-arenaSurfaceMax text-white shadow-glow"
                         : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
                     }`}
                   >
-                    <span className="label-copy uppercase tracking-[0.2em]">{noteTagLabels[tone.key]}</span>
+                    <span className="label-copy uppercase tracking-[0.14em]">{resolvedNoteTagLabels[tone.key]}</span>
                   </button>
                 ))}
               </div>
 
               <textarea
-                className="arena-input mt-4 min-h-28 resize-y"
+                className="arena-input mt-4 min-h-36 resize-y"
                 placeholder={text.notePlaceholder}
                 value={notes[selectedAct.code]?.text || ""}
                 onChange={(event) => updateNote(selectedAct.code, { text: event.target.value })}
