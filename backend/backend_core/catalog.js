@@ -138,6 +138,17 @@ function buildActsForStage(stageKey) {
     const artist = normalizeInlineText(content?.artist || parsed.artist);
     const song = normalizeInlineText(content?.song || parsed.song);
     const context = getStageContext(stageKey, entry.code, country, content);
+    const semiResult = Number.isFinite(Number(entry.semiResult))
+      ? Number(entry.semiResult)
+      : Number.isFinite(Number(content?.semiResult))
+        ? Number(content.semiResult)
+        : null;
+    const semiResultLocalized = content?.semiResultLocalized || (semiResult
+      ? {
+          en: `Finished #${semiResult} in the semi-final`,
+          ru: `Занял${semiResult === 1 ? "" : ""} #${semiResult} в полуфинале`,
+        }
+      : null);
 
     return {
       code: entry.code,
@@ -171,6 +182,8 @@ function buildActsForStage(stageKey) {
       contextValue: context?.value?.en || context.value,
       blurbLocalized: content?.blurb || null,
       blurb: content?.blurb?.en || `${artist} represents ${country} with "${song}".`,
+      semiResult,
+      semiResultLocalized,
     };
   });
 }

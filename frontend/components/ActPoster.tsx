@@ -67,7 +67,7 @@ export function ActPoster({
               `radial-gradient(circle at 82% 20%, ${act.portrait.secondary}${hasPhoto ? "24" : "7a"}, transparent 24%)`,
               `linear-gradient(140deg, ${act.portrait.primary}${hasPhoto ? "0c" : "22"}, transparent 45%)`,
               hasPhoto
-                ? "linear-gradient(0deg, rgba(8, 10, 22, 0.1), rgba(8, 10, 22, 0.38))"
+                ? "linear-gradient(0deg, rgba(8, 10, 22, 0.02), rgba(8, 10, 22, 0.24))"
                 : "linear-gradient(0deg, rgba(8, 10, 22, 0.12), rgba(8, 10, 22, 0.88))",
             ].join(", "),
           }}
@@ -83,7 +83,7 @@ export function ActPoster({
           <div className="flex items-start justify-between gap-3">
             {isHero ? (
               <div className="flex min-w-0 items-center gap-2">
-                <div className={`${flagSize} shrink-0 overflow-hidden rounded-full border border-white/15 bg-white/10 shadow-[0_0_18px_rgba(0,0,0,0.2)]`}>
+              <div className={`${flagSize} shrink-0 overflow-hidden rounded-full border border-white/15 bg-white/10 shadow-[0_0_18px_rgba(0,0,0,0.2)]`}>
                   <img
                     src={resolvedFlagUrl || undefined}
                     alt={countryName}
@@ -92,7 +92,7 @@ export function ActPoster({
                     referrerPolicy="no-referrer"
                   />
                 </div>
-                <span className={`inline-flex min-w-0 max-w-[16rem] rounded-full border border-white/10 bg-black/15 text-arenaText ${badgeClass}`}>
+                <span className={`inline-flex min-w-0 max-w-[16rem] rounded-full border border-white/10 bg-black/20 text-arenaText backdrop-blur-sm ${badgeClass}`}>
                   <span className="truncate">{countryName}</span>
                 </span>
               </div>
@@ -148,25 +148,25 @@ export function ActPoster({
           {!isCompact ? (
             <div className="space-y-2">
               <div
-                className={`rounded-[1.1rem] border border-white/10 bg-black/15 px-3 py-2 backdrop-blur-sm ${
+                className={`flex flex-col justify-end rounded-[1.1rem] border border-white/10 bg-black/22 px-3 py-2 backdrop-blur-md ${
                   isHero
                     ? isDense
-                      ? "h-[5.1rem] md:h-[5.5rem]"
-                      : "h-[5.9rem] md:h-[6.4rem]"
+                      ? "min-h-[5.8rem] md:min-h-[6.1rem]"
+                      : "min-h-[6.3rem] md:min-h-[6.8rem]"
                     : isCard
-                      ? "h-[4.25rem]"
+                      ? "min-h-[4.6rem]"
                       : ""
                 }`}
               >
                 <p
-                  className={`overflow-hidden font-semibold leading-[0.95] text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] ${
-                    isHero ? (isDense ? "text-[1.9rem] md:text-[2.15rem]" : "text-2xl md:text-[2rem]") : "text-sm"
+                  className={`overflow-hidden font-semibold leading-[0.92] text-white [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] ${
+                    isHero ? (isDense ? "text-[1.65rem] md:text-[1.9rem]" : "text-[1.85rem] md:text-[2.15rem]") : "text-sm"
                   }`}
                 >
                   {act.artist}
                 </p>
                 <p
-                  className={`mt-2 overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1] text-arenaMuted ${
+                  className={`mt-1.5 overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:1] text-white/72 ${
                     isHero ? (isDense ? "text-sm" : "text-base") : "text-xs"
                   }`}
                 >

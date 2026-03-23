@@ -1,16 +1,16 @@
 'use client';
 
 import Link from "next/link";
-import { Search } from "lucide-react";
-import { useDeferredValue, useEffect, useState } from "react";
+import { NotebookPen, Search } from "lucide-react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { fetchActs, fetchRoom } from "../lib/api";
 import { loadNotes, loadRanking, saveNotes } from "../lib/storage";
 import type { ActEntry, ActNote, RoomDetails, StageKey } from "../lib/types";
 import { hasNote, normalizeRanking, NOTE_TONES } from "../lib/vote-utils";
 import { ActPoster } from "./ActPoster";
 import { BottomSheet } from "./BottomSheet";
-import { useLanguage } from "./LanguageProvider";
 import { StageSwitch } from "./StageSwitch";
+import { useLanguage } from "./LanguageProvider";
 
 export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageKey: StageKey }) {
   const [room, setRoom] = useState<RoomDetails | null>(null);
@@ -24,28 +24,71 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
   const [selectedActCode, setSelectedActCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { copy, getActBlurb, getActContext, getActFacts, getCountryName, language } = useLanguage();
-
+  const { getActBlurb, getActContext, getActFacts, getCountryName, language } = useLanguage();
   const deferredQuery = useDeferredValue(query);
 
+  const text = useMemo(() => (
+    language === "ru"
+      ? {
+          kicker: "Companion screen",
+          title: "Гид по артистам",
+          description:
+            "Открывай артистов во время шоу, быстро читай про них и держи заметку рядом с карточкой, а не в отдельном тяжёлом интерфейсе.",
+          searchPlaceholder: "Поиск по артисту, стране или песне",
+          roomLabel: "Комната",
+          openVoteStudio: "Открыть бюллетень",
+          stageForming: "Состав этапа ещё формируется",
+          stageFormingText: (count: number, total: number) => `Сейчас подтверждено ${count} из ${total} участников. Когда состав станет полным, карточки автоматически выстроятся под официальный этап.`,
+          currentPlace: "Моё место",
+          aboutArtist: "Об исполнителе",
+          noteLabel: "Моя заметка",
+          noNotesYet: "Пока нет заметки. Открой артиста и оставь быструю пометку, как на бумаге.",
+          noteSaved: "Заметка сохранена на этом устройстве",
+          tapToAddNote: "Открой карточку и добавь заметку",
+          clearNote: "Очистить заметку",
+          officialProfile: "Официальный профиль",
+          noteSavedBadge: "Есть заметка",
+        }
+      : {
+          kicker: "Companion screen",
+          title: "Acts guide",
+          description:
+            "Open performers during the show, read the essentials fast, and keep your note attached to the card instead of hidden in a heavy UI.",
+          searchPlaceholder: "Search by artist, country, or song",
+          roomLabel: "Room",
+          openVoteStudio: "Open ballot",
+          stageForming: "Stage lineup is still forming",
+          stageFormingText: (count: number, total: number) => `${count} of ${total} acts are confirmed right now. Once the lineup is complete, these cards will align to the official stage setup.`,
+          currentPlace: "My place",
+          aboutArtist: "About the artist",
+          noteLabel: "My note",
+          noNotesYet: "No note yet. Open the act and keep one fast note just like on paper.",
+          noteSaved: "The note is already saved on this device",
+          tapToAddNote: "Open the card to add a note",
+          clearNote: "Clear note",
+          officialProfile: "Official profile",
+          noteSavedBadge: "Note saved",
+        }
+  ), [language]);
+
+  const toneLabels = language === "ru"
+    ? {
+        favorite: "Фаворит",
+        watch: "Надо следить",
+        vocals: "Вокал",
+        skip: "Не моё",
+      }
+    : {
+        favorite: "Favorite",
+        watch: "Watch",
+        vocals: "Vocals",
+        skip: "Skip",
+      };
+
   function describeNote(note?: ActNote | null) {
-    if (!note || (!note.text.trim() && !note.tone)) return copy.vote.noNotesYet;
+    if (!note || (!note.text.trim() && !note.tone)) return text.noNotesYet;
     if (note.text.trim()) return note.text.trim();
-    return copy.notes[note.tone as keyof typeof copy.notes] || copy.vote.noNotesYet;
-  }
-
-  function getRunningOrderLabel(value: number | null) {
-    return value ? copy.acts.runningOrder(value) : null;
-  }
-
-  function getPlacementLabel(value: number | null | undefined) {
-    return value != null ? `#${value}` : "—";
-  }
-
-  function noteChipClass(selected: boolean) {
-    return selected
-      ? "bg-arenaSurfaceMax text-white shadow-glow"
-      : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white";
+    return note.tone ? toneLabels[note.tone] : text.noNotesYet;
   }
 
   function persistNotes(nextNotes: Record<string, ActNote>) {
@@ -81,13 +124,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
   }
 
   function getAboutFacts(act: ActEntry) {
-    const blurb = getActBlurb(act).trim();
-    return getActFacts(act).filter((fact) => fact.trim() && fact.trim() !== blurb);
-  }
-
-  function getFinalContext(act: ActEntry) {
-    if (act.stageKey !== "final") return null;
-    return getActContext(act);
+    return getActFacts(act).filter(Boolean);
   }
 
   useEffect(() => {
@@ -118,11 +155,12 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
         setHasPersonalRanking(rawStoredRanking.length > 0);
         setNotes(storedNotes);
         setLoading(false);
+        setError("");
       } catch (loadError) {
         if (!active) return;
         console.error(loadError);
         setLoading(false);
-        setError(copy.acts.loadError);
+        setError(language === "ru" ? "Не удалось загрузить гид по артистам." : "Unable to load the acts guide.");
       }
     };
 
@@ -131,7 +169,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
     return () => {
       active = false;
     };
-  }, [copy.acts.loadError, roomSlug, stageKey]);
+  }, [language, roomSlug, stageKey]);
 
   const filteredActs = acts.filter((act) => {
     const value = deferredQuery.trim().toLowerCase();
@@ -146,10 +184,10 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
   if (loading) {
     return (
       <div className="grid gap-4">
-        <div className="h-14 animate-pulse rounded-full bg-white/5" />
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="h-20 animate-pulse rounded-[1.8rem] bg-white/5" />
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {[0, 1, 2, 3].map((index) => (
-            <div key={index} className="h-52 animate-pulse rounded-[1.8rem] bg-white/5" />
+            <div key={index} className="h-[30rem] animate-pulse rounded-[1.8rem] bg-white/5" />
           ))}
         </div>
       </div>
@@ -164,33 +202,33 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
     <div className="grid gap-5">
       <StageSwitch roomSlug={roomSlug} currentStage={stageKey} section="acts" />
 
-      <section className="show-card p-5">
+      <section className="show-card p-5 md:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.acts.heroKicker}</p>
-            <h2 className="display-copy mt-2 text-3xl font-black md:text-5xl">{copy.acts.heroTitle}</h2>
-            <p className="mt-3 text-sm text-arenaMuted md:text-base">{copy.acts.heroDescription}</p>
-            {room ? <p className="mt-3 text-sm text-arenaMuted">{copy.acts.roomLabel}: {room.name}</p> : null}
+          <div className="max-w-3xl">
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.kicker}</p>
+            <h2 className="display-copy mt-3 text-3xl font-black md:text-5xl">{text.title}</h2>
+            <p className="mt-4 text-sm leading-7 text-arenaMuted md:text-base">{text.description}</p>
+            {room ? (
+              <p className="mt-3 text-sm text-arenaMuted">
+                {text.roomLabel}: {room.name}
+              </p>
+            ) : null}
           </div>
+
           <Link
             href={`/${roomSlug}/vote/${stageKey}`}
-            className="arena-button-primary inline-flex h-14 items-center justify-center px-8 text-sm"
+            className="arena-button-primary inline-flex h-14 items-center justify-center gap-2 px-8 text-sm"
           >
-            {copy.acts.openVoteStudio}
+            <NotebookPen size={16} />
+            {text.openVoteStudio}
           </Link>
         </div>
       </section>
 
       {!lineupReady ? (
         <section className="show-card p-4 text-sm text-arenaMuted">
-          <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaPulse">
-            {language === "ru" ? "Состав этапа ещё формируется" : "Stage lineup still forming"}
-          </p>
-          <p className="mt-2">
-            {language === "ru"
-              ? `Сейчас подтверждено ${acts.length} из ${expectedEntries} участников. Полный состав для официального голосования появится после завершения полуфиналов.`
-              : `${acts.length} of ${expectedEntries} expected acts are confirmed right now. The full official voting lineup will appear after the semi-finals are complete.`}
-          </p>
+          <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaPulse">{text.stageForming}</p>
+          <p className="mt-2">{text.stageFormingText(acts.length, expectedEntries)}</p>
         </section>
       ) : null}
 
@@ -199,7 +237,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
           <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-arenaMuted" size={18} />
           <input
             className="arena-input pl-12"
-            placeholder={copy.acts.searchPlaceholder}
+            placeholder={text.searchPlaceholder}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -209,7 +247,8 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {filteredActs.map((act) => {
           const note = notes[act.code];
-          const aboutFacts = getAboutFacts(act);
+          const facts = getAboutFacts(act);
+          const finalContext = act.stageKey === "final" ? getActContext(act) : null;
 
           return (
             <button
@@ -224,49 +263,37 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
                 <span className="show-chip text-xs text-arenaBeam">{getCountryName(act.code, act.country)}</span>
                 {hasPersonalRanking ? (
                   <span className="show-chip text-xs text-white">
-                    {copy.acts.currentPlace} {getPlacementLabel(rankingMap[act.code])}
+                    {text.currentPlace} #{rankingMap[act.code]}
                   </span>
                 ) : null}
-                {getRunningOrderLabel(act.runningOrder) ? (
-                  <span className="show-chip text-xs text-arenaMuted">{getRunningOrderLabel(act.runningOrder)}</span>
+                {finalContext ? (
+                  <span className="show-chip text-xs text-arenaMuted">{finalContext.value}</span>
+                ) : null}
+                {hasNote(note) ? (
+                  <span className="show-chip text-xs text-white">{text.noteSavedBadge}</span>
                 ) : null}
               </div>
 
-              <div className="mt-4 flex flex-1 flex-col">
-                {getFinalContext(act) ? (
-                  <div className="show-panel-muted p-4">
-                    <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaPulse">
-                      {getFinalContext(act)?.label || copy.acts.stageMetaLabel}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-white">{getFinalContext(act)?.value}</p>
+              <div className="mt-5 flex flex-1 flex-col">
+                <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
+                  {text.aboutArtist}
+                </p>
+                <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(act)}</p>
+
+                {facts.length ? (
+                  <div className="mt-4 grid gap-2">
+                    {facts.slice(0, 2).map((fact) => (
+                      <p key={`${act.code}-${fact}`} className="text-sm leading-7 text-arenaMuted">
+                        {fact}
+                      </p>
+                    ))}
                   </div>
                 ) : null}
 
-                <div className="mt-4">
-                  <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
-                    {copy.acts.aboutArtist}
-                  </p>
-                  <p className="mt-3 text-sm leading-6 text-arenaMuted">{getActBlurb(act)}</p>
-
-                  {aboutFacts.length ? (
-                    <div className="mt-4 grid gap-3">
-                      {aboutFacts.map((fact) => (
-                        <p key={`${act.code}-${fact}`} className="text-sm leading-6 text-arenaMuted">
-                          {fact}
-                        </p>
-                      ))}
-                    </div>
-                  ) : null}
+                <div className="show-panel mt-5 p-4">
+                  <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaMuted">{text.noteLabel}</p>
+                  <p className="mt-2 text-sm leading-6 text-arenaMuted">{describeNote(note)}</p>
                 </div>
-
-                {hasNote(note) ? (
-                  <div className="show-panel mt-4 p-4">
-                    <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaMuted">
-                      {copy.acts.noteSummaryPrefix}
-                    </p>
-                    <p className="mt-2 text-sm text-arenaMuted">{describeNote(note)}</p>
-                  </div>
-                ) : null}
               </div>
             </button>
           );
@@ -284,35 +311,21 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
               </span>
               {hasPersonalRanking ? (
                 <span className="show-chip text-xs text-white">
-                  {copy.acts.currentPlace} {getPlacementLabel(rankingMap[selectedAct.code])}
+                  {text.currentPlace} #{rankingMap[selectedAct.code]}
                 </span>
               ) : null}
-              {getRunningOrderLabel(selectedAct.runningOrder) ? (
-                <span className="show-chip text-xs text-arenaMuted">
-                  {getRunningOrderLabel(selectedAct.runningOrder)}
-                </span>
+              {selectedAct.stageKey === "final" ? (
+                <span className="show-chip text-xs text-arenaMuted">{getActContext(selectedAct).value}</span>
               ) : null}
             </div>
 
-            {getFinalContext(selectedAct) ? (
-              <div className="show-panel-muted p-4">
-                <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaPulse">
-                  {getFinalContext(selectedAct)?.label || copy.acts.stageMetaLabel}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-white">{getFinalContext(selectedAct)?.value}</p>
-              </div>
-            ) : null}
-
             <div className="show-panel p-4">
-              <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
-                {copy.acts.aboutArtist}
-              </p>
-              <p className="mt-3 text-sm leading-6 text-arenaMuted">{getActBlurb(selectedAct)}</p>
-
+              <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.aboutArtist}</p>
+              <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(selectedAct)}</p>
               {getAboutFacts(selectedAct).length ? (
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {getAboutFacts(selectedAct).map((fact) => (
-                    <p key={fact} className="text-sm leading-6 text-arenaMuted">
+                    <p key={`${selectedAct.code}-${fact}`} className="text-sm leading-7 text-arenaMuted">
                       {fact}
                     </p>
                   ))}
@@ -321,18 +334,15 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
             </div>
 
             <div className="show-panel p-4">
-              <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
-                {copy.vote.tabNotes}
-              </p>
-              <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
+                  <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.noteLabel}</p>
                   <p className="mt-2 text-sm text-arenaMuted">
-                    {hasNote(notes[selectedAct.code]) ? describeNote(notes[selectedAct.code]) : copy.vote.noNotesYet}
+                    {hasNote(notes[selectedAct.code]) ? text.noteSaved : text.tapToAddNote}
                   </p>
-                  <p className="mt-2 text-sm text-arenaMuted">{copy.vote.notesAutosave}</p>
                 </div>
                 {hasNote(notes[selectedAct.code]) ? (
-                  <span className="show-chip text-xs text-arenaBeam">{copy.vote.noteSavedBadge}</span>
+                  <span className="show-chip text-xs text-arenaBeam">{text.noteSavedBadge}</span>
                 ) : null}
               </div>
 
@@ -346,33 +356,33 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
                         tone: notes[selectedAct.code]?.tone === tone.key ? null : tone.key,
                       })
                     }
-                    className={`rounded-full px-4 py-2 text-sm transition ${noteChipClass(notes[selectedAct.code]?.tone === tone.key)}`}
+                    className={`rounded-full px-4 py-2 text-sm transition ${
+                      notes[selectedAct.code]?.tone === tone.key
+                        ? "bg-arenaSurfaceMax text-white shadow-glow"
+                        : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
+                    }`}
                   >
-                    <span className="label-copy uppercase tracking-[0.2em]">{copy.notes[tone.key]}</span>
+                    <span className="label-copy uppercase tracking-[0.2em]">{toneLabels[tone.key]}</span>
                   </button>
                 ))}
               </div>
 
               <textarea
                 className="arena-input mt-4 min-h-28 resize-y"
-                placeholder={copy.vote.notePlaceholder}
+                placeholder={text.noNotesYet}
                 value={notes[selectedAct.code]?.text || ""}
                 onChange={(event) => updateNote(selectedAct.code, { text: event.target.value })}
               />
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm text-arenaMuted">
-                  {hasNote(notes[selectedAct.code])
-                    ? copy.acts.noteSavedLocally
-                    : copy.vote.tapToAddNote}
-                </p>
+                <p className="text-sm text-arenaMuted">{describeNote(notes[selectedAct.code])}</p>
                 {hasNote(notes[selectedAct.code]) ? (
                   <button
                     type="button"
                     onClick={() => clearNote(selectedAct.code)}
                     className="arena-button-secondary px-5 py-3 text-sm"
                   >
-                    {copy.vote.clearNote}
+                    {text.clearNote}
                   </button>
                 ) : null}
               </div>
@@ -386,14 +396,14 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
                   rel="noreferrer"
                   className="arena-button-secondary inline-flex h-14 items-center justify-center px-6 text-sm"
                 >
-                  {language === "ru" ? "Официальный профиль" : "Official profile"}
+                  {text.officialProfile}
                 </a>
               ) : null}
               <Link
                 href={`/${roomSlug}/vote/${stageKey}`}
                 className="arena-button-primary inline-flex h-14 items-center justify-center px-8 text-sm"
               >
-                {copy.acts.openVoteStudio}
+                {text.openVoteStudio}
               </Link>
             </div>
           </div>

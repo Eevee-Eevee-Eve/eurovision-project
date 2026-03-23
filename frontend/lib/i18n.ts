@@ -599,6 +599,22 @@ export function getLocalizedActBlurb(language: Language, act: ActEntry) {
 }
 
 export function getLocalizedActContext(language: Language, act: ActEntry) {
+  if (act.stageKey === "final" && act.semiResultLocalized?.[language]) {
+    return {
+      label: getCopy(language).act.roadToFinal,
+      value: act.semiResultLocalized[language],
+    };
+  }
+
+  if (act.stageKey === "final" && act.semiResult != null) {
+    return {
+      label: getCopy(language).act.roadToFinal,
+      value: language === "ru"
+        ? `Занял #${act.semiResult} в полуфинале`
+        : `Finished #${act.semiResult} in the semi-final`,
+    };
+  }
+
   if (act.contextLocalized) {
     return {
       label: act.contextLocalized.label[language],

@@ -1,5 +1,8 @@
 # Known Issues
 
+> Current focus after the three-mode redesign:
+> manually QA notes and bottom sheet on real phones, expand artist bios further, and fill final-only semi-result context once official data is available.
+
 ## Актуальные
 
 - Нужно вручную добить UX заметок после последних карточных правок и ещё раз проверить на мобильных.
@@ -19,4 +22,3 @@
 - Вынести state из локального файла в нормальную БД
 - Доделать отдельные admin accounts вместо одной общей схемы
 - Добить полноценный post-launch backup flow
-

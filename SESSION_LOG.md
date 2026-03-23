@@ -1,5 +1,8 @@
 # Session Log
 
+> Latest update:
+> three-mode redesign foundation implemented; `VoteStudio` rebuilt as a companion ballot; room-level `showState` added for projector control; frontend production build passes.
+
 ## 2026-03-23
 
 ### Что делали
@@ -25,4 +28,3 @@
 - удобство bottom sheet
 - насыщенность биографий артистов
 - финальный блок про результат полуфинала
-
