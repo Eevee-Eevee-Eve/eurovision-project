@@ -74,3 +74,22 @@
 - удобство bottom sheet
 - насыщенность биографий артистов
 - финальный блок про результат полуфинала
+
+## 2026-03-24
+
+### Vote Flow Pass
+
+- rebuilt `VoteStudio` around a lighter mobile-first ranking flow
+- changed the main `acts` tab from tall editorial cards into compact ranking rows
+- simplified the `order` tab so it shows only explicitly placed acts instead of duplicating the full acts list
+- added drag-and-drop reordering for placed acts with `@dnd-kit`
+- added a larger `row` poster mode for faster artist recognition in dense lists
+- removed fake occupied labels for untouched places; empty slots now read as free
+- kept notes inside the artist card, but exposed note state and note summary directly in the list/order rows
+
+### Manual Check Next
+
+- real-phone test for drag-and-drop feel
+- dropdown clarity on narrow screens
+- whether the compact top stats and tab switcher still feel too tall
+- whether the modal needs one more pass on vertical spacing
