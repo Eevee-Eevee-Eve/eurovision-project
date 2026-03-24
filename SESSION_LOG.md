@@ -142,3 +142,9 @@
   - direct video button is shown only when a real `videoUrl` exists
   - stopped relying on the YouTube search fallback inside this modal
 - reduced the notes textarea height on mobile and tightened the search field icon spacing
+
+### 2026-03-24 sheet scroll lock pass
+
+- reworked `BottomSheet` into a bounded mobile sheet with a dedicated inner scroll area
+- switched body scroll lock from `overflow: hidden` only to a fixed-body lock that restores the previous page scroll
+- added clearer screen padding and a stronger bottom safe-area so the sheet no longer feels cut off against browser chrome
