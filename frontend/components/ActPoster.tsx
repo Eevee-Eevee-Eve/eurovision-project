@@ -4,7 +4,7 @@ import type { ActEntry } from "../lib/types";
 import { resolveMediaUrl } from "../lib/media";
 import { useLanguage } from "./LanguageProvider";
 
-type ActPosterMode = "compact" | "card" | "hero";
+type ActPosterMode = "compact" | "card" | "hero" | "row";
 
 export function ActPoster({
   act,
@@ -22,15 +22,18 @@ export function ActPoster({
   const isCompact = resolvedMode === "compact";
   const isHero = resolvedMode === "hero";
   const isCard = resolvedMode === "card";
+  const isRow = resolvedMode === "row";
   const isDense = contentDensity === "compact";
   const frameClass = isCompact
     ? "h-14 w-14 rounded-[1.2rem]"
+    : isRow
+      ? "h-20 w-20 rounded-[1.45rem]"
     : isHero
       ? "aspect-[1.26/1] w-full rounded-[2rem]"
       : "h-28 w-24 rounded-[1.6rem]";
   const initialsClass = isCompact ? "text-base" : isHero ? "text-6xl md:text-7xl" : "text-[2rem]";
-  const badgeClass = isCompact ? "px-2 py-1 text-[9px]" : isHero ? "px-3 py-1.5 text-[11px]" : "px-2.5 py-1 text-[10px]";
-  const flagSize = isCompact ? "h-6 w-6" : isHero ? "h-12 w-12" : "h-9 w-9";
+  const badgeClass = isCompact ? "px-2 py-1 text-[9px]" : isHero ? "px-3 py-1.5 text-[11px]" : isRow ? "px-2.5 py-1 text-[10px]" : "px-2.5 py-1 text-[10px]";
+  const flagSize = isCompact ? "h-6 w-6" : isHero ? "h-12 w-12" : isRow ? "h-8 w-8" : "h-9 w-9";
   const showRunningOrder = typeof act.runningOrder === "number";
   const runningBadge = showRunningOrder ? `#${act.runningOrder}` : null;
   const resolvedPhotoUrl = resolveMediaUrl(act.photoUrl);
@@ -73,11 +76,11 @@ export function ActPoster({
           }}
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.05),transparent)] opacity-20" />
-        {!isCompact ? (
+        {!isCompact && !isRow ? (
           <div className="absolute inset-x-6 top-0 h-20 rounded-b-[2rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.16),transparent)] blur-2xl" />
         ) : null}
         <div className="absolute -right-5 -top-5 h-20 w-20 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-[linear-gradient(180deg,transparent,rgba(8,10,22,0.42))]" />
+        <div className={`absolute inset-x-0 bottom-0 ${isRow ? "h-10" : "h-20"} bg-[linear-gradient(180deg,transparent,rgba(8,10,22,0.42))]`} />
 
         <div className="relative flex h-full flex-col justify-between">
           <div className="flex items-start justify-between gap-3">
@@ -145,7 +148,7 @@ export function ActPoster({
             ) : null}
           </div>
 
-          {!isCompact ? (
+          {!isCompact && !isRow ? (
             <div className="space-y-2">
               <div
                 className={`flex flex-col justify-end rounded-[1.1rem] border border-white/10 bg-black/22 px-3 py-2 backdrop-blur-md ${
