@@ -112,3 +112,6 @@
   - already placed acts
   - still unplaced acts
 - kept drag-and-drop inside the main acts flow instead of pushing it behind a separate ranking screen
+- follow-up pass:
+  - made country read before artist name in the vote rows
+  - compressed row typography and action width even further for phone screens

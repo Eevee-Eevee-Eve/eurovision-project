@@ -104,26 +104,26 @@ function SortableOrderRow({
       }}
       className={`show-card p-3 transition md:p-3.5 ${isDragging ? "scale-[0.995] shadow-[0_28px_80px_rgba(0,0,0,0.34)]" : ""}`}
     >
-      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+      <div className="grid grid-cols-[minmax(0,1fr)_8.75rem] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_11rem]">
         <button type="button" onClick={onOpen} className="flex min-w-0 items-center gap-3 text-left">
-          <div className="show-rank h-11 w-11 shrink-0 md:h-12 md:w-12">
-            <span className="display-copy text-xl font-black text-arenaText md:text-2xl">{rank}</span>
+          <div className="show-rank h-10 w-10 shrink-0 md:h-12 md:w-12">
+            <span className="display-copy text-lg font-black text-arenaText md:text-2xl">{rank}</span>
           </div>
           <div className="shrink-0">
             <ActPoster act={act} mode="row" />
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="show-chip px-2.5 py-1 text-[10px] text-arenaBeam">{countryName}</span>
+              <span className="line-clamp-1 text-sm font-semibold text-white md:text-base">{countryName}</span>
               {finalContext ? <span className="show-chip px-2.5 py-1 text-[10px] text-arenaMuted">{finalContext}</span> : null}
               {noteBadge ? <span className="show-chip px-2.5 py-1 text-[10px] text-white">{noteBadge}</span> : null}
             </div>
-            <p className="mt-2 line-clamp-1 text-base font-semibold leading-tight text-white md:text-lg">{act.artist}</p>
-            <p className="mt-1 line-clamp-1 text-sm text-arenaMuted">{act.song}</p>
+            <p className="mt-1 line-clamp-1 text-sm leading-tight text-arenaText/88 md:text-[0.95rem]">{act.artist}</p>
+            <p className="mt-0.5 line-clamp-1 text-xs text-arenaMuted">{act.song}</p>
           </div>
         </button>
 
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:w-[11rem]">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
           <select
             className="arena-input h-10 min-w-0 px-3 text-sm"
             value={selectValue}
@@ -860,7 +860,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
             return (
               <article key={act.code} className="show-card p-3 md:p-3.5">
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div className="grid grid-cols-[minmax(0,1fr)_8.75rem] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_11rem]">
                   <button
                     type="button"
                     onClick={() => setSelectedActCode(act.code)}
@@ -872,19 +872,19 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="show-chip px-2.5 py-1 text-[10px] text-arenaBeam">{getCountryName(act.code, act.country)}</span>
+                        <span className="line-clamp-1 text-sm font-semibold text-white md:text-base">{getCountryName(act.code, act.country)}</span>
                         {finalContext ? (
                           <span className="show-chip px-2.5 py-1 text-[10px] text-arenaMuted">{finalContext}</span>
                         ) : null}
                         {hasNote(note) ? <span className="show-chip px-2.5 py-1 text-[10px] text-white">{text.savedBadge}</span> : null}
                       </div>
 
-                      <h3 className="mt-2 line-clamp-1 text-base font-semibold leading-tight text-white md:text-lg">{act.artist}</h3>
-                      <p className="mt-1 truncate text-sm text-arenaMuted">{act.song}</p>
+                      <h3 className="mt-1 line-clamp-1 text-sm leading-tight text-arenaText/88 md:text-[0.95rem]">{act.artist}</h3>
+                      <p className="mt-0.5 truncate text-xs text-arenaMuted">{act.song}</p>
                     </div>
                   </button>
 
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:w-[11rem]">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
                     <select
                       className="arena-input h-10 min-w-0 px-3 text-sm"
                       value={getSelectValue(act.code)}
