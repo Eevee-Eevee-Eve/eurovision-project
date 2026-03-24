@@ -166,6 +166,7 @@ function SortableOrderRow({
     disabled: locked || !isPlaced,
   });
   const flagUrl = resolveMediaUrl(act.flagUrl);
+  const photoUrl = resolveMediaUrl(act.photoUrl);
 
   return (
     <article
@@ -176,24 +177,65 @@ function SortableOrderRow({
       }}
       className={`show-card p-2.5 transition md:p-3 ${isDragging ? "scale-[0.995] shadow-[0_28px_80px_rgba(0,0,0,0.34)]" : ""}`}
     >
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-        <button type="button" onClick={onOpen} className="flex min-w-0 items-center gap-3 text-left">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 md:gap-3">
+        <button
+          type="button"
+          onClick={onOpen}
+          className={`grid min-w-0 items-center gap-2.5 text-left ${
+            isPlaced ? "grid-cols-[2.45rem_3.7rem_minmax(0,1fr)] md:grid-cols-[2.65rem_4rem_minmax(0,1fr)]" : "grid-cols-[3.7rem_minmax(0,1fr)] md:grid-cols-[4rem_minmax(0,1fr)]"
+          }`}
+        >
           {isPlaced ? (
-            <div className="show-rank h-10 w-10 shrink-0">
-              <span className="display-copy text-base font-black text-arenaText">{rank}</span>
+            <div className="show-rank h-[2.45rem] w-[2.45rem] shrink-0 md:h-[2.65rem] md:w-[2.65rem]">
+              <span className="display-copy text-[0.95rem] font-black text-arenaText md:text-base">{rank}</span>
             </div>
           ) : null}
-          <div className="shrink-0">
-            <ActPoster act={act} mode="row" />
+
+          <div
+            className="relative h-[3.7rem] w-[3.7rem] shrink-0 overflow-hidden rounded-[1.2rem] border border-white/10 bg-white/5 md:h-[4rem] md:w-[4rem]"
+            style={{
+              backgroundImage: photoUrl
+                ? undefined
+                : `linear-gradient(135deg, ${act.portrait.primary}, ${act.portrait.secondary})`,
+            }}
+          >
+            {photoUrl ? (
+              <img
+                src={photoUrl || undefined}
+                alt={`${act.artist} portrait`}
+                className="h-full w-full object-cover"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(180deg,rgba(10,12,24,0.2),rgba(10,12,24,0.72))]">
+                <span className="display-copy text-base font-black tracking-[-0.08em] text-white/80">{act.portrait.initials}</span>
+              </div>
+            )}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-[linear-gradient(180deg,transparent,rgba(8,10,22,0.5))]" />
           </div>
+
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <CountryBadge countryName={countryName} flagUrl={flagUrl} />
-              {finalContext ? <span className="show-chip px-2.5 py-1 text-[10px] text-arenaMuted">{finalContext}</span> : null}
-              {noteBadge ? <span className="show-chip px-2.5 py-1 text-[10px] text-white">{noteBadge}</span> : null}
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="inline-flex min-w-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-white/94">
+                <span className="h-4 w-4 shrink-0 overflow-hidden rounded-[0.35rem] border border-white/10 bg-white/10">
+                  <img
+                    src={flagUrl || undefined}
+                    alt={countryName}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                </span>
+                <span className="truncate">{countryName}</span>
+              </span>
+              {noteBadge ? <span className="show-chip hidden px-2 py-1 text-[10px] text-white sm:inline-flex">{noteBadge}</span> : null}
             </div>
-            <p className="mt-2 line-clamp-1 text-[0.95rem] font-medium leading-tight text-white/92">{act.artist}</p>
-            <p className="mt-0.5 line-clamp-1 text-[0.82rem] text-arenaMuted">{act.song}</p>
+            <p className="mt-1.5 line-clamp-1 text-[0.92rem] font-medium leading-tight text-white/84 md:text-[0.98rem]">{act.artist}</p>
+            <div className="mt-0.5 flex min-w-0 items-center gap-2">
+              <p className="min-w-0 flex-1 line-clamp-1 text-[0.78rem] leading-5 text-arenaMuted md:text-[0.82rem]">{act.song}</p>
+              {finalContext ? <span className="hidden truncate text-[10px] text-arenaMuted md:inline">{finalContext}</span> : null}
+            </div>
           </div>
         </button>
 
@@ -201,7 +243,7 @@ function SortableOrderRow({
           {isPlaced ? (
             <button
               type="button"
-              className="arena-button-secondary inline-flex h-10 w-10 touch-none items-center justify-center rounded-[1rem] px-0 text-sm"
+              className="arena-button-secondary inline-flex h-10 w-10 touch-none items-center justify-center rounded-[1rem] px-0 text-sm md:h-11 md:w-11"
               aria-label={dragLabel}
               title={dragLabel}
               disabled={locked}
@@ -214,7 +256,7 @@ function SortableOrderRow({
             <button
               type="button"
               onClick={onAddToRanking}
-              className="arena-button-secondary inline-flex h-10 items-center justify-center rounded-[1rem] px-3 text-xs"
+              className="arena-button-secondary inline-flex h-10 items-center justify-center rounded-[1rem] px-3.5 text-[11px] font-medium md:h-11 md:px-4 md:text-xs"
               disabled={locked}
               aria-label={addToRankingLabel}
               title={addToRankingLabel}
@@ -1031,6 +1073,146 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     );
   }
 
+  function renderActsTabCompact() {
+    return (
+      <div className="grid gap-4">
+        {hasStartedRanking ? (
+          <section className="show-card p-3.5 md:p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.orderTitle}</p>
+                <p className="mt-1.5 text-xs text-arenaMuted">
+                  {language === "ru" ? `Р Р°СЃСЃС‚Р°РІР»РµРЅРѕ ${placedActsCount} РёР· ${acts.length}` : `${placedActsCount} of ${acts.length} placed`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmResetOpen(true)}
+                disabled={locked}
+                className="arena-button-secondary inline-flex h-10 items-center justify-center gap-2 px-4 text-xs md:text-sm"
+              >
+                <RotateCcw size={15} />
+                {text.resetRanking}
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        {hasStartedRanking ? (
+          <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={handleOrderDragEnd}>
+            <SortableContext items={placedFilteredActs.map((act) => act.code)} strategy={verticalListSortingStrategy}>
+              <section className="grid gap-2.5">
+                {placedFilteredActs.length ? (
+                  <p className="px-1 text-[11px] uppercase tracking-[0.28em] text-arenaPulse">
+                    {language === "ru" ? "РЈР¶Рµ РІ С‚РІРѕС‘Рј СЂРµР№С‚РёРЅРіРµ" : "Already in your ranking"}
+                  </p>
+                ) : null}
+                {placedFilteredActs.map((act) => {
+                  const rank = rankingMap[act.code] ?? 0;
+                  const note = notes[act.code];
+                  return (
+                    <SortableOrderRow
+                      key={act.code}
+                      act={act}
+                      rank={rank}
+                      countryName={getCountryName(act.code, act.country)}
+                      noteBadge={hasNote(note) ? text.savedBadge : null}
+                      finalContext={act.stageKey === "final" ? getActContext(act).value : null}
+                      locked={locked}
+                      dragLabel={language === "ru" ? "РџРµСЂРµС‚Р°С‰РёС‚СЊ" : "Drag to reorder"}
+                      onOpen={() => setSelectedActCode(act.code)}
+                      addToRankingLabel={language === "ru" ? "Р’ СЂРµР№С‚РёРЅРі" : "Add"}
+                      isPlaced
+                      onAddToRanking={() => placeArtistAt(act.code, placedActsCount)}
+                    />
+                  );
+                })}
+              </section>
+            </SortableContext>
+          </DndContext>
+        ) : null}
+
+        <section className="show-card p-3.5 md:p-4">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-arenaMuted" size={15} />
+            <input
+              className="arena-input h-11 pl-11 pr-4 text-sm md:h-12 md:pl-12"
+              placeholder={text.searchPlaceholder}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </div>
+        </section>
+
+        {((!hasStartedRanking && filteredActs.length === 0) || (hasStartedRanking && placedFilteredActs.length === 0 && unplacedFilteredActs.length === 0)) ? (
+          <section className="show-card p-5 text-sm text-arenaMuted">
+            {hasStartedRanking && !deferredQuery.trim()
+              ? (language === "ru" ? "Р’СЃРµ Р°СЂС‚РёСЃС‚С‹ СѓР¶Рµ РґРѕР±Р°РІР»РµРЅС‹ РІ С‚РІРѕР№ РїРѕСЂСЏРґРѕРє." : "All acts are already added to your order.")
+              : text.emptyActs}
+          </section>
+        ) : null}
+
+        {hasStartedRanking ? (
+          <section className="px-1 text-xs leading-6 text-arenaMuted">
+            {language === "ru"
+              ? `РћСЃС‚Р°Р»РѕСЃСЊ РґРѕР±Р°РІРёС‚СЊ РІ СЂРµР№С‚РёРЅРі: ${acts.length - placedActsCount}.`
+              : `${acts.length - placedActsCount} acts are still unplaced.`}
+          </section>
+        ) : null}
+
+        <section className="grid gap-2.5">
+          {hasStartedRanking && unplacedFilteredActs.length ? (
+            <p className="px-1 text-[11px] uppercase tracking-[0.28em] text-arenaMuted">
+              {language === "ru" ? "Р•С‰С‘ РЅРµ РІС‹Р±СЂР°РЅРѕ" : "Still unplaced"}
+            </p>
+          ) : null}
+          {(hasStartedRanking ? unplacedFilteredActs : filteredActs).map((act) => {
+            const note = notes[act.code];
+            const finalContext = act.stageKey === "final" ? getActContext(act).value : null;
+
+            return (
+              <SortableOrderRow
+                key={act.code}
+                act={act}
+                rank={0}
+                countryName={getCountryName(act.code, act.country)}
+                noteBadge={hasNote(note) ? text.savedBadge : null}
+                finalContext={finalContext}
+                locked={locked}
+                dragLabel={language === "ru" ? "РџРµСЂРµС‚Р°С‰РёС‚СЊ" : "Drag to reorder"}
+                addToRankingLabel={language === "ru" ? "Р’ СЂРµР№С‚РёРЅРі" : "Add"}
+                isPlaced={false}
+                onOpen={() => setSelectedActCode(act.code)}
+                onAddToRanking={() => placeArtistAt(act.code, placedActsCount)}
+              />
+            );
+          })}
+        </section>
+
+        <section className="show-card sticky bottom-4 z-10 p-4 md:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.submitTitle}</p>
+              <p className="mt-2 text-sm leading-6 text-arenaMuted">{text.submitText}</p>
+            </div>
+            <div className="flex flex-col gap-3 lg:items-end">
+              <button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={Boolean(submitDisabledReason) || submitting}
+                className="arena-button-primary flex h-12 items-center justify-center gap-2 px-6 text-sm md:h-14 md:px-8"
+              >
+                <Send size={16} />
+                {submitting ? "..." : text.submitButton}
+              </button>
+              <p className="text-xs leading-5 text-arenaMuted md:text-sm">{submitDisabledReason || text.saveOrderHint}</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   function renderNotesTab() {
     return (
       <div className="grid gap-4">
@@ -1380,7 +1562,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         </div>
       </section>
 
-      {selectedTab === "acts" ? renderActsTab() : null}
+      {selectedTab === "acts" ? renderActsTabCompact() : null}
       {selectedTab === "notes" ? renderNotesTab() : null}
 
       <BottomSheet open={Boolean(selectedAct)} onClose={() => setSelectedActCode(null)}>
