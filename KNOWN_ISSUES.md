@@ -14,6 +14,10 @@
   - browser-specific rendering
   - can still feel heavy on narrow screens
 - The new video action currently uses a YouTube search fallback when no dedicated video URL exists yet.
+- Need a real-device check for the latest mobile ranking split:
+  - `add to ranking` from the list
+  - drag-and-drop for already placed acts
+  - precise place selection inside the artist card
 
 - В `VoteStudio` ещё нужно руками добить поведение модального окна на разных разрешениях.
 - Native `select` для выбора места остаётся уязвимым по UX:

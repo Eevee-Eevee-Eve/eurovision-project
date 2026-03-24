@@ -27,7 +27,7 @@ export function ActPoster({
   const frameClass = isCompact
     ? "h-14 w-14 rounded-[1.2rem]"
     : isRow
-      ? "h-[4.5rem] w-[4.5rem] rounded-[1.35rem] md:h-20 md:w-20 md:rounded-[1.45rem]"
+      ? "h-[4.45rem] w-[4.45rem] rounded-[1.35rem] md:h-[4.85rem] md:w-[4.85rem] md:rounded-[1.45rem]"
       : isHero
       ? "aspect-[1.26/1] w-full rounded-[2rem]"
       : "h-28 w-24 rounded-[1.6rem]";
@@ -101,7 +101,7 @@ export function ActPoster({
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                {!isCompact ? (
+                {!isCompact && !isRow ? (
                   <div className={`${flagSize} overflow-hidden rounded-full border border-white/15 bg-white/10 shadow-[0_0_18px_rgba(0,0,0,0.2)]`}>
                     <img
                       src={resolvedFlagUrl || undefined}
@@ -115,7 +115,7 @@ export function ActPoster({
               </div>
             )}
             <div className="flex items-center gap-2">
-              {!isCompact && runningBadge ? (
+              {!isCompact && !isRow && runningBadge ? (
                 <span className={`inline-flex rounded-full border border-white/10 bg-black/15 text-arenaText ${badgeClass}`}>
                   {runningBadge}
                 </span>

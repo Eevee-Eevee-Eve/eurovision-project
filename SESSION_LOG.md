@@ -115,3 +115,12 @@
 - follow-up pass:
   - made country read before artist name in the vote rows
   - compressed row typography and action width even further for phone screens
+
+### 2026-03-24 compact ranking pass
+
+- removed the heavy place `select` from the main vote list
+- kept drag-and-drop as the main reorder action for already placed acts
+- moved precise place picking back into the artist card sheet
+- changed unplaced rows into a simpler `add to ranking + tap for details` flow
+- moved the flag out of the row poster so it no longer covers artists' faces
+- increased left padding in the search field to stop the icon colliding with placeholder text on mobile
