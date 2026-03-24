@@ -27,7 +27,7 @@ export function ActPoster({
   const frameClass = isCompact
     ? "h-14 w-14 rounded-[1.2rem]"
     : isRow
-      ? "h-16 w-16 rounded-[1.25rem] md:h-20 md:w-20 md:rounded-[1.45rem]"
+      ? "h-[4.5rem] w-[4.5rem] rounded-[1.35rem] md:h-20 md:w-20 md:rounded-[1.45rem]"
       : isHero
       ? "aspect-[1.26/1] w-full rounded-[2rem]"
       : "h-28 w-24 rounded-[1.6rem]";

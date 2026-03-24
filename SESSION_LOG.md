@@ -98,3 +98,17 @@
 - dropdown clarity on narrow screens
 - whether the compact top stats and tab switcher still feel too tall
 - whether the modal needs one more pass on vertical spacing
+
+### 2026-03-24 late pass
+
+- tightened the main vote list to reduce mobile card height
+- removed editorial note-summary text from the main ranking rows
+- made quick actions denser:
+  - smaller select
+  - smaller card-entry button
+  - compact drag handle in placed rows
+- increased row poster presence without keeping the whole row oversized
+- split the acts tab visually into:
+  - already placed acts
+  - still unplaced acts
+- kept drag-and-drop inside the main acts flow instead of pushing it behind a separate ranking screen

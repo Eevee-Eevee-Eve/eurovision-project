@@ -19,7 +19,6 @@ import type { ActEntry, ActNote, NoteTone, RoomDetails, StageKey } from "../lib/
 import {
   NOTE_TONES,
   buildActVideoUrl,
-  compactArtistLabel,
   createDefaultRanking,
   getNoteTags,
   hasNote,
@@ -68,43 +67,27 @@ function SortableOrderRow({
   act,
   rank,
   countryName,
-  noteSummary,
   noteBadge,
   finalContext,
   locked,
-  canMoveHigher,
-  canMoveLower,
   selectValue,
   placeOptions,
   choosePlacePlaceholder,
-  moveHigherLabel,
-  moveLowerLabel,
   dragLabel,
-  openDetailsLabel,
   onOpen,
-  onMoveHigher,
-  onMoveLower,
   onPlaceChange,
 }: {
   act: ActEntry;
   rank: number;
   countryName: string;
-  noteSummary: string | null;
   noteBadge: string | null;
   finalContext: string | null;
   locked: boolean;
-  canMoveHigher: boolean;
-  canMoveLower: boolean;
   selectValue: string;
   placeOptions: PlaceOption[];
   choosePlacePlaceholder: string;
-  moveHigherLabel: string;
-  moveLowerLabel: string;
   dragLabel: string;
-  openDetailsLabel: string;
   onOpen: () => void;
-  onMoveHigher: () => void;
-  onMoveLower: () => void;
   onPlaceChange: (nextPlace: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -119,101 +102,60 @@ function SortableOrderRow({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`show-card p-4 transition ${isDragging ? "scale-[0.995] shadow-[0_28px_80px_rgba(0,0,0,0.34)]" : ""}`}
+      className={`show-card p-3 transition md:p-3.5 ${isDragging ? "scale-[0.995] shadow-[0_28px_80px_rgba(0,0,0,0.34)]" : ""}`}
     >
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-        <div className="grid min-w-0 gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
-          <div className="flex items-center gap-3">
-            <div className="show-rank h-14 w-14 shrink-0">
-              <span className="display-copy text-2xl font-black text-arenaText">{rank}</span>
-            </div>
-            <button type="button" onClick={onOpen} className="shrink-0 text-left">
-              <ActPoster act={act} mode="row" />
-            </button>
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+        <button type="button" onClick={onOpen} className="flex min-w-0 items-center gap-3 text-left">
+          <div className="show-rank h-11 w-11 shrink-0 md:h-12 md:w-12">
+            <span className="display-copy text-xl font-black text-arenaText md:text-2xl">{rank}</span>
           </div>
-
+          <div className="shrink-0">
+            <ActPoster act={act} mode="row" />
+          </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="show-chip text-xs text-arenaBeam">{countryName}</span>
-              {finalContext ? <span className="show-chip text-xs text-arenaMuted">{finalContext}</span> : null}
-              {noteBadge ? <span className="show-chip text-xs text-white">{noteBadge}</span> : null}
+              <span className="show-chip px-2.5 py-1 text-[10px] text-arenaBeam">{countryName}</span>
+              {finalContext ? <span className="show-chip px-2.5 py-1 text-[10px] text-arenaMuted">{finalContext}</span> : null}
+              {noteBadge ? <span className="show-chip px-2.5 py-1 text-[10px] text-white">{noteBadge}</span> : null}
             </div>
-            <button type="button" onClick={onOpen} className="mt-3 block min-w-0 text-left">
-              <p className="truncate text-xl font-semibold leading-tight text-white">{act.artist}</p>
-              <p className="mt-1 truncate text-sm text-arenaMuted">{act.song}</p>
-            </button>
-            {noteSummary ? (
-              <p className="mt-3 line-clamp-2 text-sm leading-6 text-arenaMuted">{noteSummary}</p>
-            ) : null}
+            <p className="mt-2 line-clamp-1 text-base font-semibold leading-tight text-white md:text-lg">{act.artist}</p>
+            <p className="mt-1 line-clamp-1 text-sm text-arenaMuted">{act.song}</p>
           </div>
-        </div>
+        </button>
 
-        <div className="grid gap-3 lg:w-[20rem]">
-          <div className="grid grid-cols-[repeat(3,minmax(0,1fr))] gap-2">
-            <button
-              type="button"
-              onClick={onMoveHigher}
-              disabled={locked || !canMoveHigher}
-              className="arena-button-secondary inline-flex h-11 items-center justify-center rounded-[1rem] px-0 text-sm"
-              aria-label={moveHigherLabel}
-              title={moveHigherLabel}
-            >
-              <ArrowUp size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={onMoveLower}
-              disabled={locked || !canMoveLower}
-              className="arena-button-secondary inline-flex h-11 items-center justify-center rounded-[1rem] px-0 text-sm"
-              aria-label={moveLowerLabel}
-              title={moveLowerLabel}
-            >
-              <ArrowDown size={16} />
-            </button>
-            <button
-              type="button"
-              className="arena-button-secondary inline-flex h-11 items-center justify-center rounded-[1rem] px-0 text-sm"
-              aria-label={dragLabel}
-              title={dragLabel}
-              disabled={locked}
-              {...attributes}
-              {...listeners}
-            >
-              <GripVertical size={16} />
-            </button>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-            <select
-              className="arena-input h-11 min-w-0"
-              value={selectValue}
-              disabled={locked}
-              onChange={(event) => {
-                const nextValue = Number(event.target.value);
-                if (Number.isFinite(nextValue) && nextValue > 0) {
-                  onPlaceChange(nextValue);
-                }
-              }}
-            >
-              <option value="" disabled>
-                {choosePlacePlaceholder}
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:w-[11rem]">
+          <select
+            className="arena-input h-10 min-w-0 px-3 text-sm"
+            value={selectValue}
+            disabled={locked}
+            onChange={(event) => {
+              const nextValue = Number(event.target.value);
+              if (Number.isFinite(nextValue) && nextValue > 0) {
+                onPlaceChange(nextValue);
+              }
+            }}
+          >
+            <option value="" disabled>
+              {choosePlacePlaceholder}
+            </option>
+            {placeOptions.map((option) => (
+              <option key={`${act.code}-placed-${option.value}`} value={option.value}>
+                {option.label}
               </option>
-              {placeOptions.map((option) => (
-                <option key={`${act.code}-placed-${option.value}`} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            ))}
+          </select>
 
-            <button
-              type="button"
-              onClick={onOpen}
-              className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
-            >
-              <NotebookPen size={15} />
-              {openDetailsLabel}
-            </button>
-          </div>
+          <button
+            type="button"
+            className="arena-button-secondary inline-flex h-10 w-10 touch-none items-center justify-center rounded-[1rem] px-0 text-sm"
+            aria-label={dragLabel}
+            title={dragLabel}
+            disabled={locked}
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical size={16} />
+          </button>
         </div>
       </div>
     </article>
@@ -555,24 +497,16 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
   function getPlaceOptionLabel(rankIndex: number, currentCode: string) {
     const place = rankIndex + 1;
-    if (!hasStartedRanking) {
+    const occupantCode = ranking[rankIndex];
+    if (!hasStartedRanking || !occupantCode) {
       return `#${place}`;
     }
 
-    const occupantCode = ranking[rankIndex];
-    const occupant = acts.find((act) => act.code === occupantCode);
-    if (!occupant) return `#${place}`;
-    const compactArtist = compactArtistLabel(occupant.artist, 18);
-
-    if (occupant.code === currentCode && placedActsSet.has(currentCode)) {
-      return text.placeOptionCurrent(place);
+    if (occupantCode === currentCode && placedActsSet.has(currentCode)) {
+      return `#${place}`;
     }
 
-    if (placedActsSet.has(occupant.code)) {
-      return text.placeOptionOccupied(place, compactArtist);
-    }
-
-    return text.placeOptionFree(place);
+    return `#${place}`;
   }
 
   function getPlaceOptions(code: string) {
@@ -764,6 +698,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     );
   }, [acts, placedActsSet, rankingMap]);
 
+  const placedFilteredActs = useMemo(() => {
+    return filteredActs.filter((act) => placedActsSet.has(act.code));
+  }, [filteredActs, placedActsSet]);
+
   const unplacedFilteredActs = useMemo(() => {
     return filteredActs.filter((act) => !placedActsSet.has(act.code));
   }, [filteredActs, placedActsSet]);
@@ -819,11 +757,11 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     return (
       <div className="grid gap-4">
         {hasStartedRanking ? (
-          <section className="show-card p-4 md:p-5">
+          <section className="show-card p-3 md:p-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0">
                 <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.orderTitle}</p>
-                <p className="mt-3 text-sm leading-7 text-arenaMuted">
+                <p className="mt-2 text-xs leading-6 text-arenaMuted">
                   {language === "ru"
                     ? "Здесь твой текущий порядок. Перетаскивай артистов прямо в списке или двигай их кнопками на шаг выше и ниже."
                     : "This is your current order. Drag acts right here in the list or nudge them up and down."}
@@ -837,7 +775,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   type="button"
                   onClick={() => setConfirmResetOpen(true)}
                   disabled={locked}
-                  className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
+                  className="arena-button-secondary inline-flex h-10 items-center justify-center gap-2 px-4 text-sm"
                 >
                   <RotateCcw size={15} />
                   {text.resetRanking}
@@ -849,9 +787,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
         {hasStartedRanking ? (
           <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={handleOrderDragEnd}>
-            <SortableContext items={placedActsSorted.map((act) => act.code)} strategy={verticalListSortingStrategy}>
+            <SortableContext items={placedFilteredActs.map((act) => act.code)} strategy={verticalListSortingStrategy}>
               <section className="grid gap-3">
-                {placedActsSorted.map((act) => {
+                {placedFilteredActs.length ? (
+                  <p className="px-1 text-[11px] uppercase tracking-[0.28em] text-arenaPulse">
+                    {language === "ru" ? "Уже в твоём рейтинге" : "Already in your ranking"}
+                  </p>
+                ) : null}
+                {placedFilteredActs.map((act) => {
                   const rank = rankingMap[act.code] ?? 0;
                   const note = notes[act.code];
                   return (
@@ -860,22 +803,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                       act={act}
                       rank={rank}
                       countryName={getCountryName(act.code, act.country)}
-                      noteSummary={getNoteSummaryText(note)}
                       noteBadge={hasNote(note) ? text.savedBadge : null}
                       finalContext={act.stageKey === "final" ? getActContext(act).value : null}
                       locked={locked}
-                      canMoveHigher={rank > 1}
-                      canMoveLower={rank < ranking.length}
                       selectValue={getSelectValue(act.code)}
                       placeOptions={getPlaceOptions(act.code)}
                       choosePlacePlaceholder={text.choosePlacePlaceholder}
-                      moveHigherLabel={text.moveHigher}
-                      moveLowerLabel={text.moveLower}
                       dragLabel={language === "ru" ? "Перетащить" : "Drag to reorder"}
-                      openDetailsLabel={text.openCard}
                       onOpen={() => setSelectedActCode(act.code)}
-                      onMoveHigher={() => moveArtistBy(act.code, -1)}
-                      onMoveLower={() => moveArtistBy(act.code, 1)}
                       onPlaceChange={(nextPlace) => placeArtistAt(act.code, nextPlace - 1)}
                     />
                   );
@@ -897,7 +832,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           </div>
         </section>
 
-        {((!hasStartedRanking && filteredActs.length === 0) || (hasStartedRanking && unplacedFilteredActs.length === 0)) ? (
+        {((!hasStartedRanking && filteredActs.length === 0) || (hasStartedRanking && placedFilteredActs.length === 0 && unplacedFilteredActs.length === 0)) ? (
           <section className="show-card p-5 text-sm text-arenaMuted">
             {hasStartedRanking && !deferredQuery.trim()
               ? (language === "ru" ? "Все артисты уже добавлены в твой порядок." : "All acts are already added to your order.")
@@ -906,7 +841,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         ) : null}
 
         {hasStartedRanking ? (
-          <section className="show-card p-4 text-sm text-arenaMuted">
+          <section className="px-1 text-xs leading-6 text-arenaMuted">
             {language === "ru"
               ? `Осталось добавить в рейтинг: ${acts.length - placedActsCount}. Ниже список тех, кто ещё не расставлен.`
               : `${acts.length - placedActsCount} acts are still unplaced. Add them from the list below.`}
@@ -914,18 +849,22 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         ) : null}
 
         <section className="grid gap-3">
+          {hasStartedRanking && unplacedFilteredActs.length ? (
+            <p className="px-1 text-[11px] uppercase tracking-[0.28em] text-arenaMuted">
+              {language === "ru" ? "Ещё не выбрано" : "Still unplaced"}
+            </p>
+          ) : null}
           {(hasStartedRanking ? unplacedFilteredActs : filteredActs).map((act) => {
             const note = notes[act.code];
             const finalContext = act.stageKey === "final" ? getActContext(act).value : null;
-            const noteSummary = getNoteSummaryText(note);
 
             return (
-              <article key={act.code} className="show-card p-4">
-                <div className="grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-4">
+              <article key={act.code} className="show-card p-3 md:p-3.5">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                   <button
                     type="button"
                     onClick={() => setSelectedActCode(act.code)}
-                    className="grid min-w-0 gap-3 text-left sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center"
+                    className="flex min-w-0 items-center gap-3 text-left"
                   >
                     <div className="shrink-0">
                       <ActPoster act={act} mode="row" />
@@ -933,26 +872,21 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="show-chip text-xs text-arenaBeam">{getCountryName(act.code, act.country)}</span>
+                        <span className="show-chip px-2.5 py-1 text-[10px] text-arenaBeam">{getCountryName(act.code, act.country)}</span>
                         {finalContext ? (
-                          <span className="show-chip text-xs text-arenaMuted">{finalContext}</span>
+                          <span className="show-chip px-2.5 py-1 text-[10px] text-arenaMuted">{finalContext}</span>
                         ) : null}
-                        {hasNote(note) ? <span className="show-chip text-xs text-white">{text.savedBadge}</span> : null}
+                        {hasNote(note) ? <span className="show-chip px-2.5 py-1 text-[10px] text-white">{text.savedBadge}</span> : null}
                       </div>
 
-                      <h3 className="mt-2 truncate text-lg font-semibold leading-tight text-white md:text-xl">{act.artist}</h3>
+                      <h3 className="mt-2 line-clamp-1 text-base font-semibold leading-tight text-white md:text-lg">{act.artist}</h3>
                       <p className="mt-1 truncate text-sm text-arenaMuted">{act.song}</p>
-                      {noteSummary ? (
-                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-arenaMuted md:text-sm md:leading-6">
-                          {noteSummary}
-                        </p>
-                      ) : null}
                     </div>
                   </button>
 
-                  <div className="grid gap-2 lg:grid-cols-1">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:w-[11rem]">
                     <select
-                      className="arena-input h-11 min-w-0"
+                      className="arena-input h-10 min-w-0 px-3 text-sm"
                       value={getSelectValue(act.code)}
                       disabled={locked}
                       onChange={(event) => {
@@ -975,10 +909,11 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                     <button
                       type="button"
                       onClick={() => setSelectedActCode(act.code)}
-                      className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
+                      className="arena-button-secondary inline-flex h-10 w-10 items-center justify-center rounded-[1rem] px-0 text-sm"
+                      aria-label={text.openCard}
+                      title={text.openCard}
                     >
                       <NotebookPen size={15} />
-                      {text.openCard}
                     </button>
                   </div>
                 </div>
@@ -1172,22 +1107,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                     act={act}
                     rank={rank}
                     countryName={getCountryName(act.code, act.country)}
-                    noteSummary={getNoteSummaryText(note)}
                     noteBadge={hasNote(note) ? text.savedBadge : null}
                     finalContext={act.stageKey === "final" ? getActContext(act).value : null}
                     locked={locked}
-                    canMoveHigher={rank > 1}
-                    canMoveLower={rank < ranking.length}
                     selectValue={getSelectValue(act.code)}
                     placeOptions={getPlaceOptions(act.code)}
                     choosePlacePlaceholder={text.choosePlacePlaceholder}
-                    moveHigherLabel={text.moveHigher}
-                    moveLowerLabel={text.moveLower}
                     dragLabel={language === "ru" ? "Перетащить" : "Drag to reorder"}
-                    openDetailsLabel={text.openCard}
                     onOpen={() => setSelectedActCode(act.code)}
-                    onMoveHigher={() => moveArtistBy(act.code, -1)}
-                    onMoveLower={() => moveArtistBy(act.code, 1)}
                     onPlaceChange={(nextPlace) => placeArtistAt(act.code, nextPlace - 1)}
                   />
                 );
