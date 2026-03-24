@@ -15,18 +15,20 @@
   - precise place selection inside the artist card
   - custom place picker scrolling and hit targets on iPhone Safari
 - The rebuilt artist sheet needs a real-phone check for:
-  - sticky close button placement
-  - full scroll reachability with browser chrome visible after the fixed-body scroll-lock change
-  - direct profile link visibility before the notes block
-- Direct YouTube links are still missing from most act data:
-  - the sheet can now show a real direct video link when `videoUrl` exists
-  - otherwise it still falls back to the direct official profile, not a curated YouTube song URL
+  - background page scroll must stay locked every time, not just most of the time
+  - full scroll reachability with browser chrome visible after the stronger fixed-body lock
+  - close button hit area and placement on small iPhones
+  - notes/tags visibility before the user reaches the bottom of the sheet
+- Direct song links now go through `/api/video-link`, but still need live verification on prod:
+  - that the resolver finds the correct performance often enough
+  - that iPhone opens the resulting YouTube URL naturally
+  - that fallback to YouTube search is acceptable when no direct watch URL can be extracted
 
 - В `VoteStudio` ещё нужно руками добить поведение модального окна на разных разрешениях.
-- Native `select` для выбора места остаётся уязвимым по UX:
-  - длинные строки
-  - разный рендер в браузерах
-  - неудобство на узких экранах
+- Кастомный список выбора места в карточке ещё нужно проверить на iPhone:
+  - длинные строки страны / артиста
+  - скролл внутри списка мест
+  - работа после первого выбранного места
 - Логика черновика только что изменена и требует ручной проверки:
   - место не должно показываться как будто уже выбрано, пока пользователь ничего не делал
   - после первого действия UI должен стабильно переключаться в режим личного рейтинга

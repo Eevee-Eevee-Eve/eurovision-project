@@ -19,6 +19,7 @@ import { clearRanking, loadNotes, loadPlacedActs, loadRanking, saveNotes, savePl
 import type { ActEntry, ActNote, NoteTone, RoomDetails, StageKey } from "../lib/types";
 import {
   NOTE_TONES,
+  buildActVideoUrl,
   createDefaultRanking,
   getNoteTags,
   hasNote,
@@ -641,7 +642,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
     return {
       profileUrl: act.profileUrl?.trim() || null,
-      videoUrl: act.videoUrl?.trim() || null,
+      videoUrl: buildActVideoUrl(act),
     };
   }
 
@@ -656,6 +657,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     if (!nextIndex) return;
     placeArtistAt(activeCode, nextIndex - 1);
   }
+
+  useEffect(() => {
+    setPlacePickerOpen(false);
+  }, [selectedActCode]);
 
   useEffect(() => {
     let active = true;
@@ -1380,9 +1385,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
       <BottomSheet open={Boolean(selectedAct)} onClose={() => setSelectedActCode(null)}>
         {selectedAct ? (
-          <div className="grid gap-5">
-            <div className="grid grid-cols-[5.25rem_1fr] items-start gap-4 sm:grid-cols-[6.25rem_1fr]">
-              <div className="mx-auto w-full max-w-[6.25rem]">
+          <div className="grid gap-4 md:gap-5">
+            <div className="grid grid-cols-[4.75rem_1fr] items-start gap-3 sm:grid-cols-[5.5rem_1fr] sm:gap-4">
+              <div className="mx-auto w-full max-w-[5.5rem]">
                 <ActPoster act={selectedAct} mode="row" />
               </div>
 
@@ -1406,50 +1411,13 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   ) : null}
                 </div>
 
-                <h3 className="display-copy mt-3 text-[2rem] font-black leading-[0.94] text-white md:text-4xl">
+                <h3 className="display-copy mt-3 text-[1.85rem] font-black leading-[0.94] text-white md:text-4xl">
                   {selectedAct.artist}
                 </h3>
                 <p className="mt-1 text-base text-arenaMuted md:text-lg">{selectedAct.song}</p>
-                <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(selectedAct)}</p>
+                <p className="mt-3 text-sm leading-6 text-arenaMuted">{getActBlurb(selectedAct)}</p>
               </div>
             </div>
-
-            {selectedActLinks.profileUrl || selectedActLinks.videoUrl ? (
-              <div className="show-panel p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.linksTitle}</p>
-                    <p className="mt-2 text-sm leading-6 text-arenaMuted">
-                      {selectedActLinks.videoUrl ? text.watchVideoHint : text.officialProfileHint}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedActLinks.profileUrl ? (
-                      <a
-                        href={selectedActLinks.profileUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
-                      >
-                        <ExternalLink size={15} />
-                        {text.officialProfile}
-                      </a>
-                    ) : null}
-                    {selectedActLinks.videoUrl ? (
-                      <a
-                        href={selectedActLinks.videoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
-                      >
-                        <PlayCircle size={16} />
-                        {text.watchVideo}
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            ) : null}
 
             <div className="show-panel p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1465,30 +1433,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 ) : null}
               </div>
 
-              <div className="mt-4 grid grid-cols-[2.9rem_2.9rem_minmax(0,1fr)] gap-2 sm:grid-cols-[3rem_3rem_minmax(0,1fr)] sm:items-center">
+              <div className="mt-4 grid gap-2.5">
                 <button
                   type="button"
-                  className="arena-button-secondary inline-flex h-[2.9rem] w-[2.9rem] items-center justify-center rounded-[1rem] px-0 text-sm sm:h-12 sm:w-12"
-                  disabled={locked || !placedActsSet.has(selectedAct.code) || rankingMap[selectedAct.code] === 1}
-                  onClick={() => moveArtistBy(selectedAct.code, -1)}
-                  aria-label={text.moveHigher}
-                  title={text.moveHigher}
-                >
-                  <ArrowUp size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="arena-button-secondary inline-flex h-[2.9rem] w-[2.9rem] items-center justify-center rounded-[1rem] px-0 text-sm sm:h-12 sm:w-12"
-                  disabled={locked || !placedActsSet.has(selectedAct.code) || rankingMap[selectedAct.code] === ranking.length}
-                  onClick={() => moveArtistBy(selectedAct.code, 1)}
-                  aria-label={text.moveLower}
-                  title={text.moveLower}
-                >
-                  <ArrowDown size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="arena-input flex h-[2.9rem] items-center justify-between px-4 text-left text-sm sm:h-12"
+                  className="arena-input flex h-11 items-center justify-between px-4 text-left text-sm sm:h-12"
                   onClick={() => setPlacePickerOpen((current) => !current)}
                   disabled={locked}
                   aria-expanded={placePickerOpen}
@@ -1497,11 +1445,36 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   <span className="truncate text-white/92">{getPlacePickerLabel(selectedAct.code)}</span>
                   <ChevronDown size={16} className={`shrink-0 text-arenaMuted transition ${placePickerOpen ? "rotate-180" : ""}`} />
                 </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 rounded-[1rem] px-4 text-sm"
+                    disabled={locked || !placedActsSet.has(selectedAct.code) || rankingMap[selectedAct.code] === 1}
+                    onClick={() => moveArtistBy(selectedAct.code, -1)}
+                    aria-label={text.moveHigher}
+                    title={text.moveHigher}
+                  >
+                    <ArrowUp size={16} />
+                    {text.moveHigher}
+                  </button>
+                  <button
+                    type="button"
+                    className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 rounded-[1rem] px-4 text-sm"
+                    disabled={locked || !placedActsSet.has(selectedAct.code) || rankingMap[selectedAct.code] === ranking.length}
+                    onClick={() => moveArtistBy(selectedAct.code, 1)}
+                    aria-label={text.moveLower}
+                    title={text.moveLower}
+                  >
+                    <ArrowDown size={16} />
+                    {text.moveLower}
+                  </button>
+                </div>
               </div>
 
               {placePickerOpen ? (
-                <div className="show-panel-muted mt-3 p-2">
-                  <div className="max-h-[min(42svh,18rem)] overflow-y-auto overscroll-y-contain pr-1 [-webkit-overflow-scrolling:touch]">
+                <div className="show-panel-muted mt-3 border border-white/8 p-2">
+                  <div className="max-h-[min(40svh,16rem)] overflow-y-auto overscroll-y-contain pr-1 [-webkit-overflow-scrolling:touch]">
                     <div className="grid gap-2">
                       {getPlaceOptions(selectedAct.code).map((option) => (
                         <PlaceOptionRow
@@ -1540,7 +1513,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                     key={`${selectedAct.code}-${tone.key}`}
                     type="button"
                     onClick={() => toggleTone(selectedAct.code, tone.key)}
-                    className={`rounded-full px-2.5 py-1 text-[10px] transition ${
+                    className={`rounded-full px-2.5 py-1 text-[9px] transition sm:text-[10px] ${
                       getNoteTags(notes[selectedAct.code]).includes(tone.key)
                         ? "bg-arenaSurfaceMax text-white shadow-glow"
                         : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
@@ -1552,7 +1525,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               </div>
 
               <textarea
-                className="arena-input mt-4 min-h-[7.5rem] resize-y md:min-h-[9rem]"
+                className="arena-input mt-3 min-h-[6.75rem] resize-y text-sm md:min-h-[8rem]"
                 placeholder={text.notePlaceholder}
                 value={notes[selectedAct.code]?.text || ""}
                 onChange={(event) => updateNote(selectedAct.code, { text: event.target.value })}
@@ -1574,6 +1547,35 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               </div>
             </div>
 
+            {selectedActLinks.videoUrl ? (
+              <div className="show-panel p-4">
+                <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.watchVideo}</p>
+                <p className="mt-2 text-sm leading-6 text-arenaMuted">{text.watchVideoHint}</p>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <a
+                    href={selectedActLinks.videoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
+                  >
+                    <PlayCircle size={16} />
+                    {text.watchVideo}
+                  </a>
+                  {selectedActLinks.profileUrl ? (
+                    <a
+                      href={selectedActLinks.profileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 text-sm text-arenaMuted underline-offset-4 transition hover:text-white hover:underline"
+                    >
+                      <ExternalLink size={14} />
+                      {text.officialProfile}
+                    </a>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+
             <div className="show-panel p-4">
               <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.aboutArtist}</p>
               {getActFacts(selectedAct).length ? (
@@ -1587,15 +1589,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               ) : (
                 <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(selectedAct)}</p>
               )}
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href={`/${roomSlug}/acts/${stageKey}`}
-                className="arena-button-primary inline-flex items-center justify-center px-6 py-3 text-sm"
-              >
-                {text.quickGuide}
-              </Link>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  href={`/${roomSlug}/acts/${stageKey}`}
+                  className="arena-button-primary inline-flex items-center justify-center px-6 py-3 text-sm"
+                >
+                  {text.quickGuide}
+                </Link>
+              </div>
             </div>
           </div>
         ) : null}

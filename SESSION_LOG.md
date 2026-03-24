@@ -148,3 +148,20 @@
 - reworked `BottomSheet` into a bounded mobile sheet with a dedicated inner scroll area
 - switched body scroll lock from `overflow: hidden` only to a fixed-body lock that restores the previous page scroll
 - added clearer screen padding and a stronger bottom safe-area so the sheet no longer feels cut off against browser chrome
+
+### 2026-03-24 direct video + reachable notes pass
+
+- strengthened `BottomSheet` again:
+  - blocks wheel scroll outside the sheet
+  - blocks touch overscroll bounce more aggressively
+  - adds a more explicit lower edge with border + gradient
+- added a new Next route: `frontend/app/api/video-link/route.ts`
+  - tries to resolve a direct YouTube watch URL from the artist/song/country query
+  - falls back to YouTube search results only if direct parsing fails
+- changed `buildActVideoUrl` so artist cards now point to the resolver route instead of raw search results
+- repacked the `vote` artist sheet:
+  - tighter top summary block
+  - compact ranking controls
+  - notes/tags moved higher and kept reachable earlier in the scroll
+  - direct YouTube CTA shown before the long background/facts section
+  - optional official profile kept only as a quieter secondary link
