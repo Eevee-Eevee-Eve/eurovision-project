@@ -93,11 +93,15 @@ export function buildActVideoUrl(act: Pick<ActEntry, "artist" | "song" | "countr
     return act.videoUrl.trim();
   }
 
-  const query = `${act.artist} ${act.song} Eurovision 2026 ${act.country} live`;
-  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+  const query = new URLSearchParams({
+    artist: act.artist,
+    song: act.song,
+    country: act.country,
+  });
+  return `/api/video-link?${query.toString()}`;
 }
 
 export function compactArtistLabel(name: string, limit = 18) {
   if (name.length <= limit) return name;
-  return `${name.slice(0, limit).trim()}…`;
+  return `${name.slice(0, limit).trim()}...`;
 }
