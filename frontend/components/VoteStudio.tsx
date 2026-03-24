@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { ArrowDown, ArrowUp, CheckCircle2, ClipboardList, Lock, NotebookPen, Radio, Search, Send, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, ClipboardList, Lock, NotebookPen, PlayCircle, Radio, RotateCcw, Search, Send, Sparkles } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
   createRoomSocket,
@@ -11,10 +11,12 @@ import {
   joinRoom,
   submitMyPrediction,
 } from "../lib/api";
-import { loadNotes, loadRanking, saveNotes, saveRanking } from "../lib/storage";
+import { clearRanking, loadNotes, loadPlacedActs, loadRanking, saveNotes, savePlacedActs, saveRanking } from "../lib/storage";
 import type { ActEntry, ActNote, NoteTone, RoomDetails, StageKey } from "../lib/types";
 import {
   NOTE_TONES,
+  buildActVideoUrl,
+  compactArtistLabel,
   createDefaultRanking,
   getNoteTags,
   hasNote,
@@ -73,7 +75,8 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   const [lineupReady, setLineupReady] = useState(true);
   const [expectedEntries, setExpectedEntries] = useState(0);
   const [currentEntries, setCurrentEntries] = useState(0);
-  const [hasPersonalRanking, setHasPersonalRanking] = useState(false);
+  const [placedActs, setPlacedActs] = useState<string[]>([]);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const deferredQuery = useDeferredValue(query);
 
   const text = useMemo(() => (
@@ -96,26 +99,36 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           lockedState: "Бюллетень уже зафиксирован",
           lineupLabel: "Состав этапа",
           notesCount: "Заметки",
-          rankingCount: "Мест расставлено",
+          rankingCount: "Артистов расставлено",
           tabs: {
             acts: "Артисты",
             notes: "Заметки",
             order: "Мой порядок",
           },
           searchPlaceholder: "Поиск по артисту, стране или песне",
-          openCard: "Открыть карточку",
+          openCard: "Подробнее",
           aboutArtist: "Об исполнителе",
           noteLabel: "Моя заметка",
           noteHint: "Короткая мысль по ходу шоу, как на бумаге.",
           noteSaved: "Сохранено на этом устройстве",
           noNotesYet: "Пока заметок нет. Выбери тег или напиши короткую мысль.",
           clearNote: "Очистить",
-          rankingLabel: "Моё место",
+          rankingLabel: "Место в моём рейтинге",
+          rankingFieldLabel: "Место артиста в моём рейтинге",
           quickGuide: "Открыть полный гид",
           officialProfile: "Официальный профиль",
-          choosePlace: "Поставить на место",
+          choosePlace: "Поставить артиста на место",
+          choosePlacePlaceholder: "Выбрать место",
           moveHigher: "Выше",
           moveLower: "Ниже",
+          watchVideo: "Посмотреть видео",
+          watchVideoHint: "Открой видео, чтобы быстро вспомнить артиста и вайб номера.",
+          resetRanking: "Сбросить рейтинг",
+          resetRankingConfirmTitle: "Сбросить личный рейтинг?",
+          resetRankingConfirmText: "Все выставленные места будут очищены. Это действие нельзя отменить.",
+          resetRankingConfirmCancel: "Отмена",
+          resetRankingConfirmAction: "Сбросить",
+          openActsTab: "К артистам",
           emptyActs: "Ничего не найдено. Попробуй другой запрос.",
           submitTitle: "Финальная отправка",
           submitText: "Когда порядок готов, зафиксируй его. После отправки этот этап больше нельзя менять.",
@@ -128,23 +141,28 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           loadError: "Не удалось загрузить бюллетень для этого этапа.",
           saveOrderHint: "Порядок и заметки сохраняются локально даже до входа в аккаунт.",
           blockedMessage: "Хост временно убрал тебя из этой комнаты. Смотреть артистов можно, но ответ отправить нельзя.",
-          currentPlace: "Сейчас у тебя",
+          currentPlace: "Этот артист сейчас на",
           notesBoardTitle: "Цифровой лист заметок",
           notesBoardText: "Здесь удобно быстро помечать всех артистов подряд, а не открывать каждую карточку по отдельности.",
           noNoteRows: "Пока нет артистов для заметок.",
-          orderTitle: "Полный порядок мест",
-          orderText: "Это твой окончательный список 1..N. Можно двигать артистов вверх-вниз или поставить сразу на нужное место.",
+          orderTitle: "Личный рейтинг",
+          orderText: "Когда начнёшь расставлять артистов, здесь появится полный порядок 1..N. Пока удобнее выбирать места прямо из списка.",
+          orderEmptyTitle: "Рейтинг пока пуст",
+          orderEmptyText: "Поставь артисту место прямо в списке или открой карточку, чтобы начать собирать личный порядок.",
           summaryTitle: "Статус бюллетеня",
           stageStatusIdle: "Ожидаем шоу",
           stageStatusLive: "Этап в эфире",
           finalContextLabel: "Путь в финал",
           notePlaceholder: "Короткая заметка про номер, вокал, песню или вайб…",
           savedBadge: "Есть заметка",
-          placeUnknown: "Черновик",
+          placeUnknown: "Пока не расставлено",
+          placeUnknownHint: "Выбери место в своём рейтинге",
+          placeOptionCurrent: (place: number) => `#${place} — сейчас здесь`,
+          placeOptionOccupied: (place: number, artist: string) => `#${place} — сейчас ${artist}`,
           tabDescriptions: {
-            acts: "Быстрые карточки артистов для просмотра во время шоу.",
+            acts: "Список артистов с быстрым выбором места и входом в карточку.",
             notes: "Личный цифровой лист заметок по всем артистам.",
-            order: "Полный личный рейтинг 1..N без одинаковых мест.",
+            order: "Личный порядок 1..N, который появляется после первых расстановок.",
           },
         }
       : {
@@ -172,19 +190,29 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
             order: "My order",
           },
           searchPlaceholder: "Search by act, country, or song",
-          openCard: "Open card",
+          openCard: "Open details",
           aboutArtist: "About the artist",
           noteLabel: "My note",
           noteHint: "A quick thought during the show, just like on paper.",
           noteSaved: "Saved on this device",
           noNotesYet: "No notes yet. Pick a tag or write a quick thought.",
           clearNote: "Clear",
-          rankingLabel: "My place",
+          rankingLabel: "Place in my ranking",
+          rankingFieldLabel: "This artist in my ranking",
           quickGuide: "Open full guide",
           officialProfile: "Official profile",
-          choosePlace: "Set place",
+          choosePlace: "Place this artist at",
+          choosePlacePlaceholder: "Choose place",
           moveHigher: "Move up",
           moveLower: "Move down",
+          watchVideo: "Watch video",
+          watchVideoHint: "Open the video to quickly remember the artist and the performance vibe.",
+          resetRanking: "Reset ranking",
+          resetRankingConfirmTitle: "Reset your personal ranking?",
+          resetRankingConfirmText: "All placed positions will be cleared. This action cannot be undone.",
+          resetRankingConfirmCancel: "Cancel",
+          resetRankingConfirmAction: "Reset",
+          openActsTab: "Back to acts",
           emptyActs: "Nothing matched this search.",
           submitTitle: "Final submit",
           submitText: "When the order is ready, lock it in. After submit this stage can no longer be changed.",
@@ -197,57 +225,38 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           loadError: "Unable to load the ballot for this stage.",
           saveOrderHint: "Order and notes are saved locally even before login.",
           blockedMessage: "The host temporarily removed you from this room. You can still browse acts, but you cannot submit.",
-          currentPlace: "Currently",
+          currentPlace: "This artist is currently at",
           notesBoardTitle: "Digital notes sheet",
           notesBoardText: "This is the fastest place to mark everyone in a row without opening every single card.",
           noNoteRows: "No acts available for notes yet.",
-          orderTitle: "Full ranking order",
-          orderText: "This is your final 1..N list. Move acts up or down, or jump straight to the exact place.",
+          orderTitle: "Personal ranking",
+          orderText: "Once you start placing artists, your full 1..N order will appear here. Until then, picking places from the list is faster.",
+          orderEmptyTitle: "Your ranking is still empty",
+          orderEmptyText: "Choose places from the acts list or open any card to start building your order.",
           summaryTitle: "Ballot status",
           stageStatusIdle: "Waiting for the show",
           stageStatusLive: "Stage live",
           finalContextLabel: "Road to the final",
           notePlaceholder: "A quick note about vocals, staging, song, or overall vibe…",
           savedBadge: "Note saved",
-          placeUnknown: "Draft",
+          placeUnknown: "Not placed yet",
+          placeUnknownHint: "Choose a place in your ranking",
+          placeOptionCurrent: (place: number) => `#${place} — currently here`,
+          placeOptionOccupied: (place: number, artist: string) => `#${place} — now ${artist}`,
           tabDescriptions: {
-            acts: "Quick act cards for live browsing during the show.",
+            acts: "Acts list with quick place selection and card details.",
             notes: "Your personal digital notes sheet for every act.",
-            order: "Your full personal ranking 1..N with no duplicate places.",
+            order: "Your personal 1..N order once you start placing acts.",
           },
         }
   ), [language]);
 
-  const toneLabelsLegacy = useMemo(() => (
-    language === "ru"
-      ? {
-          favorite: "Фаворит",
-          watch: "Следить",
-          vocals: "Вокал",
-          skip: "Мимо",
-        }
-      : {
-          favorite: "Favorite",
-          watch: "Watch",
-          vocals: "Vocals",
-          skip: "Skip",
-        }
-  ), [language]);
-
-  const noteTagLabels = {
-    favorite: language === "ru" ? "Р¤Р°РІРѕСЂРёС‚" : "Favorite",
-    winner: language === "ru" ? "РџРѕР±РµРґРёС‚РµР»СЊ" : "Winner",
-    vocals: language === "ru" ? "Р’РѕРєР°Р»" : "Vocals",
-    staging: language === "ru" ? "РќРѕРјРµСЂ" : "Staging",
-    song: language === "ru" ? "РџРµСЃРЅСЏ" : "Song",
-    energy: language === "ru" ? "Р­РЅРµСЂРіРёСЏ" : "Energy",
-    memorable: language === "ru" ? "Р—Р°РїРѕРјРЅРёР»РѕСЃСЊ" : "Memorable",
-    skip: language === "ru" ? "РњРёРјРѕ" : "Skip",
-  } satisfies Record<NoteTone, string>;
-
   const currentStageOpen = room?.predictionWindows[stageKey] ?? false;
   const selectedAct = acts.find((act) => act.code === selectedActCode) || null;
   const rankingMap = useMemo(() => buildRankingMap(ranking), [ranking]);
+  const placedActsSet = useMemo(() => new Set(placedActs), [placedActs]);
+  const hasStartedRanking = placedActs.length > 0;
+  const placedActsCount = placedActs.length;
   const noteCount = useMemo(() => Object.values(notes).filter((entry) => hasNote(entry)).length, [notes]);
   const resolvedNoteTagLabels: Record<NoteTone, string> = useMemo(() => (
     language === "ru"
@@ -273,12 +282,16 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         }
   ), [language]);
 
-  function persistRanking(nextRanking: string[]) {
+  function persistRanking(nextRanking: string[], touchedCodes: string[] = []) {
     const normalized = normalizeRanking(acts, nextRanking);
+    const validCodes = new Set(normalized);
+    const nextPlacedActs = Array.from(new Set([...placedActs, ...touchedCodes])).filter((code) => validCodes.has(code));
+
     setRanking(normalized);
-    setHasPersonalRanking(true);
+    setPlacedActs(nextPlacedActs);
     if (acts.length) {
       saveRanking(roomSlug, stageKey, normalized);
+      savePlacedActs(roomSlug, stageKey, nextPlacedActs);
     }
   }
 
@@ -324,27 +337,62 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     });
   }
 
+  function clearPersonalRankingState() {
+    const baseline = createDefaultRanking(acts);
+    setRanking(baseline);
+    setPlacedActs([]);
+    clearRanking(roomSlug, stageKey);
+  }
+
+  function handleResetRanking() {
+    clearPersonalRankingState();
+    setConfirmResetOpen(false);
+    setStatusText("");
+    setError("");
+  }
+
+  function moveArtistBy(code: string, delta: number) {
+    persistRanking(moveCodeBy(ranking, code, delta), [code]);
+  }
+
+  function placeArtistAt(code: string, nextIndex: number) {
+    persistRanking(moveCodeToIndex(ranking, code, nextIndex), [code]);
+  }
+
+  function getSelectValue(code: string) {
+    if (!placedActsSet.has(code)) return "";
+    const rank = rankingMap[code];
+    return rank ? String(rank) : "";
+  }
+
+  function getCurrentPlaceLabel(code: string) {
+    const rank = rankingMap[code];
+    if (!placedActsSet.has(code) || !rank) return text.placeUnknown;
+    return `#${rank}`;
+  }
+
+  function getCurrentPlaceDescription(code: string) {
+    const rank = rankingMap[code];
+    if (!placedActsSet.has(code) || !rank) return text.placeUnknown;
+    return `${text.currentPlace} #${rank}`;
+  }
+
   function getPlaceOptionLabel(rankIndex: number, currentCode: string) {
     const place = rankIndex + 1;
-    if (!hasPersonalRanking) {
+    if (!hasStartedRanking) {
       return `#${place}`;
     }
+
     const occupantCode = ranking[rankIndex];
     const occupant = acts.find((act) => act.code === occupantCode);
     if (!occupant) return `#${place}`;
-    const compactArtist = occupant.artist.length > 22
-      ? `${occupant.artist.slice(0, 22).trim()}...`
-      : occupant.artist;
+    const compactArtist = compactArtistLabel(occupant.artist, 18);
 
     if (occupant.code === currentCode) {
-      return language === "ru"
-        ? `#${place} - сейчас здесь`
-        : `#${place} - currently here`;
+      return text.placeOptionCurrent(place);
     }
 
-    return language === "ru"
-      ? `#${place} - ${compactArtist}`
-      : `#${place} - ${compactArtist}`;
+    return text.placeOptionOccupied(place, compactArtist);
   }
 
   useEffect(() => {
@@ -370,6 +418,8 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         setCurrentEntries(actsPayload.currentEntries);
 
         const storedNotes = loadNotes(roomSlug, stageKey);
+        const storedRanking = loadRanking(roomSlug, stageKey);
+        const storedPlacedActs = loadPlacedActs(roomSlug, stageKey);
         setNotes(storedNotes);
         saveNotes(roomSlug, stageKey, storedNotes);
 
@@ -391,33 +441,52 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               actsPayload.acts,
               predictionPayload.value.ranking.length
                 ? predictionPayload.value.ranking
-                : loadRanking(roomSlug, stageKey),
+                : storedRanking,
             );
-            const hasSavedRanking = predictionPayload.value.ranking.length > 0 || loadRanking(roomSlug, stageKey).length > 0;
             const baseline = normalized.length ? normalized : createDefaultRanking(actsPayload.acts);
+            const nextPlacedActs = predictionPayload.value.ranking.length > 0
+              ? baseline
+              : storedPlacedActs.length > 0
+                ? storedPlacedActs.filter((code) => baseline.includes(code))
+                : storedRanking.length > 0
+                  ? baseline
+                  : [];
             setRanking(baseline);
-            setHasPersonalRanking(hasSavedRanking);
-            if (hasSavedRanking) {
+            setPlacedActs(nextPlacedActs);
+            if (nextPlacedActs.length > 0) {
               saveRanking(roomSlug, stageKey, baseline);
+              savePlacedActs(roomSlug, stageKey, nextPlacedActs);
             }
             setLocked(predictionPayload.value.locked);
           } else {
-            const fallback = normalizeRanking(actsPayload.acts, loadRanking(roomSlug, stageKey));
+            const fallback = normalizeRanking(actsPayload.acts, storedRanking);
             const baseline = fallback.length ? fallback : createDefaultRanking(actsPayload.acts);
+            const nextPlacedActs = storedPlacedActs.length > 0
+              ? storedPlacedActs.filter((code) => baseline.includes(code))
+              : storedRanking.length > 0
+                ? baseline
+                : [];
             setRanking(baseline);
-            setHasPersonalRanking(loadRanking(roomSlug, stageKey).length > 0);
-            if (loadRanking(roomSlug, stageKey).length > 0) {
+            setPlacedActs(nextPlacedActs);
+            if (nextPlacedActs.length > 0) {
               saveRanking(roomSlug, stageKey, baseline);
+              savePlacedActs(roomSlug, stageKey, nextPlacedActs);
             }
             setLocked(false);
           }
         } else {
-          const fallback = normalizeRanking(actsPayload.acts, loadRanking(roomSlug, stageKey));
+          const fallback = normalizeRanking(actsPayload.acts, storedRanking);
           const baseline = fallback.length ? fallback : createDefaultRanking(actsPayload.acts);
+          const nextPlacedActs = storedPlacedActs.length > 0
+            ? storedPlacedActs.filter((code) => baseline.includes(code))
+            : storedRanking.length > 0
+              ? baseline
+              : [];
           setRanking(baseline);
-          setHasPersonalRanking(loadRanking(roomSlug, stageKey).length > 0);
-          if (loadRanking(roomSlug, stageKey).length > 0) {
+          setPlacedActs(nextPlacedActs);
+          if (nextPlacedActs.length > 0) {
             saveRanking(roomSlug, stageKey, baseline);
+            savePlacedActs(roomSlug, stageKey, nextPlacedActs);
           }
           setLocked(false);
         }
@@ -442,13 +511,22 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   useEffect(() => {
     if (!acts.length || !ranking.length) return;
     const normalized = normalizeRanking(acts, ranking);
+    const normalizedPlacedActs = placedActs.filter((code) => normalized.includes(code));
+
     if (!arraysEqual(normalized, ranking)) {
       setRanking(normalized);
-      if (hasPersonalRanking) {
+      if (hasStartedRanking) {
         saveRanking(roomSlug, stageKey, normalized);
       }
     }
-  }, [acts, hasPersonalRanking, ranking, roomSlug, stageKey]);
+
+    if (!arraysEqual(normalizedPlacedActs, placedActs)) {
+      setPlacedActs(normalizedPlacedActs);
+      if (normalizedPlacedActs.length > 0) {
+        savePlacedActs(roomSlug, stageKey, normalizedPlacedActs);
+      }
+    }
+  }, [acts, hasStartedRanking, placedActs, ranking, roomSlug, stageKey]);
 
   useEffect(() => {
     const socket = createRoomSocket(roomSlug);
@@ -500,8 +578,8 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           ? text.submitDisabledClosed
           : !lineupReady
             ? text.submitDisabledLineup
-            : !hasPersonalRanking
-              ? (language === "ru" ? "Сначала расставь хотя бы несколько мест" : "Start building your ranking first")
+            : !hasStartedRanking
+              ? (language === "ru" ? "Сначала поставь хотя бы одного артиста в рейтинг" : "Start placing at least one act in your ranking")
             : null;
 
   async function handleSubmit() {
@@ -526,12 +604,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     }
   }
 
-  function getCurrentPlaceLabel(code: string) {
-    if (!hasPersonalRanking) return text.placeUnknown;
-    const rank = rankingMap[code];
-    return rank ? `#${rank}` : text.placeUnknown;
-  }
-
   function renderActsTab() {
     return (
       <div className="grid gap-4">
@@ -554,7 +626,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filteredActs.map((act) => {
             const note = notes[act.code];
-            const facts = getActFacts(act).slice(0, 2);
+            const facts = getActFacts(act).slice(0, 1);
             const finalContext = act.stageKey === "final" ? getActContext(act).value : null;
 
             return (
@@ -568,7 +640,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     <span className="show-chip text-xs text-arenaBeam">{getCountryName(act.code, act.country)}</span>
-                    {hasPersonalRanking ? (
+                    {placedActsSet.has(act.code) ? (
                       <span className="show-chip text-xs text-white">
                         {text.rankingLabel} {getCurrentPlaceLabel(act.code)}
                       </span>
@@ -596,21 +668,46 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   </div>
                 </button>
 
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedActCode(act.code)}
-                    className="arena-button-primary flex-1 px-5 py-3 text-sm"
-                  >
-                    <Sparkles size={16} />
-                    {text.openCard}
-                  </button>
-                  <Link
-                    href={`/${roomSlug}/acts/${stageKey}`}
-                    className="arena-button-secondary inline-flex items-center justify-center px-5 py-3 text-sm"
-                  >
-                    {text.quickGuide}
-                  </Link>
+                <div className="mt-5 border-t border-white/6 pt-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.rankingFieldLabel}</p>
+                      <p className="mt-2 text-sm text-arenaMuted">{getCurrentPlaceDescription(act.code)}</p>
+                    </div>
+                    {hasNote(note) ? <span className="show-chip text-xs text-arenaBeam">{text.savedBadge}</span> : null}
+                  </div>
+
+                  <div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <select
+                      className="arena-input h-11 min-w-0"
+                      value={getSelectValue(act.code)}
+                      disabled={locked}
+                      onChange={(event) => {
+                        const nextValue = Number(event.target.value);
+                        if (Number.isFinite(nextValue) && nextValue > 0) {
+                          placeArtistAt(act.code, nextValue - 1);
+                        }
+                      }}
+                    >
+                      <option value="" disabled>
+                        {text.choosePlacePlaceholder}
+                      </option>
+                      {ranking.map((_, rankingIndex) => (
+                        <option key={`${act.code}-list-${rankingIndex + 1}`} value={rankingIndex + 1}>
+                          {getPlaceOptionLabel(rankingIndex, act.code)}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedActCode(act.code)}
+                      className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
+                    >
+                      <Sparkles size={15} />
+                      {text.openCard}
+                    </button>
+                  </div>
                 </div>
               </article>
             );
@@ -649,7 +746,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   <div className="grid gap-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="show-chip text-xs text-arenaBeam">{getCountryName(act.code, act.country)}</span>
-                      {hasPersonalRanking ? (
+                      {placedActsSet.has(act.code) ? (
                         <span className="show-chip text-xs text-white">
                           {text.rankingLabel} {getCurrentPlaceLabel(act.code)}
                         </span>
@@ -670,7 +767,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                           key={`${act.code}-${tone.key}`}
                           type="button"
                           onClick={() => toggleTone(act.code, tone.key)}
-                          className={`rounded-full px-3 py-1.5 text-[11px] transition ${
+                          className={`rounded-full px-2.5 py-1 text-[10px] transition ${
                             getNoteTags(note).includes(tone.key)
                               ? "bg-arenaSurfaceMax text-white shadow-glow"
                               : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
@@ -682,7 +779,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                     </div>
 
                     <textarea
-                      className="arena-input min-h-36 resize-y"
+                      className="arena-input min-h-[9rem] resize-y"
                       placeholder={text.notePlaceholder}
                       value={note?.text || ""}
                       onChange={(event) => updateNote(act.code, { text: event.target.value })}
@@ -713,6 +810,32 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   }
 
   function renderOrderTab() {
+    if (!hasStartedRanking) {
+      return (
+        <div className="grid gap-4">
+          <section className="show-card p-5">
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.orderTitle}</p>
+            <p className="mt-3 text-sm leading-7 text-arenaMuted">{text.orderText}</p>
+          </section>
+
+          <section className="show-card p-5 md:p-6">
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.orderEmptyTitle}</p>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-arenaMuted">{text.orderEmptyText}</p>
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={() => setSelectedTab("acts")}
+                className="arena-button-primary inline-flex h-12 items-center justify-center gap-2 px-5 text-sm"
+              >
+                <Sparkles size={15} />
+                {text.openActsTab}
+              </button>
+            </div>
+          </section>
+        </div>
+      );
+    }
+
     return (
       <div className="grid gap-4">
         <section className="show-card p-5">
@@ -753,18 +876,18 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,14rem)] xl:w-[34rem]">
                   <button
                     type="button"
-                    className="arena-button-secondary px-4 py-3 text-sm"
+                    className="arena-button-secondary h-11 px-4 text-sm"
                     disabled={locked || index === 0}
-                    onClick={() => persistRanking(moveCodeBy(ranking, act.code, -1))}
+                    onClick={() => moveArtistBy(act.code, -1)}
                   >
                     <ArrowUp size={16} />
                     {text.moveHigher}
                   </button>
                   <button
                     type="button"
-                    className="arena-button-secondary px-4 py-3 text-sm"
+                    className="arena-button-secondary h-11 px-4 text-sm"
                     disabled={locked || index === ranking.length - 1}
-                    onClick={() => persistRanking(moveCodeBy(ranking, act.code, 1))}
+                    onClick={() => moveArtistBy(act.code, 1)}
                   >
                     <ArrowDown size={16} />
                     {text.moveLower}
@@ -772,16 +895,19 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   <label className="grid gap-2 text-xs text-arenaMuted sm:col-span-2 xl:col-span-1">
                     <span className="label-copy uppercase tracking-[0.2em]">{text.choosePlace}</span>
                     <select
-                      className="arena-input"
-                      value={hasPersonalRanking ? index + 1 : ""}
+                      className="arena-input h-11"
+                      value={getSelectValue(act.code)}
                       disabled={locked}
-                      onChange={(event) => persistRanking(moveCodeToIndex(ranking, act.code, Number(event.target.value) - 1))}
+                      onChange={(event) => {
+                        const nextValue = Number(event.target.value);
+                        if (Number.isFinite(nextValue) && nextValue > 0) {
+                          placeArtistAt(act.code, nextValue - 1);
+                        }
+                      }}
                     >
-                      {!hasPersonalRanking ? (
-                        <option value="" disabled>
-                          {language === "ru" ? "Выбери место" : "Choose place"}
-                        </option>
-                      ) : null}
+                      <option value="" disabled>
+                        {text.choosePlacePlaceholder}
+                      </option>
                       {ranking.map((_, rankingIndex) => (
                         <option key={`${act.code}-${rankingIndex + 1}`} value={rankingIndex + 1}>
                           {getPlaceOptionLabel(rankingIndex, act.code)}
@@ -802,6 +928,15 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               <p className="mt-3 text-sm leading-7 text-arenaMuted">{text.submitText}</p>
             </div>
             <div className="flex flex-col gap-3 lg:items-end">
+              <button
+                type="button"
+                onClick={() => setConfirmResetOpen(true)}
+                disabled={locked}
+                className="arena-button-secondary flex h-11 items-center justify-center gap-2 px-5 text-sm"
+              >
+                <RotateCcw size={15} />
+                {text.resetRanking}
+              </button>
               <button
                 type="button"
                 onClick={() => void handleSubmit()}
@@ -900,7 +1035,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         </div>
         <div className="show-card p-4">
           <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaMuted">{text.rankingCount}</p>
-          <p className="display-copy mt-2 text-4xl font-black">{ranking.length}</p>
+          <p className="display-copy mt-2 text-4xl font-black">{placedActsCount}</p>
         </div>
       </section>
 
@@ -973,8 +1108,8 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       <BottomSheet open={Boolean(selectedAct)} onClose={() => setSelectedActCode(null)}>
         {selectedAct ? (
           <div className="grid gap-5">
-            <div className="grid gap-4 md:grid-cols-[7rem_1fr] md:items-start">
-              <div className="mx-auto md:mx-0">
+            <div className="grid grid-cols-[5.5rem_1fr] items-start gap-4 sm:grid-cols-[6.75rem_1fr]">
+              <div className="mx-auto w-full max-w-[6.75rem]">
                 <ActPoster act={selectedAct} mode="card" />
               </div>
 
@@ -983,7 +1118,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   <span className="show-chip text-xs text-arenaBeam">
                     {getCountryName(selectedAct.code, selectedAct.country)}
                   </span>
-                  {hasPersonalRanking ? (
+                  {placedActsSet.has(selectedAct.code) ? (
                     <span className="show-chip text-xs text-white">
                       {text.rankingLabel} {getCurrentPlaceLabel(selectedAct.code)}
                     </span>
@@ -1006,10 +1141,13 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
             </div>
 
             <div className="show-panel p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.orderTitle}</p>
-                  <p className="mt-2 text-sm text-arenaMuted">{text.currentPlace} {getCurrentPlaceLabel(selectedAct.code)}</p>
+                  <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.rankingFieldLabel}</p>
+                  <p className="mt-2 text-sm text-arenaMuted">{getCurrentPlaceDescription(selectedAct.code)}</p>
+                  {!placedActsSet.has(selectedAct.code) ? (
+                    <p className="mt-1 text-xs text-arenaMuted/80">{text.placeUnknownHint}</p>
+                  ) : null}
                 </div>
                 {locked ? (
                   <span className="show-chip text-xs text-amber-100">
@@ -1019,38 +1157,41 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 ) : null}
               </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,14rem)]">
+              <div className="mt-4 grid gap-3 sm:grid-cols-[auto_auto_minmax(0,1fr)] sm:items-end">
                 <button
                   type="button"
-                  className="arena-button-secondary px-5 py-3 text-sm"
+                  className="arena-button-secondary h-11 min-w-[7.25rem] px-4 text-sm"
                   disabled={locked || rankingMap[selectedAct.code] === 1}
-                  onClick={() => persistRanking(moveCodeBy(ranking, selectedAct.code, -1))}
+                  onClick={() => moveArtistBy(selectedAct.code, -1)}
                 >
                   <ArrowUp size={16} />
                   {text.moveHigher}
                 </button>
                 <button
                   type="button"
-                  className="arena-button-secondary px-5 py-3 text-sm"
+                  className="arena-button-secondary h-11 min-w-[7.25rem] px-4 text-sm"
                   disabled={locked || rankingMap[selectedAct.code] === ranking.length}
-                  onClick={() => persistRanking(moveCodeBy(ranking, selectedAct.code, 1))}
+                  onClick={() => moveArtistBy(selectedAct.code, 1)}
                 >
                   <ArrowDown size={16} />
                   {text.moveLower}
                 </button>
-                <label className="grid gap-2 text-xs text-arenaMuted sm:col-span-2 xl:col-span-1">
+                <label className="grid gap-2 text-xs text-arenaMuted">
                   <span className="label-copy uppercase tracking-[0.2em]">{text.choosePlace}</span>
                   <select
-                    className="arena-input"
-                    value={hasPersonalRanking ? (rankingMap[selectedAct.code] || 1) : ""}
+                    className="arena-input h-11"
+                    value={getSelectValue(selectedAct.code)}
                     disabled={locked}
-                    onChange={(event) => persistRanking(moveCodeToIndex(ranking, selectedAct.code, Number(event.target.value) - 1))}
+                    onChange={(event) => {
+                      const nextValue = Number(event.target.value);
+                      if (Number.isFinite(nextValue) && nextValue > 0) {
+                        placeArtistAt(selectedAct.code, nextValue - 1);
+                      }
+                    }}
                   >
-                    {!hasPersonalRanking ? (
-                      <option value="" disabled>
-                        {language === "ru" ? "Выбери место" : "Choose place"}
-                      </option>
-                    ) : null}
+                    <option value="" disabled>
+                      {text.choosePlacePlaceholder}
+                    </option>
                     {ranking.map((_, index) => (
                       <option key={`${selectedAct.code}-sheet-${index + 1}`} value={index + 1}>
                         {getPlaceOptionLabel(index, selectedAct.code)}
@@ -1058,6 +1199,24 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                     ))}
                   </select>
                 </label>
+              </div>
+            </div>
+
+            <div className="show-panel p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.watchVideo}</p>
+                  <p className="mt-2 text-sm leading-6 text-arenaMuted">{text.watchVideoHint}</p>
+                </div>
+                <a
+                  href={buildActVideoUrl(selectedAct)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
+                >
+                  <PlayCircle size={16} />
+                  {text.watchVideo}
+                </a>
               </div>
             </div>
 
@@ -1081,7 +1240,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                     key={`${selectedAct.code}-${tone.key}`}
                     type="button"
                     onClick={() => toggleTone(selectedAct.code, tone.key)}
-                    className={`rounded-full px-3 py-1.5 text-[11px] transition ${
+                    className={`rounded-full px-2.5 py-1 text-[10px] transition ${
                       getNoteTags(notes[selectedAct.code]).includes(tone.key)
                         ? "bg-arenaSurfaceMax text-white shadow-glow"
                         : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
@@ -1093,7 +1252,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               </div>
 
               <textarea
-                className="arena-input mt-4 min-h-36 resize-y"
+                className="arena-input mt-4 min-h-[9.5rem] resize-y"
                 placeholder={text.notePlaceholder}
                 value={notes[selectedAct.code]?.text || ""}
                 onChange={(event) => updateNote(selectedAct.code, { text: event.target.value })}
@@ -1150,6 +1309,33 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
             </div>
           </div>
         ) : null}
+      </BottomSheet>
+
+      <BottomSheet open={confirmResetOpen} onClose={() => setConfirmResetOpen(false)}>
+        <div className="grid gap-5">
+          <div>
+            <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaPulse">{text.resetRanking}</p>
+            <h3 className="display-copy mt-3 text-3xl font-black text-white">{text.resetRankingConfirmTitle}</h3>
+            <p className="mt-4 text-sm leading-7 text-arenaMuted">{text.resetRankingConfirmText}</p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setConfirmResetOpen(false)}
+              className="arena-button-secondary h-12 px-5 text-sm"
+            >
+              {text.resetRankingConfirmCancel}
+            </button>
+            <button
+              type="button"
+              onClick={handleResetRanking}
+              className="arena-button-primary h-12 px-5 text-sm"
+            >
+              {text.resetRankingConfirmAction}
+            </button>
+          </div>
+        </div>
       </BottomSheet>
     </div>
   );

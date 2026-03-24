@@ -1,12 +1,12 @@
 'use client';
 
 import Link from "next/link";
-import { NotebookPen, Search } from "lucide-react";
+import { NotebookPen, PlayCircle, Search } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { fetchActs, fetchRoom } from "../lib/api";
-import { loadNotes, loadRanking, saveNotes } from "../lib/storage";
+import { loadNotes, loadPlacedActs, loadRanking, saveNotes } from "../lib/storage";
 import type { ActEntry, ActNote, RoomDetails, StageKey } from "../lib/types";
-import { getNoteTags, hasNote, normalizeRanking, NOTE_TONES } from "../lib/vote-utils";
+import { buildActVideoUrl, getNoteTags, hasNote, normalizeRanking, NOTE_TONES } from "../lib/vote-utils";
 import { ActPoster } from "./ActPoster";
 import { BottomSheet } from "./BottomSheet";
 import { StageSwitch } from "./StageSwitch";
@@ -18,7 +18,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
   const [lineupReady, setLineupReady] = useState(true);
   const [expectedEntries, setExpectedEntries] = useState(0);
   const [rankingMap, setRankingMap] = useState<Record<string, number>>({});
-  const [hasPersonalRanking, setHasPersonalRanking] = useState(false);
+  const [placedActs, setPlacedActs] = useState<string[]>([]);
   const [notes, setNotes] = useState<Record<string, ActNote>>({});
   const [query, setQuery] = useState("");
   const [selectedActCode, setSelectedActCode] = useState<string | null>(null);
@@ -39,7 +39,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
           openVoteStudio: "Открыть бюллетень",
           stageForming: "Состав этапа ещё формируется",
           stageFormingText: (count: number, total: number) => `Сейчас подтверждено ${count} из ${total} участников. Когда состав станет полным, карточки автоматически выстроятся под официальный этап.`,
-          currentPlace: "Моё место",
+          currentPlace: "Место в моём рейтинге",
           aboutArtist: "Об исполнителе",
           noteLabel: "Моя заметка",
           noNotesYet: "Пока нет заметки. Открой артиста и оставь быструю пометку, как на бумаге.",
@@ -47,7 +47,10 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
           tapToAddNote: "Открой карточку и добавь заметку",
           clearNote: "Очистить заметку",
           officialProfile: "Официальный профиль",
+          watchVideo: "Посмотреть видео",
+          watchVideoHint: "Если забыли выступление, можно быстро освежить его в памяти.",
           noteSavedBadge: "Есть заметка",
+          placeUnknown: "Пока не расставлено",
         }
       : {
           kicker: "Companion screen",
@@ -59,7 +62,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
           openVoteStudio: "Open ballot",
           stageForming: "Stage lineup is still forming",
           stageFormingText: (count: number, total: number) => `${count} of ${total} acts are confirmed right now. Once the lineup is complete, these cards will align to the official stage setup.`,
-          currentPlace: "My place",
+          currentPlace: "Place in my ranking",
           aboutArtist: "About the artist",
           noteLabel: "My note",
           noNotesYet: "No note yet. Open the act and keep one fast note just like on paper.",
@@ -67,34 +70,12 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
           tapToAddNote: "Open the card to add a note",
           clearNote: "Clear note",
           officialProfile: "Official profile",
+          watchVideo: "Watch video",
+          watchVideoHint: "Open the video to quickly remember the act and the vibe.",
           noteSavedBadge: "Note saved",
+          placeUnknown: "Not placed yet",
         }
   ), [language]);
-
-  const toneLabels = language === "ru"
-    ? {
-        favorite: "Фаворит",
-        watch: "Надо следить",
-        vocals: "Вокал",
-        skip: "Не моё",
-      }
-    : {
-        favorite: "Favorite",
-        watch: "Watch",
-        vocals: "Vocals",
-        skip: "Skip",
-      };
-
-  const noteTagLabels = {
-    favorite: language === "ru" ? "Р¤Р°РІРѕСЂРёС‚" : "Favorite",
-    winner: language === "ru" ? "РџРѕР±РµРґРёС‚РµР»СЊ" : "Winner",
-    vocals: language === "ru" ? "Р’РѕРєР°Р»" : "Vocals",
-    staging: language === "ru" ? "РќРѕРјРµСЂ" : "Staging",
-    song: language === "ru" ? "РџРµСЃРЅСЏ" : "Song",
-    energy: language === "ru" ? "Р­РЅРµСЂРіРёСЏ" : "Energy",
-    memorable: language === "ru" ? "Р—Р°РїРѕРјРЅРёР»РѕСЃСЊ" : "Memorable",
-    skip: language === "ru" ? "РќРµ РјРѕС‘" : "Skip",
-  } as const;
   const resolvedNoteTagLabels = language === "ru"
     ? {
         favorite: "Фаворит",
@@ -124,6 +105,8 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
     return selectedTags.map((tone) => resolvedNoteTagLabels[tone]).join(", ") || text.noNotesYet;
   }
 
+  const placedActsSet = useMemo(() => new Set(placedActs), [placedActs]);
+
   function persistNotes(nextNotes: Record<string, ActNote>) {
     saveNotes(roomSlug, stageKey, nextNotes);
     return nextNotes;
@@ -148,7 +131,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
     });
   }
 
-  function toggleTone(code: string, toneKey: keyof typeof noteTagLabels) {
+  function toggleTone(code: string, toneKey: (typeof NOTE_TONES)[number]["key"]) {
     const currentTags = getNoteTags(notes[code]);
     const nextTags = currentTags.includes(toneKey)
       ? currentTags.filter((entry) => entry !== toneKey)
@@ -181,6 +164,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
 
         const storedNotes = loadNotes(roomSlug, stageKey);
         const rawStoredRanking = loadRanking(roomSlug, stageKey);
+        const storedPlacedActs = loadPlacedActs(roomSlug, stageKey);
         const storedRanking = normalizeRanking(actsPayload.acts, rawStoredRanking);
 
         setRoom(roomPayload);
@@ -193,7 +177,13 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
             return acc;
           }, {}),
         );
-        setHasPersonalRanking(rawStoredRanking.length > 0);
+        setPlacedActs(
+          storedPlacedActs.length > 0
+            ? storedPlacedActs.filter((code) => storedRanking.includes(code))
+            : rawStoredRanking.length > 0
+              ? storedRanking
+              : [],
+        );
         setNotes(storedNotes);
         setLoading(false);
         setError("");
@@ -302,11 +292,13 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="show-chip text-xs text-arenaBeam">{getCountryName(act.code, act.country)}</span>
-                {hasPersonalRanking ? (
+                {placedActsSet.has(act.code) ? (
                   <span className="show-chip text-xs text-white">
                     {text.currentPlace} #{rankingMap[act.code]}
                   </span>
-                ) : null}
+                ) : (
+                  <span className="show-chip text-xs text-arenaMuted">{text.placeUnknown}</span>
+                )}
                 {finalContext ? (
                   <span className="show-chip text-xs text-arenaMuted">{finalContext.value}</span>
                 ) : null}
@@ -344,8 +336,8 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
       <BottomSheet open={Boolean(selectedAct)} onClose={() => setSelectedActCode(null)}>
         {selectedAct ? (
           <div className="grid gap-5">
-            <div className="grid gap-4 md:grid-cols-[7rem_1fr] md:items-start">
-              <div className="mx-auto md:mx-0">
+            <div className="grid grid-cols-[5.5rem_1fr] items-start gap-4 sm:grid-cols-[6.75rem_1fr]">
+              <div className="mx-auto w-full max-w-[6.75rem]">
                 <ActPoster act={selectedAct} mode="card" />
               </div>
 
@@ -354,11 +346,13 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
                   <span className="show-chip text-xs text-arenaBeam">
                     {getCountryName(selectedAct.code, selectedAct.country)}
                   </span>
-                  {hasPersonalRanking ? (
+                  {placedActsSet.has(selectedAct.code) ? (
                     <span className="show-chip text-xs text-white">
                       {text.currentPlace} #{rankingMap[selectedAct.code]}
                     </span>
-                  ) : null}
+                  ) : (
+                    <span className="show-chip text-xs text-arenaMuted">{text.placeUnknown}</span>
+                  )}
                   {selectedAct.stageKey === "final" ? (
                     <span className="show-chip text-xs text-arenaMuted">{getActContext(selectedAct).value}</span>
                   ) : null}
@@ -406,7 +400,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
                     key={tone.key}
                     type="button"
                     onClick={() => toggleTone(selectedAct.code, tone.key)}
-                    className={`rounded-full px-3 py-1.5 text-[11px] transition ${
+                    className={`rounded-full px-2.5 py-1 text-[10px] transition ${
                       getNoteTags(notes[selectedAct.code]).includes(tone.key)
                         ? "bg-arenaSurfaceMax text-white shadow-glow"
                         : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
@@ -418,7 +412,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
               </div>
 
               <textarea
-                className="arena-input mt-4 min-h-36 resize-y"
+                className="arena-input mt-4 min-h-[9rem] resize-y"
                 placeholder={text.noNotesYet}
                 value={notes[selectedAct.code]?.text || ""}
                 onChange={(event) => updateNote(selectedAct.code, { text: event.target.value })}
@@ -435,6 +429,22 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
                     {text.clearNote}
                   </button>
                 ) : null}
+              </div>
+            </div>
+
+            <div className="show-panel p-4">
+              <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.watchVideo}</p>
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm leading-6 text-arenaMuted">{text.watchVideoHint}</p>
+                <a
+                  href={buildActVideoUrl(selectedAct)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
+                >
+                  <PlayCircle size={16} />
+                  {text.watchVideo}
+                </a>
               </div>
             </div>
 
