@@ -4,7 +4,7 @@ import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, CheckCircle2, ClipboardList, GripVertical, Lock, NotebookPen, PlayCircle, Radio, RotateCcw, Search, Send, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, GripVertical, Lock, NotebookPen, PlayCircle, Radio, RotateCcw, Search, Send, Sparkles } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
   createRoomSocket,
@@ -35,7 +35,7 @@ import { StageSwitch } from "./StageSwitch";
 import { useLanguage } from "./LanguageProvider";
 import { UserAvatar } from "./UserAvatar";
 
-type VoteTab = "acts" | "notes" | "order";
+type VoteTab = "acts" | "notes";
 
 function arraysEqual(left: string[], right: string[]) {
   if (left.length !== right.length) return false;
@@ -654,9 +654,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               ? baseline
               : storedPlacedActs.length > 0
                 ? storedPlacedActs.filter((code) => baseline.includes(code))
-                : storedRanking.length > 0
-                  ? baseline
-                  : [];
+                : [];
             setRanking(baseline);
             setPlacedActs(nextPlacedActs);
             if (nextPlacedActs.length > 0) {
@@ -669,9 +667,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
             const baseline = fallback.length ? fallback : createDefaultRanking(actsPayload.acts);
             const nextPlacedActs = storedPlacedActs.length > 0
               ? storedPlacedActs.filter((code) => baseline.includes(code))
-              : storedRanking.length > 0
-                ? baseline
-                : [];
+              : [];
             setRanking(baseline);
             setPlacedActs(nextPlacedActs);
             if (nextPlacedActs.length > 0) {
@@ -685,9 +681,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           const baseline = fallback.length ? fallback : createDefaultRanking(actsPayload.acts);
           const nextPlacedActs = storedPlacedActs.length > 0
             ? storedPlacedActs.filter((code) => baseline.includes(code))
-            : storedRanking.length > 0
-              ? baseline
-              : [];
+            : [];
           setRanking(baseline);
           setPlacedActs(nextPlacedActs);
           if (nextPlacedActs.length > 0) {
@@ -770,6 +764,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     );
   }, [acts, placedActsSet, rankingMap]);
 
+  const unplacedFilteredActs = useMemo(() => {
+    return filteredActs.filter((act) => !placedActsSet.has(act.code));
+  }, [filteredActs, placedActsSet]);
+
   const notesRows = useMemo(() => {
     return sortActsByRanking(acts, rankingMap).sort((left, right) => {
       const leftNoted = hasNote(notes[left.code]);
@@ -808,7 +806,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       const payload = await submitMyPrediction(roomSlug, stageKey, ranking);
       setLocked(payload.locked);
       setStatusText(text.submitSuccess);
-      setSelectedTab("order");
+      setSelectedTab("acts");
     } catch (submitError) {
       console.error(submitError);
       setError(submitError instanceof Error ? submitError.message : text.submitDisabledClosed);
@@ -820,6 +818,73 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   function renderActsTab() {
     return (
       <div className="grid gap-4">
+        {hasStartedRanking ? (
+          <section className="show-card p-4 md:p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
+                <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.orderTitle}</p>
+                <p className="mt-3 text-sm leading-7 text-arenaMuted">
+                  {language === "ru"
+                    ? "Здесь твой текущий порядок. Перетаскивай артистов прямо в списке или двигай их кнопками на шаг выше и ниже."
+                    : "This is your current order. Drag acts right here in the list or nudge them up and down."}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="show-chip text-xs text-white">
+                  {language === "ru" ? `Расставлено ${placedActsCount} из ${acts.length}` : `${placedActsCount} of ${acts.length} placed`}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setConfirmResetOpen(true)}
+                  disabled={locked}
+                  className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
+                >
+                  <RotateCcw size={15} />
+                  {text.resetRanking}
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {hasStartedRanking ? (
+          <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={handleOrderDragEnd}>
+            <SortableContext items={placedActsSorted.map((act) => act.code)} strategy={verticalListSortingStrategy}>
+              <section className="grid gap-3">
+                {placedActsSorted.map((act) => {
+                  const rank = rankingMap[act.code] ?? 0;
+                  const note = notes[act.code];
+                  return (
+                    <SortableOrderRow
+                      key={act.code}
+                      act={act}
+                      rank={rank}
+                      countryName={getCountryName(act.code, act.country)}
+                      noteSummary={getNoteSummaryText(note)}
+                      noteBadge={hasNote(note) ? text.savedBadge : null}
+                      finalContext={act.stageKey === "final" ? getActContext(act).value : null}
+                      locked={locked}
+                      canMoveHigher={rank > 1}
+                      canMoveLower={rank < ranking.length}
+                      selectValue={getSelectValue(act.code)}
+                      placeOptions={getPlaceOptions(act.code)}
+                      choosePlacePlaceholder={text.choosePlacePlaceholder}
+                      moveHigherLabel={text.moveHigher}
+                      moveLowerLabel={text.moveLower}
+                      dragLabel={language === "ru" ? "Перетащить" : "Drag to reorder"}
+                      openDetailsLabel={text.openCard}
+                      onOpen={() => setSelectedActCode(act.code)}
+                      onMoveHigher={() => moveArtistBy(act.code, -1)}
+                      onMoveLower={() => moveArtistBy(act.code, 1)}
+                      onPlaceChange={(nextPlace) => placeArtistAt(act.code, nextPlace - 1)}
+                    />
+                  );
+                })}
+              </section>
+            </SortableContext>
+          </DndContext>
+        ) : null}
+
         <section className="show-card p-4">
           <div className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-arenaMuted" size={18} />
@@ -832,23 +897,35 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           </div>
         </section>
 
-        {filteredActs.length === 0 ? (
-          <section className="show-card p-5 text-sm text-arenaMuted">{text.emptyActs}</section>
+        {((!hasStartedRanking && filteredActs.length === 0) || (hasStartedRanking && unplacedFilteredActs.length === 0)) ? (
+          <section className="show-card p-5 text-sm text-arenaMuted">
+            {hasStartedRanking && !deferredQuery.trim()
+              ? (language === "ru" ? "Все артисты уже добавлены в твой порядок." : "All acts are already added to your order.")
+              : text.emptyActs}
+          </section>
+        ) : null}
+
+        {hasStartedRanking ? (
+          <section className="show-card p-4 text-sm text-arenaMuted">
+            {language === "ru"
+              ? `Осталось добавить в рейтинг: ${acts.length - placedActsCount}. Ниже список тех, кто ещё не расставлен.`
+              : `${acts.length - placedActsCount} acts are still unplaced. Add them from the list below.`}
+          </section>
         ) : null}
 
         <section className="grid gap-3">
-          {filteredActs.map((act) => {
+          {(hasStartedRanking ? unplacedFilteredActs : filteredActs).map((act) => {
             const note = notes[act.code];
             const finalContext = act.stageKey === "final" ? getActContext(act).value : null;
             const noteSummary = getNoteSummaryText(note);
 
             return (
               <article key={act.code} className="show-card p-4">
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_15rem] lg:items-center">
+                <div className="grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-4">
                   <button
                     type="button"
                     onClick={() => setSelectedActCode(act.code)}
-                    className="grid min-w-0 gap-4 text-left sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center"
+                    className="grid min-w-0 gap-3 text-left sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center"
                   >
                     <div className="shrink-0">
                       <ActPoster act={act} mode="row" />
@@ -857,28 +934,23 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="show-chip text-xs text-arenaBeam">{getCountryName(act.code, act.country)}</span>
-                        {placedActsSet.has(act.code) ? (
-                          <span className="show-chip text-xs text-white">
-                            {text.rankingLabel} {getCurrentPlaceLabel(act.code)}
-                          </span>
-                        ) : (
-                          <span className="show-chip text-xs text-arenaMuted">{text.placeUnknown}</span>
-                        )}
                         {finalContext ? (
                           <span className="show-chip text-xs text-arenaMuted">{finalContext}</span>
                         ) : null}
                         {hasNote(note) ? <span className="show-chip text-xs text-white">{text.savedBadge}</span> : null}
                       </div>
 
-                      <h3 className="mt-3 truncate text-xl font-semibold leading-tight text-white">{act.artist}</h3>
+                      <h3 className="mt-2 truncate text-lg font-semibold leading-tight text-white md:text-xl">{act.artist}</h3>
                       <p className="mt-1 truncate text-sm text-arenaMuted">{act.song}</p>
-                      <p className="mt-3 line-clamp-2 text-sm leading-6 text-arenaMuted">
-                        {noteSummary || text.noteHint}
-                      </p>
+                      {noteSummary ? (
+                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-arenaMuted md:text-sm md:leading-6">
+                          {noteSummary}
+                        </p>
+                      ) : null}
                     </div>
                   </button>
 
-                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-1">
+                  <div className="grid gap-2 lg:grid-cols-1">
                     <select
                       className="arena-input h-11 min-w-0"
                       value={getSelectValue(act.code)}
@@ -913,6 +985,27 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               </article>
             );
           })}
+        </section>
+
+        <section className="show-card sticky bottom-4 z-10 p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.submitTitle}</p>
+              <p className="mt-3 text-sm leading-7 text-arenaMuted">{text.submitText}</p>
+            </div>
+            <div className="flex flex-col gap-3 lg:items-end">
+              <button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={Boolean(submitDisabledReason) || submitting}
+                className="arena-button-primary flex h-14 items-center justify-center gap-2 px-8 text-sm"
+              >
+                <Send size={16} />
+                {submitting ? "..." : text.submitButton}
+              </button>
+              <p className="text-sm text-arenaMuted">{submitDisabledReason || text.saveOrderHint}</p>
+            </div>
+          </div>
         </section>
       </div>
     );
@@ -1248,11 +1341,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           {([
             { key: "acts", icon: Sparkles },
             { key: "notes", icon: NotebookPen },
-            { key: "order", icon: ClipboardList },
           ] as const).map((tab) => {
             const Icon = tab.icon;
             const active = selectedTab === tab.key;
-            const counter = tab.key === "notes" ? noteCount : tab.key === "order" ? placedActsCount : acts.length;
+            const counter = tab.key === "notes" ? noteCount : acts.length;
             return (
               <button
                 key={tab.key}
@@ -1279,7 +1371,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
       {selectedTab === "acts" ? renderActsTab() : null}
       {selectedTab === "notes" ? renderNotesTab() : null}
-      {selectedTab === "order" ? renderOrderTab() : null}
 
       <BottomSheet open={Boolean(selectedAct)} onClose={() => setSelectedActCode(null)}>
         {selectedAct ? (

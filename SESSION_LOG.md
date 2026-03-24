@@ -86,6 +86,11 @@
 - added a larger `row` poster mode for faster artist recognition in dense lists
 - removed fake occupied labels for untouched places; empty slots now read as free
 - kept notes inside the artist card, but exposed note state and note summary directly in the list/order rows
+- then simplified the IA one step further:
+  - the `acts` tab now contains the working ranking flow directly
+  - current placed acts appear first and are reorderable there
+  - remaining unplaced acts stay below as the add-to-ranking list
+  - the separate `order` tab was effectively removed from the main UX path
 
 ### Manual Check Next
 
