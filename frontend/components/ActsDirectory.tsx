@@ -180,9 +180,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
         setPlacedActs(
           storedPlacedActs.length > 0
             ? storedPlacedActs.filter((code) => storedRanking.includes(code))
-            : rawStoredRanking.length > 0
-              ? storedRanking
-              : [],
+            : [],
         );
         setNotes(storedNotes);
         setLoading(false);
