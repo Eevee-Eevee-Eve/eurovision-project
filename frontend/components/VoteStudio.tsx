@@ -4,7 +4,7 @@ import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, CheckCircle2, GripVertical, Lock, NotebookPen, PlayCircle, Radio, RotateCcw, Search, Send, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, CheckCircle2, ChevronDown, ExternalLink, GripVertical, Lock, NotebookPen, PlayCircle, Radio, RotateCcw, Search, Send, Sparkles } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
   createRoomSocket,
@@ -19,7 +19,6 @@ import { clearRanking, loadNotes, loadPlacedActs, loadRanking, saveNotes, savePl
 import type { ActEntry, ActNote, NoteTone, RoomDetails, StageKey } from "../lib/types";
 import {
   NOTE_TONES,
-  buildActVideoUrl,
   createDefaultRanking,
   getNoteTags,
   hasNote,
@@ -61,7 +60,12 @@ function sortActsByRanking(acts: ActEntry[], rankingMap: Record<string, number>)
 
 type PlaceOption = {
   value: number;
-  label: string;
+  state: "current" | "occupied" | "free";
+  countryName: string | null;
+  flagUrl: string | null;
+  artist: string | null;
+  song: string | null;
+  caption: string;
 };
 
 function CountryBadge({
@@ -84,6 +88,50 @@ function CountryBadge({
       </span>
       <span className="truncate">{countryName}</span>
     </span>
+  );
+}
+
+function PlaceOptionRow({
+  option,
+  selected,
+  onSelect,
+}: {
+  option: PlaceOption;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`w-full rounded-[1.25rem] border px-3 py-3 text-left transition ${
+        selected
+          ? "border-arenaBeam/30 bg-arenaBeam/10 text-white shadow-[0_8px_24px_rgba(129,236,255,0.12)]"
+          : "border-white/6 bg-white/[0.04] text-white/92 hover:bg-white/[0.07]"
+      }`}
+    >
+      <div className="grid grid-cols-[auto_1fr_auto] items-start gap-3">
+        <div className="show-rank h-10 w-10 shrink-0">
+          <span className="display-copy text-sm font-black text-arenaText">{option.value}</span>
+        </div>
+        <div className="min-w-0">
+          {option.countryName ? (
+            <CountryBadge countryName={option.countryName} flagUrl={option.flagUrl} />
+          ) : (
+            <span className="show-chip px-2.5 py-1 text-[11px] text-arenaMuted">{option.caption}</span>
+          )}
+          {option.artist ? (
+            <p className="mt-2 line-clamp-1 text-sm font-medium text-white">{option.artist}</p>
+          ) : null}
+          <p className="mt-1 line-clamp-1 text-xs text-arenaMuted">
+            {option.song || option.caption}
+          </p>
+        </div>
+        <span className="mt-1 inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-arenaBeam">
+          {selected ? <Check size={15} /> : <span className="h-1.5 w-1.5 rounded-full bg-white/25" />}
+        </span>
+      </div>
+    </button>
   );
 }
 
@@ -191,6 +239,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   const [locked, setLocked] = useState(false);
   const [selectedTab, setSelectedTab] = useState<VoteTab>("acts");
   const [selectedActCode, setSelectedActCode] = useState<string | null>(null);
+  const [placePickerOpen, setPlacePickerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [statusText, setStatusText] = useState("");
@@ -239,7 +288,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           rankingLabel: "Место в моём рейтинге",
           rankingFieldLabel: "Место артиста в моём рейтинге",
           quickGuide: "Открыть полный гид",
+          linksTitle: "Прямые ссылки",
           officialProfile: "Официальный профиль",
+          officialProfileHint: "Открой страницу артиста напрямую, без поиска по YouTube.",
           choosePlace: "Поставить артиста на место",
           choosePlacePlaceholder: "Выбрать место",
           moveHigher: "Выше",
@@ -324,7 +375,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           rankingLabel: "Place in my ranking",
           rankingFieldLabel: "This artist in my ranking",
           quickGuide: "Open full guide",
+          linksTitle: "Direct links",
           officialProfile: "Official profile",
+          officialProfileHint: "Open the artist page directly without a YouTube search.",
           choosePlace: "Place this artist at",
           choosePlacePlaceholder: "Choose place",
           moveHigher: "Move up",
@@ -378,6 +431,15 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
   const currentStageOpen = room?.predictionWindows[stageKey] ?? false;
   const selectedAct = acts.find((act) => act.code === selectedActCode) || null;
+  const selectedActLinks = useMemo(() => getActLinks(selectedAct), [selectedAct]);
+  const actsByCode = useMemo(
+    () =>
+      acts.reduce<Record<string, ActEntry>>((acc, act) => {
+        acc[act.code] = act;
+        return acc;
+      }, {}),
+    [acts],
+  );
   const rankingMap = useMemo(() => buildRankingMap(ranking), [ranking]);
   const placedActsSet = useMemo(() => new Set(placedActs), [placedActs]);
   const hasStartedRanking = placedActs.length > 0;
@@ -494,12 +556,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     persistRanking(moveCodeToIndex(ranking, code, nextIndex), [code]);
   }
 
-  function getSelectValue(code: string) {
-    if (!placedActsSet.has(code)) return "";
-    const rank = rankingMap[code];
-    return rank ? String(rank) : "";
-  }
-
   function getCurrentPlaceLabel(code: string) {
     const rank = rankingMap[code];
     if (!placedActsSet.has(code) || !rank) return text.placeUnknown;
@@ -512,25 +568,60 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     return `${text.currentPlace} #${rank}`;
   }
 
-  function getPlaceOptionLabel(rankIndex: number, currentCode: string) {
-    const place = rankIndex + 1;
-    const occupantCode = ranking[rankIndex];
-    if (!hasStartedRanking || !occupantCode) {
-      return `#${place}`;
-    }
+  function getPlaceOptions(code: string) {
+    const currentAct = actsByCode[code];
+    const currentRank = rankingMap[code];
 
-    if (occupantCode === currentCode && placedActsSet.has(currentCode)) {
-      return `#${place}`;
-    }
+    return ranking.map((_, rankingIndex) => {
+      const value = rankingIndex + 1;
+      const occupantCode = ranking[rankingIndex];
+      const occupantAct = occupantCode ? actsByCode[occupantCode] : null;
+      const occupantIsPlaced = occupantCode ? placedActsSet.has(occupantCode) : false;
 
-    return `#${place}`;
+      if (currentAct && placedActsSet.has(code) && currentRank === value) {
+        return {
+          value,
+          state: "current" as const,
+          countryName: getCountryName(currentAct.code, currentAct.country),
+          flagUrl: resolveMediaUrl(currentAct.flagUrl),
+          artist: currentAct.artist,
+          song: currentAct.song,
+          caption: text.placeOptionCurrent(value),
+        };
+      }
+
+      if (occupantAct && occupantIsPlaced) {
+        return {
+          value,
+          state: "occupied" as const,
+          countryName: getCountryName(occupantAct.code, occupantAct.country),
+          flagUrl: resolveMediaUrl(occupantAct.flagUrl),
+          artist: occupantAct.artist,
+          song: occupantAct.song,
+          caption: text.placeOptionOccupied(value, occupantAct.artist),
+        };
+      }
+
+      return {
+        value,
+        state: "free" as const,
+        countryName: null,
+        flagUrl: null,
+        artist: null,
+        song: null,
+        caption: text.placeOptionFree(value),
+      };
+    });
   }
 
-  function getPlaceOptions(code: string) {
-    return ranking.map((_, rankingIndex) => ({
-      value: rankingIndex + 1,
-      label: getPlaceOptionLabel(rankingIndex, code),
-    }));
+  function getPlacePickerLabel(code: string) {
+    const act = actsByCode[code];
+    const rank = rankingMap[code];
+    if (!act || !placedActsSet.has(code) || !rank) {
+      return text.choosePlacePlaceholder;
+    }
+
+    return `#${rank} · ${getCountryName(act.code, act.country)}`;
   }
 
   function getNoteSummaryText(note?: ActNote | null) {
@@ -538,6 +629,20 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     if (!note || (!note.text.trim() && !tags.length)) return null;
     if (note.text.trim()) return note.text.trim();
     return tags.map((tone) => resolvedNoteTagLabels[tone]).join(" · ");
+  }
+
+  function getActLinks(act: ActEntry | null) {
+    if (!act) {
+      return {
+        profileUrl: null,
+        videoUrl: null,
+      };
+    }
+
+    return {
+      profileUrl: act.profileUrl?.trim() || null,
+      videoUrl: act.videoUrl?.trim() || null,
+    };
   }
 
   function handleOrderDragEnd(event: DragEndEvent) {
@@ -715,6 +820,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     );
   }, [acts, placedActsSet, rankingMap]);
 
+  useEffect(() => {
+    setPlacePickerOpen(false);
+  }, [selectedActCode]);
+
   const placedFilteredActs = useMemo(() => {
     return filteredActs.filter((act) => placedActsSet.has(act.code));
   }, [filteredActs, placedActsSet]);
@@ -838,9 +947,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
         <section className="show-card p-4">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-arenaMuted" size={18} />
+            <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-arenaMuted" size={16} />
             <input
-              className="arena-input h-12 pl-14 pr-4 text-sm"
+              className="arena-input h-11 pl-12 pr-4 text-sm md:h-12 md:pl-14"
               placeholder={text.searchPlaceholder}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -1272,16 +1381,17 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       <BottomSheet open={Boolean(selectedAct)} onClose={() => setSelectedActCode(null)}>
         {selectedAct ? (
           <div className="grid gap-5">
-            <div className="grid grid-cols-[5.5rem_1fr] items-start gap-4 sm:grid-cols-[6.75rem_1fr]">
-              <div className="mx-auto w-full max-w-[6.75rem]">
-                <ActPoster act={selectedAct} mode="card" />
+            <div className="grid grid-cols-[5.25rem_1fr] items-start gap-4 sm:grid-cols-[6.25rem_1fr]">
+              <div className="mx-auto w-full max-w-[6.25rem]">
+                <ActPoster act={selectedAct} mode="row" />
               </div>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap gap-2">
-                  <span className="show-chip text-xs text-arenaBeam">
-                    {getCountryName(selectedAct.code, selectedAct.country)}
-                  </span>
+                  <CountryBadge
+                    countryName={getCountryName(selectedAct.code, selectedAct.country)}
+                    flagUrl={resolveMediaUrl(selectedAct.flagUrl)}
+                  />
                   {placedActsSet.has(selectedAct.code) ? (
                     <span className="show-chip text-xs text-white">
                       {text.rankingLabel} {getCurrentPlaceLabel(selectedAct.code)}
@@ -1296,13 +1406,50 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   ) : null}
                 </div>
 
-                <h3 className="display-copy mt-4 text-3xl font-black leading-[0.92] text-white md:text-4xl">
+                <h3 className="display-copy mt-3 text-[2rem] font-black leading-[0.94] text-white md:text-4xl">
                   {selectedAct.artist}
                 </h3>
-                <p className="mt-2 text-base text-arenaMuted md:text-lg">{selectedAct.song}</p>
-                <p className="mt-4 text-sm leading-7 text-arenaMuted">{getActBlurb(selectedAct)}</p>
+                <p className="mt-1 text-base text-arenaMuted md:text-lg">{selectedAct.song}</p>
+                <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(selectedAct)}</p>
               </div>
             </div>
+
+            {selectedActLinks.profileUrl || selectedActLinks.videoUrl ? (
+              <div className="show-panel p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.linksTitle}</p>
+                    <p className="mt-2 text-sm leading-6 text-arenaMuted">
+                      {selectedActLinks.videoUrl ? text.watchVideoHint : text.officialProfileHint}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedActLinks.profileUrl ? (
+                      <a
+                        href={selectedActLinks.profileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
+                      >
+                        <ExternalLink size={15} />
+                        {text.officialProfile}
+                      </a>
+                    ) : null}
+                    {selectedActLinks.videoUrl ? (
+                      <a
+                        href={selectedActLinks.videoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
+                      >
+                        <PlayCircle size={16} />
+                        {text.watchVideo}
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             <div className="show-panel p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1318,10 +1465,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 ) : null}
               </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-[auto_auto_minmax(0,1fr)] sm:items-center">
+              <div className="mt-4 grid grid-cols-[2.9rem_2.9rem_minmax(0,1fr)] gap-2 sm:grid-cols-[3rem_3rem_minmax(0,1fr)] sm:items-center">
                 <button
                   type="button"
-                  className="arena-button-secondary inline-flex h-11 w-11 items-center justify-center rounded-[1rem] px-0 text-sm"
+                  className="arena-button-secondary inline-flex h-[2.9rem] w-[2.9rem] items-center justify-center rounded-[1rem] px-0 text-sm sm:h-12 sm:w-12"
                   disabled={locked || !placedActsSet.has(selectedAct.code) || rankingMap[selectedAct.code] === 1}
                   onClick={() => moveArtistBy(selectedAct.code, -1)}
                   aria-label={text.moveHigher}
@@ -1331,7 +1478,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 </button>
                 <button
                   type="button"
-                  className="arena-button-secondary inline-flex h-11 w-11 items-center justify-center rounded-[1rem] px-0 text-sm"
+                  className="arena-button-secondary inline-flex h-[2.9rem] w-[2.9rem] items-center justify-center rounded-[1rem] px-0 text-sm sm:h-12 sm:w-12"
                   disabled={locked || !placedActsSet.has(selectedAct.code) || rankingMap[selectedAct.code] === ranking.length}
                   onClick={() => moveArtistBy(selectedAct.code, 1)}
                   aria-label={text.moveLower}
@@ -1339,45 +1486,38 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 >
                   <ArrowDown size={16} />
                 </button>
-                <select
-                  className="arena-input h-11"
-                  value={getSelectValue(selectedAct.code)}
+                <button
+                  type="button"
+                  className="arena-input flex h-[2.9rem] items-center justify-between px-4 text-left text-sm sm:h-12"
+                  onClick={() => setPlacePickerOpen((current) => !current)}
                   disabled={locked}
-                  onChange={(event) => {
-                    const nextValue = Number(event.target.value);
-                    if (Number.isFinite(nextValue) && nextValue > 0) {
-                      placeArtistAt(selectedAct.code, nextValue - 1);
-                    }
-                  }}
+                  aria-expanded={placePickerOpen}
+                  aria-label={text.choosePlace}
                 >
-                  <option value="" disabled>
-                    {text.choosePlacePlaceholder}
-                  </option>
-                  {getPlaceOptions(selectedAct.code).map((option) => (
-                    <option key={`${selectedAct.code}-sheet-${option.value}`} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  <span className="truncate text-white/92">{getPlacePickerLabel(selectedAct.code)}</span>
+                  <ChevronDown size={16} className={`shrink-0 text-arenaMuted transition ${placePickerOpen ? "rotate-180" : ""}`} />
+                </button>
               </div>
-            </div>
 
-            <div className="show-panel p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.watchVideo}</p>
-                  <p className="mt-2 text-sm leading-6 text-arenaMuted">{text.watchVideoHint}</p>
+              {placePickerOpen ? (
+                <div className="show-panel-muted mt-3 p-2">
+                  <div className="max-h-[min(42svh,18rem)] overflow-y-auto overscroll-y-contain pr-1 [-webkit-overflow-scrolling:touch]">
+                    <div className="grid gap-2">
+                      {getPlaceOptions(selectedAct.code).map((option) => (
+                        <PlaceOptionRow
+                          key={`${selectedAct.code}-sheet-${option.value}`}
+                          option={option}
+                          selected={placedActsSet.has(selectedAct.code) && rankingMap[selectedAct.code] === option.value}
+                          onSelect={() => {
+                            placeArtistAt(selectedAct.code, option.value - 1);
+                            setPlacePickerOpen(false);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <a
-                  href={buildActVideoUrl(selectedAct)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
-                >
-                  <PlayCircle size={16} />
-                  {text.watchVideo}
-                </a>
-              </div>
+              ) : null}
             </div>
 
             <div className="show-panel p-4">
@@ -1412,7 +1552,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               </div>
 
               <textarea
-                className="arena-input mt-4 min-h-[9.5rem] resize-y"
+                className="arena-input mt-4 min-h-[7.5rem] resize-y md:min-h-[9rem]"
                 placeholder={text.notePlaceholder}
                 value={notes[selectedAct.code]?.text || ""}
                 onChange={(event) => updateNote(selectedAct.code, { text: event.target.value })}
@@ -1450,16 +1590,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
             </div>
 
             <div className="flex flex-wrap gap-3">
-              {selectedAct.profileUrl ? (
-                <a
-                  href={selectedAct.profileUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="arena-button-secondary inline-flex items-center justify-center px-5 py-3 text-sm"
-                >
-                  {text.officialProfile}
-                </a>
-              ) : null}
               <Link
                 href={`/${roomSlug}/acts/${stageKey}`}
                 className="arena-button-primary inline-flex items-center justify-center px-6 py-3 text-sm"

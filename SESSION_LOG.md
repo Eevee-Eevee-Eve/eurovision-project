@@ -124,3 +124,21 @@
 - changed unplaced rows into a simpler `add to ranking + tap for details` flow
 - moved the flag out of the row poster so it no longer covers artists' faces
 - increased left padding in the search field to stop the icon colliding with placeholder text on mobile
+
+### 2026-03-24 artist card cleanup pass
+
+- rebuilt the `vote` artist sheet around a compact mobile-first header:
+  - row-style poster instead of a giant card poster
+  - country badge, current place chip, artist, and song in a tighter top block
+- reworked `BottomSheet` header and safe-area padding:
+  - the close button now sits in a proper sticky header row
+  - more bottom padding for iPhone browser chrome and longer sheets
+- replaced the native place `select` inside the artist sheet with a custom scrollable place picker list
+  - current place is visible on the trigger
+  - options now show place number, country + flag, artist, and song when occupied
+  - free places no longer look like mysterious empty native options
+- moved direct links higher in the artist sheet:
+  - direct official profile link is shown before notes
+  - direct video button is shown only when a real `videoUrl` exists
+  - stopped relying on the YouTube search fallback inside this modal
+- reduced the notes textarea height on mobile and tightened the search field icon spacing

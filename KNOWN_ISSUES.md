@@ -9,15 +9,15 @@
   - quick place select from the acts list
   - reset ranking flow
   - modal/list sync after moving one artist onto an occupied slot
-- Native `select` is still the weakest UX point in the ranking flow:
-  - long option labels
-  - browser-specific rendering
-  - can still feel heavy on narrow screens
-- The new video action currently uses a YouTube search fallback when no dedicated video URL exists yet.
 - Need a real-device check for the latest mobile ranking split:
   - `add to ranking` from the list
   - drag-and-drop for already placed acts
   - precise place selection inside the artist card
+  - custom place picker scrolling and hit targets on iPhone Safari
+- The rebuilt artist sheet needs a real-phone check for:
+  - sticky close button placement
+  - full scroll reachability with browser chrome visible
+  - direct profile link visibility before the notes block
 
 - В `VoteStudio` ещё нужно руками добить поведение модального окна на разных разрешениях.
 - Native `select` для выбора места остаётся уязвимым по UX:
