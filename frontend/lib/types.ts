@@ -56,6 +56,7 @@ export interface ActEntry {
   flagUrl: string;
   photoUrl?: string | null;
   profileUrl?: string | null;
+  videoUrl?: string | null;
   portrait: {
     type: "poster";
     initials: string;

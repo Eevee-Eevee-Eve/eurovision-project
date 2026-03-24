@@ -28,6 +28,10 @@ export function rankingStorageKey(roomSlug: string, stageKey: StageKey) {
   return `esc-room-ranking:${roomSlug}:${stageKey}`;
 }
 
+export function rankingPlacedActsKey(roomSlug: string, stageKey: StageKey) {
+  return `esc-room-ranking-placed:${roomSlug}:${stageKey}`;
+}
+
 export function notesStorageKey(roomSlug: string, stageKey: StageKey) {
   return `esc-room-notes:${roomSlug}:${stageKey}`;
 }
@@ -50,6 +54,25 @@ export function loadRanking(roomSlug: string, stageKey: StageKey) {
 export function saveRanking(roomSlug: string, stageKey: StageKey, ranking: string[]) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(rankingStorageKey(roomSlug, stageKey), JSON.stringify(ranking));
+}
+
+export function loadPlacedActs(roomSlug: string, stageKey: StageKey) {
+  if (typeof window === "undefined") return [];
+  return safeJsonParse<string[]>(
+    window.localStorage.getItem(rankingPlacedActsKey(roomSlug, stageKey)),
+    [],
+  ).filter((code): code is string => typeof code === "string" && code.trim().length > 0);
+}
+
+export function savePlacedActs(roomSlug: string, stageKey: StageKey, placedActs: string[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(rankingPlacedActsKey(roomSlug, stageKey), JSON.stringify(placedActs));
+}
+
+export function clearRanking(roomSlug: string, stageKey: StageKey) {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(rankingStorageKey(roomSlug, stageKey));
+  window.localStorage.removeItem(rankingPlacedActsKey(roomSlug, stageKey));
 }
 
 export function loadNotes(roomSlug: string, stageKey: StageKey) {

@@ -87,3 +87,17 @@ export function getNoteSummary(note?: ActNote | null) {
 export function getToneLabel(tone?: NoteTone | null) {
   return NOTE_TONES.find((entry) => entry.key === tone)?.label || "Notes";
 }
+
+export function buildActVideoUrl(act: Pick<ActEntry, "artist" | "song" | "country" | "videoUrl">) {
+  if (act.videoUrl?.trim()) {
+    return act.videoUrl.trim();
+  }
+
+  const query = `${act.artist} ${act.song} Eurovision 2026 ${act.country} live`;
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+}
+
+export function compactArtistLabel(name: string, limit = 18) {
+  if (name.length <= limit) return name;
+  return `${name.slice(0, limit).trim()}…`;
+}
