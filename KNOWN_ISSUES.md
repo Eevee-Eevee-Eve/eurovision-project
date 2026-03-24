@@ -16,8 +16,11 @@
   - custom place picker scrolling and hit targets on iPhone Safari
 - The rebuilt artist sheet needs a real-phone check for:
   - sticky close button placement
-  - full scroll reachability with browser chrome visible
+  - full scroll reachability with browser chrome visible after the fixed-body scroll-lock change
   - direct profile link visibility before the notes block
+- Direct YouTube links are still missing from most act data:
+  - the sheet can now show a real direct video link when `videoUrl` exists
+  - otherwise it still falls back to the direct official profile, not a curated YouTube song URL
 
 - В `VoteStudio` ещё нужно руками добить поведение модального окна на разных разрешениях.
 - Native `select` для выбора места остаётся уязвимым по UX:
