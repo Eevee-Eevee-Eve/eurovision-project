@@ -3,6 +3,21 @@
 > Latest update:
 > Production is live on `morozoveuroparty.ru`. The active workstream is the companion UX in `vote/acts`: modal sheet, notes, draft ranking state, and responsive layout.
 
+## 2026-03-25
+
+### Compact Vote List Pass
+
+- Added a new compact `acts` render path in `VoteStudio` and switched the tab to use it
+- Tightened the mobile ranking rows so they behave more like a dense list than tall cards
+- Kept the existing ranking logic intact:
+  - same `ranking`
+  - same `placed acts`
+  - same auto-shift behavior
+- Reduced visual weight of the top ranking summary and sticky submit block
+- Made search lighter with smaller icon spacing and tighter input padding
+- Preserved drag-and-drop for already placed acts
+- Local `next build` passed after the refactor
+
 ## 2026-03-24
 
 ### Latest UX pass
