@@ -1,457 +1,492 @@
-[
-  {
-    "code": "AL",
-    "country": "Albania",
-    "artist": "Alis",
-    "song": "Nân",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/alis/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/img_6182jpeg/IMG_6182-fill_size%3D2560x1600-focal_point%3D917x593-focal_size%3D491x571-fill_size%3D2560x1600-focal_point%3D917x593-focal_size%3D491x571.jpeg",
-    "biography": [
-      "Albania",
-      "Vienna 2026",
-      "Alis is a talented musician who, at a young age, has managed to build an impressive profile in the Albanian music scene."
-    ]
-  },
-  {
-    "code": "AM",
-    "country": "Armenia",
-    "artist": "SIMÓN",
-    "song": "Paloma Rumba",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/sim%C3%B3n/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/armeniajpg/Armenia-fill_size%3D2560x1600-focal_point%3D1383x749-focal_size%3D427x405-fill_size%3D2560x1600-focal_point%3D1383x749-focal_size%3D427x405.jpg",
-    "biography": [
-      "Armenia",
-      "Vienna 2026",
-      "ARMTV"
-    ]
-  },
-  {
-    "code": "AU",
-    "country": "Australia",
-    "artist": "Delta Goodrem",
-    "song": "Eclipse",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/delta-goodrem/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/australiajpg/Australia-fill_size%3D2560x1600-focal_point%3D1268x831-focal_size%3D531x582-fill_size%3D2560x1600-focal_point%3D1268x831-focal_size%3D531x582.jpg",
-    "biography": [
-      "Australia",
-      "Vienna 2026",
-      "Delta Goodrem is one of Australia’s most accomplished artists, whose career as a singer-songwriter, actress, philanthropist and entrepreneur has made a lasting impact on the global entertainment landscape."
-    ]
-  },
-  {
-    "code": "AT",
-    "country": "Austria",
-    "artist": "COSMÓ",
-    "song": "Tanzschein",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/cosm%C3%B3/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/vienna_calling__15_8hn6e2ujpg/Vienna_Calling__15_8HN6e2u-fill_size%3D2560x1600-focal_point%3D1254x576-focal_size%3D1259x430-fill_size%3D2560x1600-focal_point%3D1254x576-focal_size%3D1259x430.jpg",
-    "biography": [
-      "Austria",
-      "Vienna 2026",
-      "COSMÓ is a Hungarian-born singer who grew up in Burgenland, Austria, and now lives in Vienna."
-    ]
-  },
-  {
-    "code": "AZ",
-    "country": "Azerbaijan",
-    "artist": "JIVA",
-    "song": "Just Go",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/jiva/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/alif4156-1jpg/ALIF4156%20%281%29-fill_size%3D2560x1600-focal_point%3D1298x447-focal_size%3D224x279-fill_size%3D2560x1600-focal_point%3D1298x447-focal_size%3D224x279.jpg",
-    "biography": [
-      "Azerbaijan",
-      "Vienna 2026",
-      "JIVA (Jamila Hashimova) is an Azerbaijani singer renowned for her strong vocals and the sincere performances she gives to audiences."
-    ]
-  },
-  {
-    "code": "BE",
-    "country": "Belgium",
-    "artist": "ESSYLA",
-    "song": "Dancing on the Ice",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/essyla/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/essyla-euro_l_rs_ekrztndjpg/ESSYLA%20EURO_L_RS_ekRZTnD-fill_size%3D2560x1600-focal_point%3D973x526-focal_size%3D423x369-fill_size%3D2560x1600-focal_point%3D973x526-focal_size%3D423x369.jpg",
-    "biography": [
-      "Belgium",
-      "Vienna 2026",
-      "Originally from Perwez, in Walloon Brabant, ESSYLA became known to audiences when she reached the final of the ninth season of The Voice Belgique ."
-    ]
-  },
-  {
-    "code": "BG",
-    "country": "Bulgaria",
-    "artist": "DARA",
-    "song": "Bangaranga",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/dara/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/bulgariajpg/Bulgaria-fill_size%3D2560x1600-focal_point%3D1288x394-focal_size%3D225x240-fill_size%3D2560x1600-focal_point%3D1288x394-focal_size%3D225x240.jpg",
-    "biography": [
-      "Bulgaria",
-      "Vienna 2026",
-      "DARA is one of the most well-known pop musicians in her country, shaping the image of contemporary Bulgarian pop with her unique voice, commanding stage presence and unrestrained genre-blending."
-    ]
-  },
-  {
-    "code": "HR",
-    "country": "Croatia",
-    "artist": "LELEK",
-    "song": "Andromeda",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/lelek/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/lelek_-croatia_-photo-by-hrt-dario-njavro_-8png/lelek_%20croatia_%20photo%20by%20hrt%20%26%20dario%20njavro_%20%20%288%29-fill_size%3D2560x1600-focal_point%3D1256x584-focal_size%3D188x188-fill_size%3D2560x1600-focal_point%3D1256x584-focal_size%3D188x188.png",
-    "biography": [
-      "Croatia",
-      "Vienna 2026",
-      "An ethno-pop group formed in 2024, LELEK combines elements of traditional Croatian music with a modern pop sound."
-    ]
-  },
-  {
-    "code": "CY",
-    "country": "Cyprus",
-    "artist": "Antigoni",
-    "song": "JALLA",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/antigoni/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/cyprus_qo5gwlojpg/Cyprus_qO5gWlo-fill_size%3D2560x1600-focal_point%3D880x1054-focal_size%3D629x507-fill_size%3D2560x1600-focal_point%3D880x1054-focal_size%3D629x507.jpg",
-    "biography": [
-      "Cyprus",
-      "Vienna 2026",
-      "Born and raised in North London, Antigoni is a singer and songwriter with Greek-Cypriot roots, who has been making waves across the music world."
-    ]
-  },
-  {
-    "code": "CZ",
-    "country": "Czechia",
-    "artist": "Daniel Zizka",
-    "song": "CROSSROADS",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/daniel-zizka/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/daniel-zizka_finals__img7135_dcg99uzjpg/Daniel%20Zizka_finals__IMG7135_dcG99Uz-fill_size%3D2560x1600-focal_point%3D765x673-focal_size%3D418x375-fill_size%3D2560x1600-focal_point%3D765x673-focal_size%3D418x375.jpg",
-    "biography": [
-      "Czechia",
-      "Vienna 2026",
-      "At just 23 years old, Daniel Zizka is already regarded as one of the most compelling voices of a new generation in Czech music."
-    ]
-  },
-  {
-    "code": "DK",
-    "country": "Denmark",
-    "artist": "Søren Torpegaard Lund",
-    "song": "Før Vi Går Hjem",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/s%C3%B8ren-torpegaard-lund/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/denmark_8rbh8gajpg/Denmark_8Rbh8gA-fill_size%3D2560x1600-focal_point%3D1283x368-focal_size%3D207x218-fill_size%3D2560x1600-focal_point%3D1283x368-focal_size%3D207x218.jpg",
-    "biography": [
-      "Denmark",
-      "Vienna 2026",
-      "Growing up in the small Danish town of Gudme, Søren Torpegaard Lund had by the age of ten found his calling in the world of musical theatre."
-    ]
-  },
-  {
-    "code": "EE",
-    "country": "Estonia",
-    "artist": "Vanilla Ninja",
-    "song": "Too Epic To Be True",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/vanilla-ninja/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/estoniajpg/Estonia-fill_size%3D2560x1600-focal_point%3D1181x1630-focal_size%3D450x468-fill_size%3D2560x1600-focal_point%3D1181x1630-focal_size%3D450x468.jpg",
-    "biography": [
-      "Estonia",
-      "Vienna 2026",
-      "Vanilla Ninja is made up of Lenna Kuurmaa (vocals), Piret Järvis-Milder (vocals, guitar) and Kerli Kivilaan (vocals, guitar, bass)."
-    ]
-  },
-  {
-    "code": "FI",
-    "country": "Finland",
-    "artist": "Linda Lampenius x Pete Parkkonen",
-    "song": "Liekinheitin",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/linda-lampenius-x-pete-parkkonen/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/linda_lampenius_x_pete_parkkonen_music_video_still_credit_nelli_kentta_lcyg46bjpg/Linda_Lampenius_x_Pete_Parkkonen_music_video_still_Credit_Nelli_kentta_LCYG46b-fill_size%3D2560x1600-focal_point%3D2546x913-focal_size%3D968x704-fill_size%3D2560x1600-focal_point%3D2546x913-focal_size%3D968x704.jpg",
-    "biography": [
-      "Finland",
-      "Vienna 2026",
-      "Coming from different musical paths, popstar Pete Parkkonen and the internationally acclaimed violin legend Linda Lampenius are united by a deep love for music, performing and sharing powerful moments with their audience."
-    ]
-  },
-  {
-    "code": "FR",
-    "country": "France",
-    "artist": "Monroe",
-    "song": "Regarde !",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/monroe/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/monroe26jpg/Monroe26-fill_size%3D2560x1600-focal_point%3D1030x757-focal_size%3D402x426-fill_size%3D2560x1600-focal_point%3D1030x757-focal_size%3D402x426.jpg",
-    "biography": [
-      "France",
-      "Vienna 2026",
-      "Despite being just 17 years old, Monroe is already regarded as an established talent on the French music scene. The singer came to the attention of audiences in 2025 thanks to her victory in Prodiges , France Télévisions' flagship talent show. Winning over the jury and the viewers with her powerful voice, artistry and charisma, this victory marked a turning point in her career and opened the doors to national recognition. Monroe grew up between France and the United States. Introduced to singing and piano at an early age, she developed a solid musical foundation. This was enriched via choir practice and musicals, trained further thanks to her love for classical music and nourished by the demands of opera. After her debut album was praised for its musical richness and elegance, Monroe now gets to continue her ascent by representing France at Vienna 2026."
-    ]
-  },
-  {
-    "code": "GE",
-    "country": "Georgia",
-    "artist": "Bzikebi",
-    "song": "On Replay",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/bzikebi/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/georgiapng/Georgia-fill_size%3D2560x1600-focal_point%3D1281x262-focal_size%3D188x188-fill_size%3D2560x1600-focal_point%3D1281x262-focal_size%3D188x188.png",
-    "biography": [
-      "Georgia",
-      "Vienna 2026",
-      "The members of Bzikebi were just 10 years old when they won Junior Eurovision for Georgia in 2008."
-    ]
-  },
-  {
-    "code": "DE",
-    "country": "Germany",
-    "artist": "Sarah Engels",
-    "song": "Fire",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/sarah-engels/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/germanyjpg/Germany-fill_size%3D2560x1600-focal_point%3D1276x1003-focal_size%3D488x428-fill_size%3D2560x1600-focal_point%3D1276x1003-focal_size%3D488x428.jpg",
-    "biography": [
-      "Germany",
-      "Vienna 2026",
-      "Sarah Engels first rose to national recognition in 2011, becoming known to an audience of millions through her participation in Deutschland Sucht Den Superstar ."
-    ]
-  },
-  {
-    "code": "GR",
-    "country": "Greece",
-    "artist": "Akylas",
-    "song": "Ferto",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/akylas/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/greecejpg/Greece-fill_size%3D2560x1600-focal_point%3D1241x405-focal_size%3D310x253-fill_size%3D2560x1600-focal_point%3D1241x405-focal_size%3D310x253.jpg",
-    "biography": [
-      "Greece",
-      "Vienna 2026",
-      "A young, dynamic artist with an authentic sound and strong stage presence, Akylas became widely known in 2024 thanks to the hit single Atelié ."
-    ]
-  },
-  {
-    "code": "IL",
-    "country": "Israel",
-    "artist": "Noam Bettan",
-    "song": "Michelle",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/noam-bettan/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/israeljpg/Israel-fill_size%3D2560x1600-focal_point%3D1204x310-focal_size%3D259x267-fill_size%3D2560x1600-focal_point%3D1204x310-focal_size%3D259x267.jpg",
-    "biography": [
-      "Israel",
-      "Vienna 2026",
-      "Noam Bettan is considered one of the most distinctive voices within a new generation of Israeli artists."
-    ]
-  },
-  {
-    "code": "IT",
-    "country": "Italy",
-    "artist": "Sal Da Vinci",
-    "song": "Per Sempre Sì",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/sal-da-vinci/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/italyjpg/Italy-fill_size%3D2560x1600-focal_point%3D1410x1119-focal_size%3D732x755-fill_size%3D2560x1600-focal_point%3D1410x1119-focal_size%3D732x755.jpg",
-    "biography": [
-      "Italy",
-      "Vienna 2026",
-      "Sal Da Vinci, stage name of Salvatore Michael Sorrentino, is a Neapolitan artist born in 1969 in New York during a tour of his father, Mario Da Vinci, a famous singer and actor."
-    ]
-  },
-  {
-    "code": "LV",
-    "country": "Latvia",
-    "artist": "Atvara",
-    "song": "Ēnā",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/atvara/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/latviajpeg/Latvia-fill_size%3D2560x1600-focal_point%3D1477x710-focal_size%3D392x459-fill_size%3D2560x1600-focal_point%3D1477x710-focal_size%3D392x459.jpeg",
-    "biography": [
-      "Latvia",
-      "Vienna 2026",
-      "Atvara is a Latvian singer-songwriter known for her powerful voice, cinematic sound and emotionally raw storytelling."
-    ]
-  },
-  {
-    "code": "LT",
-    "country": "Lithuania",
-    "artist": "Lion Ceccah",
-    "song": "Sólo Quiero Más",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/lion-ceccah/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/lithuaniajpg/Lithuania-fill_size%3D2560x1600-focal_point%3D1306x690-focal_size%3D570x459-fill_size%3D2560x1600-focal_point%3D1306x690-focal_size%3D570x459.jpg",
-    "biography": [
-      "Lithuania",
-      "Vienna 2026",
-      "Hailing from Vilnius, Lion Ceccah is a stage artist, performer, songwriter, an advocate of drag culture and a specialist in musical theatre."
-    ]
-  },
-  {
-    "code": "LU",
-    "country": "Luxembourg",
-    "artist": "Eva Marija",
-    "song": "Mother Nature",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/eva-marija/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/luxembourgjpg/Luxembourg-fill_size%3D2560x1600-focal_point%3D1272x852-focal_size%3D445x445-fill_size%3D2560x1600-focal_point%3D1272x852-focal_size%3D445x445.jpg",
-    "biography": [
-      "Luxembourg",
-      "Vienna 2026",
-      "Eva Marija’s musical journey began at the age of just three, when she fell in love with the violin after watching Alexander Rybak win the Eurovision Song Contest 2009 with Fairytale ."
-    ]
-  },
-  {
-    "code": "MT",
-    "country": "Malta",
-    "artist": "AIDAN",
-    "song": "Bella",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/aidan/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/maltajpg/Malta-fill_size%3D2560x1600-focal_point%3D1189x630-focal_size%3D317x302-fill_size%3D2560x1600-focal_point%3D1189x630-focal_size%3D317x302.jpg",
-    "biography": [
-      "Malta",
-      "Vienna 2026",
-      "MTPBS"
-    ]
-  },
-  {
-    "code": "MD",
-    "country": "Moldova",
-    "artist": "Satoshi",
-    "song": "Viva, Moldova!",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/satoshi/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/moldovapng/Moldova-fill_size%3D2560x1600-focal_point%3D1167x399-focal_size%3D482x523-fill_size%3D2560x1600-focal_point%3D1167x399-focal_size%3D482x523.png",
-    "biography": [
-      "Moldova",
-      "Vienna 2026",
-      "Satoshi is a singer, songwriter and rapper who hails from the city of Cahul in southwest Moldova."
-    ]
-  },
-  {
-    "code": "ME",
-    "country": "Montenegro",
-    "artist": "Tamara Živković",
-    "song": "Nova Zora",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/tamara-%C5%BEivkovi%C4%87/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/montenegrojpg/Montenegro-fill_size%3D2560x1600-focal_point%3D1378x418-focal_size%3D308x368-fill_size%3D2560x1600-focal_point%3D1378x418-focal_size%3D308x368.jpg",
-    "biography": [
-      "Montenegro",
-      "Vienna 2026",
-      "RTCG"
-    ]
-  },
-  {
-    "code": "NO",
-    "country": "Norway",
-    "artist": "JONAS LOVV",
-    "song": "YA YA YA",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/jonas-lovv/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/norway_u2zlerkjpg/Norway_U2ZlERK-fill_size%3D2560x1600-focal_point%3D1090x1038-focal_size%3D739x691-fill_size%3D2560x1600-focal_point%3D1090x1038-focal_size%3D739x691.jpg",
-    "biography": [
-      "Norway",
-      "Vienna 2026",
-      "Hailing from Bergen in Norway, JONAS LOVV has, in a short space of time, managed to solidify his reputation as a true powerhouse performer."
-    ]
-  },
-  {
-    "code": "PL",
-    "country": "Poland",
-    "artist": "ALICJA",
-    "song": "Pray",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/alicja/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/polandjpeg/Poland-fill_size%3D2560x1600-focal_point%3D1241x537-focal_size%3D422x416-fill_size%3D2560x1600-focal_point%3D1241x537-focal_size%3D422x416.jpeg",
-    "biography": [
-      "Poland",
-      "Vienna 2026",
-      "ALICJA is a singer and songwriter who first rose to fame after winning The Voice of Poland . She is now regarded as one of the most distinctive voices on the Polish music scene."
-    ]
-  },
-  {
-    "code": "PT",
-    "country": "Portugal",
-    "artist": "Bandidos do Cante",
-    "song": "Rosa",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/bandidos-do-cante/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/foto-bandidos-do-cantejpg/Foto%20Bandidos%20do%20Cante-fill_size%3D2560x1600-focal_point%3D1050x559-focal_size%3D333x310-fill_size%3D2560x1600-focal_point%3D1050x559-focal_size%3D333x310.jpg",
-    "biography": [
-      "Portugal",
-      "Vienna 2026",
-      "Bandidos do Cante is a group made up of Miguel Costa, Duarte Farias, Francisco Raposo, Luís Aleixo and Francisco Pestana."
-    ]
-  },
-  {
-    "code": "RO",
-    "country": "Romania",
-    "artist": "Alexandra Căpitănescu",
-    "song": "Choke Me",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/alexandra-c%C4%83pit%C4%83nescu/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/romaniajpg/Romania-fill_size%3D2560x1600-focal_point%3D1659x838-focal_size%3D348x296-fill_size%3D2560x1600-focal_point%3D1659x838-focal_size%3D348x296.jpg",
-    "biography": [
-      "Romania",
-      "Vienna 2026",
-      "Alexandra Căpitănescu first rose to national fame in 2023, when she won The Voice of Romania ."
-    ]
-  },
-  {
-    "code": "SM",
-    "country": "San Marino",
-    "artist": "SENHIT",
-    "song": "Superstar",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/senhit/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/san-marinojpg/San%20Marino-fill_size%3D2560x1600-focal_point%3D1335x451-focal_size%3D318x413-fill_size%3D2560x1600-focal_point%3D1335x451-focal_size%3D318x413.jpg",
-    "biography": [
-      "San Marino",
-      "Vienna 2026",
-      "A name, a face and a voice that will be familiar to many Eurovision fans, SENHIT first graced the Contest a decade and a half ago. The singer represented San Marino with Stand By at Düsseldorf 2011, before returning ten years later at Rotterdam 2021, singing Adrenalina feat. Flo Rida. With the latter, she took San Marino to the Eurovision Song Contest Grand Final and scored a hit which to date has been streamed over 20 million times on Spotify alone."
-    ]
-  },
-  {
-    "code": "RS",
-    "country": "Serbia",
-    "artist": "LAVINA",
-    "song": "Kraj Mene",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/lavina/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/serbia-lavina-photo-5-by-natasa-stamatovicjpg/Serbia%2C%20Lavina%2C%20photo%205%20by%20Nata%C5%A1a%20Stamatovi%C4%87-fill_size%3D2560x1600-focal_point%3D1905x1014-focal_size%3D345x300-fill_size%3D2560x1600-focal_point%3D1905x1014-focal_size%3D345x300.jpg",
-    "biography": [
-      "Serbia",
-      "Vienna 2026",
-      "RTS"
-    ]
-  },
-  {
-    "code": "SE",
-    "country": "Sweden",
-    "artist": "FELICIA",
-    "song": "My System",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/felicia/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/felicia_69ac8624368c5_26_lizzsa7jpg/felicia_69ac8624368c5_26_lIzZSa7-fill_size%3D2560x1600-focal_point%3D840x440-focal_size%3D460x535-fill_size%3D2560x1600-focal_point%3D840x440-focal_size%3D460x535.jpg",
-    "biography": [
-      "Sweden",
-      "Vienna 2026",
-      "FELICIA, formerly known as Fröken Snusk, has taken Sweden by storm in a short time with her unique voice, charisma and stage presence."
-    ]
-  },
-  {
-    "code": "CH",
-    "country": "Switzerland",
-    "artist": "Veronica Fusaro",
-    "song": "Alice",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/veronica-fusaro/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/switzerland_edk0ddyjpg/Switzerland_eDk0DdY-fill_size%3D2560x1600-focal_point%3D1219x615-focal_size%3D436x403-fill_size%3D2560x1600-focal_point%3D1219x615-focal_size%3D436x403.jpg",
-    "biography": [
-      "Switzerland",
-      "Vienna 2026",
-      "Born and raised in Thun, Veronica Fusaro has built a reputation as one of the most distinctive voices on the Swiss music scene. Blending pop with elements of soul and rock, her songs combine sharp lyricism with emotional clarity and a groove-driven sound. Known for her strong stage presence, the 28-year-old musician balances vulnerability and confidence, creating performances that feel both personal and powerful."
-    ]
-  },
-  {
-    "code": "UA",
-    "country": "Ukraine",
-    "artist": "LELÉKA",
-    "song": "Ridnym",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/leleka-ukraine/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/ukrainejpg/Ukraine-fill_size%3D2560x1600-focal_point%3D1138x849-focal_size%3D674x715-fill_size%3D2560x1600-focal_point%3D1138x849-focal_size%3D674x715.jpg",
-    "biography": [
-      "Ukraine",
-      "Vienna 2026",
-      "LELÉKA is the music project of Victoria Leleka, which the artist founded in 2016, while living in Berlin. The singer and songwriter graduated from the Karpenko-Karyi Theatre University in Kyiv and initially went on to work as an actress at the Molodyi Theatre in the Ukrainian capital. LELÉKA continued her education in music by obtaining a master's degree in jazz composition in Dresden and studying film composition at the Babelsberg Film University. Over the past ten years, she has released five albums, many more songs, and created soundtracks for the popular series And There Will Be People ."
-    ]
-  },
-  {
-    "code": "GB",
-    "country": "United Kingdom",
-    "artist": "LOOK MUM NO COMPUTER",
-    "song": "Eins Zwei Drei",
-    "profileUrl": "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/look-mum-no-computer/",
-    "imageUrl": "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/united-kingdomjpg/United%20Kingdom-fill_size%3D2560x1600-focal_point%3D5846x2300-focal_size%3D1616x1638-fill_size%3D2560x1600-focal_point%3D5846x2300-focal_size%3D1616x1638.jpg",
-    "biography": [
-      "United Kingdom",
-      "Vienna 2026",
-      "LOOK MUM NO COMPUTER is an electronic music artist, experimental singer-songwriter, and inventor of unique musical machines. With a loyal following of fans, he has toured the UK and Europe, playing his custom-made synthesizer 'Kosmo' on stage."
-    ]
-  }
+﻿[
+    {
+        "code":  "AL",
+        "country":  "Albania",
+        "artist":  "Alis",
+        "song":  "Nân",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/alis/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/img_6182jpeg/IMG_6182-fill_size%3D2560x1600-focal_point%3D917x593-focal_size%3D491x571-fill_size%3D2560x1600-focal_point%3D917x593-focal_size%3D491x571.jpeg",
+        "biography":  [
+                          "Albania",
+                          "Vienna 2026",
+                          "Alis is a talented musician who, at a young age, has managed to build an impressive profile in the Albanian music scene."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=b9AdRrA554o"
+    },
+    {
+        "code":  "AM",
+        "country":  "Armenia",
+        "artist":  "SIMÓN",
+        "song":  "Paloma Rumba",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/sim%C3%B3n/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/armeniajpg/Armenia-fill_size%3D2560x1600-focal_point%3D1383x749-focal_size%3D427x405-fill_size%3D2560x1600-focal_point%3D1383x749-focal_size%3D427x405.jpg",
+        "biography":  [
+                          "Armenia",
+                          "Vienna 2026",
+                          "ARMTV"
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=5EXoK-lgocw"
+    },
+    {
+        "code":  "AU",
+        "country":  "Australia",
+        "artist":  "Delta Goodrem",
+        "song":  "Eclipse",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/delta-goodrem/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/australiajpg/Australia-fill_size%3D2560x1600-focal_point%3D1268x831-focal_size%3D531x582-fill_size%3D2560x1600-focal_point%3D1268x831-focal_size%3D531x582.jpg",
+        "biography":  [
+                          "Australia",
+                          "Vienna 2026",
+                          "Delta Goodrem is one of Australia’s most accomplished artists, whose career as a singer-songwriter, actress, philanthropist and entrepreneur has made a lasting impact on the global entertainment landscape."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=EUMCr1pnaMY"
+    },
+    {
+        "code":  "AT",
+        "country":  "Austria",
+        "artist":  "COSMÓ",
+        "song":  "Tanzschein",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/cosm%C3%B3/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/vienna_calling__15_8hn6e2ujpg/Vienna_Calling__15_8HN6e2u-fill_size%3D2560x1600-focal_point%3D1254x576-focal_size%3D1259x430-fill_size%3D2560x1600-focal_point%3D1254x576-focal_size%3D1259x430.jpg",
+        "biography":  [
+                          "Austria",
+                          "Vienna 2026",
+                          "COSMÓ is a Hungarian-born singer who grew up in Burgenland, Austria, and now lives in Vienna."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=zPGP9ZphxiY"
+    },
+    {
+        "code":  "AZ",
+        "country":  "Azerbaijan",
+        "artist":  "JIVA",
+        "song":  "Just Go",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/jiva/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/alif4156-1jpg/ALIF4156%20%281%29-fill_size%3D2560x1600-focal_point%3D1298x447-focal_size%3D224x279-fill_size%3D2560x1600-focal_point%3D1298x447-focal_size%3D224x279.jpg",
+        "biography":  [
+                          "Azerbaijan",
+                          "Vienna 2026",
+                          "JIVA (Jamila Hashimova) is an Azerbaijani singer renowned for her strong vocals and the sincere performances she gives to audiences."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=iMDBPe25JhM"
+    },
+    {
+        "code":  "BE",
+        "country":  "Belgium",
+        "artist":  "ESSYLA",
+        "song":  "Dancing on the Ice",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/essyla/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/essyla-euro_l_rs_ekrztndjpg/ESSYLA%20EURO_L_RS_ekRZTnD-fill_size%3D2560x1600-focal_point%3D973x526-focal_size%3D423x369-fill_size%3D2560x1600-focal_point%3D973x526-focal_size%3D423x369.jpg",
+        "biography":  [
+                          "Belgium",
+                          "Vienna 2026",
+                          "Originally from Perwez, in Walloon Brabant, ESSYLA became known to audiences when she reached the final of the ninth season of The Voice Belgique ."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=9sfI4g6DWTU"
+    },
+    {
+        "code":  "BG",
+        "country":  "Bulgaria",
+        "artist":  "DARA",
+        "song":  "Bangaranga",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/dara/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/bulgariajpg/Bulgaria-fill_size%3D2560x1600-focal_point%3D1288x394-focal_size%3D225x240-fill_size%3D2560x1600-focal_point%3D1288x394-focal_size%3D225x240.jpg",
+        "biography":  [
+                          "Bulgaria",
+                          "Vienna 2026",
+                          "DARA is one of the most well-known pop musicians in her country, shaping the image of contemporary Bulgarian pop with her unique voice, commanding stage presence and unrestrained genre-blending."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=J3oGYo_mekw"
+    },
+    {
+        "code":  "HR",
+        "country":  "Croatia",
+        "artist":  "LELEK",
+        "song":  "Andromeda",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/lelek/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/lelek_-croatia_-photo-by-hrt-dario-njavro_-8png/lelek_%20croatia_%20photo%20by%20hrt%20%26%20dario%20njavro_%20%20%288%29-fill_size%3D2560x1600-focal_point%3D1256x584-focal_size%3D188x188-fill_size%3D2560x1600-focal_point%3D1256x584-focal_size%3D188x188.png",
+        "biography":  [
+                          "Croatia",
+                          "Vienna 2026",
+                          "An ethno-pop group formed in 2024, LELEK combines elements of traditional Croatian music with a modern pop sound."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=vl7Jqnw10sU"
+    },
+    {
+        "code":  "CY",
+        "country":  "Cyprus",
+        "artist":  "Antigoni",
+        "song":  "JALLA",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/antigoni/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/cyprus_qo5gwlojpg/Cyprus_qO5gWlo-fill_size%3D2560x1600-focal_point%3D880x1054-focal_size%3D629x507-fill_size%3D2560x1600-focal_point%3D880x1054-focal_size%3D629x507.jpg",
+        "biography":  [
+                          "Cyprus",
+                          "Vienna 2026",
+                          "Born and raised in North London, Antigoni is a singer and songwriter with Greek-Cypriot roots, who has been making waves across the music world."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=TzSs51BiQrE"
+    },
+    {
+        "code":  "CZ",
+        "country":  "Czechia",
+        "artist":  "Daniel Zizka",
+        "song":  "CROSSROADS",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/daniel-zizka/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/daniel-zizka_finals__img7135_dcg99uzjpg/Daniel%20Zizka_finals__IMG7135_dcG99Uz-fill_size%3D2560x1600-focal_point%3D765x673-focal_size%3D418x375-fill_size%3D2560x1600-focal_point%3D765x673-focal_size%3D418x375.jpg",
+        "biography":  [
+                          "Czechia",
+                          "Vienna 2026",
+                          "At just 23 years old, Daniel Zizka is already regarded as one of the most compelling voices of a new generation in Czech music."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=6ea25aRGpLo"
+    },
+    {
+        "code":  "DK",
+        "country":  "Denmark",
+        "artist":  "Søren Torpegaard Lund",
+        "song":  "Før Vi Går Hjem",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/s%C3%B8ren-torpegaard-lund/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/denmark_8rbh8gajpg/Denmark_8Rbh8gA-fill_size%3D2560x1600-focal_point%3D1283x368-focal_size%3D207x218-fill_size%3D2560x1600-focal_point%3D1283x368-focal_size%3D207x218.jpg",
+        "biography":  [
+                          "Denmark",
+                          "Vienna 2026",
+                          "Growing up in the small Danish town of Gudme, Søren Torpegaard Lund had by the age of ten found his calling in the world of musical theatre."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=xKzEP9dwoss"
+    },
+    {
+        "code":  "EE",
+        "country":  "Estonia",
+        "artist":  "Vanilla Ninja",
+        "song":  "Too Epic To Be True",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/vanilla-ninja/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/estoniajpg/Estonia-fill_size%3D2560x1600-focal_point%3D1181x1630-focal_size%3D450x468-fill_size%3D2560x1600-focal_point%3D1181x1630-focal_size%3D450x468.jpg",
+        "biography":  [
+                          "Estonia",
+                          "Vienna 2026",
+                          "Vanilla Ninja is made up of Lenna Kuurmaa (vocals), Piret Järvis-Milder (vocals, guitar) and Kerli Kivilaan (vocals, guitar, bass)."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=lOiWuol3t3o"
+    },
+    {
+        "code":  "FI",
+        "country":  "Finland",
+        "artist":  "Linda Lampenius x Pete Parkkonen",
+        "song":  "Liekinheitin",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/linda-lampenius-x-pete-parkkonen/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/linda_lampenius_x_pete_parkkonen_music_video_still_credit_nelli_kentta_lcyg46bjpg/Linda_Lampenius_x_Pete_Parkkonen_music_video_still_Credit_Nelli_kentta_LCYG46b-fill_size%3D2560x1600-focal_point%3D2546x913-focal_size%3D968x704-fill_size%3D2560x1600-focal_point%3D2546x913-focal_size%3D968x704.jpg",
+        "biography":  [
+                          "Finland",
+                          "Vienna 2026",
+                          "Coming from different musical paths, popstar Pete Parkkonen and the internationally acclaimed violin legend Linda Lampenius are united by a deep love for music, performing and sharing powerful moments with their audience."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=9bfwNIYb96Q"
+    },
+    {
+        "code":  "FR",
+        "country":  "France",
+        "artist":  "Monroe",
+        "song":  "Regarde !",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/monroe/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/monroe26jpg/Monroe26-fill_size%3D2560x1600-focal_point%3D1030x757-focal_size%3D402x426-fill_size%3D2560x1600-focal_point%3D1030x757-focal_size%3D402x426.jpg",
+        "biography":  [
+                          "France",
+                          "Vienna 2026",
+                          "Despite being just 17 years old, Monroe is already regarded as an established talent on the French music scene. The singer came to the attention of audiences in 2025 thanks to her victory in Prodiges , France Télévisions\u0027 flagship talent show. Winning over the jury and the viewers with her powerful voice, artistry and charisma, this victory marked a turning point in her career and opened the doors to national recognition. Monroe grew up between France and the United States. Introduced to singing and piano at an early age, she developed a solid musical foundation. This was enriched via choir practice and musicals, trained further thanks to her love for classical music and nourished by the demands of opera. After her debut album was praised for its musical richness and elegance, Monroe now gets to continue her ascent by representing France at Vienna 2026."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=ujoCYrvvTYQ"
+    },
+    {
+        "code":  "GE",
+        "country":  "Georgia",
+        "artist":  "Bzikebi",
+        "song":  "On Replay",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/bzikebi/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/georgiapng/Georgia-fill_size%3D2560x1600-focal_point%3D1281x262-focal_size%3D188x188-fill_size%3D2560x1600-focal_point%3D1281x262-focal_size%3D188x188.png",
+        "biography":  [
+                          "Georgia",
+                          "Vienna 2026",
+                          "The members of Bzikebi were just 10 years old when they won Junior Eurovision for Georgia in 2008."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=coh-lygCINY"
+    },
+    {
+        "code":  "DE",
+        "country":  "Germany",
+        "artist":  "Sarah Engels",
+        "song":  "Fire",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/sarah-engels/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/germanyjpg/Germany-fill_size%3D2560x1600-focal_point%3D1276x1003-focal_size%3D488x428-fill_size%3D2560x1600-focal_point%3D1276x1003-focal_size%3D488x428.jpg",
+        "biography":  [
+                          "Germany",
+                          "Vienna 2026",
+                          "Sarah Engels first rose to national recognition in 2011, becoming known to an audience of millions through her participation in Deutschland Sucht Den Superstar ."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=AzvRc3eH_rA"
+    },
+    {
+        "code":  "GR",
+        "country":  "Greece",
+        "artist":  "Akylas",
+        "song":  "Ferto",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/akylas/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/greecejpg/Greece-fill_size%3D2560x1600-focal_point%3D1241x405-focal_size%3D310x253-fill_size%3D2560x1600-focal_point%3D1241x405-focal_size%3D310x253.jpg",
+        "biography":  [
+                          "Greece",
+                          "Vienna 2026",
+                          "A young, dynamic artist with an authentic sound and strong stage presence, Akylas became widely known in 2024 thanks to the hit single Atelié ."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=NGwNTd_DA9s"
+    },
+    {
+        "code":  "IL",
+        "country":  "Israel",
+        "artist":  "Noam Bettan",
+        "song":  "Michelle",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/noam-bettan/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/israeljpg/Israel-fill_size%3D2560x1600-focal_point%3D1204x310-focal_size%3D259x267-fill_size%3D2560x1600-focal_point%3D1204x310-focal_size%3D259x267.jpg",
+        "biography":  [
+                          "Israel",
+                          "Vienna 2026",
+                          "Noam Bettan is considered one of the most distinctive voices within a new generation of Israeli artists."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=xWCnWSoG8nI"
+    },
+    {
+        "code":  "IT",
+        "country":  "Italy",
+        "artist":  "Sal Da Vinci",
+        "song":  "Per Sempre Sì",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/sal-da-vinci/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/italyjpg/Italy-fill_size%3D2560x1600-focal_point%3D1410x1119-focal_size%3D732x755-fill_size%3D2560x1600-focal_point%3D1410x1119-focal_size%3D732x755.jpg",
+        "biography":  [
+                          "Italy",
+                          "Vienna 2026",
+                          "Sal Da Vinci, stage name of Salvatore Michael Sorrentino, is a Neapolitan artist born in 1969 in New York during a tour of his father, Mario Da Vinci, a famous singer and actor."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=V406FAGkhyQ"
+    },
+    {
+        "code":  "LV",
+        "country":  "Latvia",
+        "artist":  "Atvara",
+        "song":  "Ēnā",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/atvara/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/latviajpeg/Latvia-fill_size%3D2560x1600-focal_point%3D1477x710-focal_size%3D392x459-fill_size%3D2560x1600-focal_point%3D1477x710-focal_size%3D392x459.jpeg",
+        "biography":  [
+                          "Latvia",
+                          "Vienna 2026",
+                          "Atvara is a Latvian singer-songwriter known for her powerful voice, cinematic sound and emotionally raw storytelling."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=6C2ivaB5D00"
+    },
+    {
+        "code":  "LT",
+        "country":  "Lithuania",
+        "artist":  "Lion Ceccah",
+        "song":  "Sólo Quiero Más",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/lion-ceccah/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/lithuaniajpg/Lithuania-fill_size%3D2560x1600-focal_point%3D1306x690-focal_size%3D570x459-fill_size%3D2560x1600-focal_point%3D1306x690-focal_size%3D570x459.jpg",
+        "biography":  [
+                          "Lithuania",
+                          "Vienna 2026",
+                          "Hailing from Vilnius, Lion Ceccah is a stage artist, performer, songwriter, an advocate of drag culture and a specialist in musical theatre."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=0H-PXnbhG7A"
+    },
+    {
+        "code":  "LU",
+        "country":  "Luxembourg",
+        "artist":  "Eva Marija",
+        "song":  "Mother Nature",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/eva-marija/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/luxembourgjpg/Luxembourg-fill_size%3D2560x1600-focal_point%3D1272x852-focal_size%3D445x445-fill_size%3D2560x1600-focal_point%3D1272x852-focal_size%3D445x445.jpg",
+        "biography":  [
+                          "Luxembourg",
+                          "Vienna 2026",
+                          "Eva Marija’s musical journey began at the age of just three, when she fell in love with the violin after watching Alexander Rybak win the Eurovision Song Contest 2009 with Fairytale ."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=DmVfJSRqgnI"
+    },
+    {
+        "code":  "MT",
+        "country":  "Malta",
+        "artist":  "AIDAN",
+        "song":  "Bella",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/aidan/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/maltajpg/Malta-fill_size%3D2560x1600-focal_point%3D1189x630-focal_size%3D317x302-fill_size%3D2560x1600-focal_point%3D1189x630-focal_size%3D317x302.jpg",
+        "biography":  [
+                          "Malta",
+                          "Vienna 2026",
+                          "MTPBS"
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=CW6mQLBh6Js"
+    },
+    {
+        "code":  "MD",
+        "country":  "Moldova",
+        "artist":  "Satoshi",
+        "song":  "Viva, Moldova!",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/satoshi/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/moldovapng/Moldova-fill_size%3D2560x1600-focal_point%3D1167x399-focal_size%3D482x523-fill_size%3D2560x1600-focal_point%3D1167x399-focal_size%3D482x523.png",
+        "biography":  [
+                          "Moldova",
+                          "Vienna 2026",
+                          "Satoshi is a singer, songwriter and rapper who hails from the city of Cahul in southwest Moldova."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=SViojHjNSzc"
+    },
+    {
+        "code":  "ME",
+        "country":  "Montenegro",
+        "artist":  "Tamara Živković",
+        "song":  "Nova Zora",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/tamara-%C5%BEivkovi%C4%87/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/montenegrojpg/Montenegro-fill_size%3D2560x1600-focal_point%3D1378x418-focal_size%3D308x368-fill_size%3D2560x1600-focal_point%3D1378x418-focal_size%3D308x368.jpg",
+        "biography":  [
+                          "Montenegro",
+                          "Vienna 2026",
+                          "RTCG"
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=nuvy2d60HbI"
+    },
+    {
+        "code":  "NO",
+        "country":  "Norway",
+        "artist":  "JONAS LOVV",
+        "song":  "YA YA YA",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/jonas-lovv/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/norway_u2zlerkjpg/Norway_U2ZlERK-fill_size%3D2560x1600-focal_point%3D1090x1038-focal_size%3D739x691-fill_size%3D2560x1600-focal_point%3D1090x1038-focal_size%3D739x691.jpg",
+        "biography":  [
+                          "Norway",
+                          "Vienna 2026",
+                          "Hailing from Bergen in Norway, JONAS LOVV has, in a short space of time, managed to solidify his reputation as a true powerhouse performer."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=MasllzWk_bQ"
+    },
+    {
+        "code":  "PL",
+        "country":  "Poland",
+        "artist":  "ALICJA",
+        "song":  "Pray",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/alicja/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/polandjpeg/Poland-fill_size%3D2560x1600-focal_point%3D1241x537-focal_size%3D422x416-fill_size%3D2560x1600-focal_point%3D1241x537-focal_size%3D422x416.jpeg",
+        "biography":  [
+                          "Poland",
+                          "Vienna 2026",
+                          "ALICJA is a singer and songwriter who first rose to fame after winning The Voice of Poland . She is now regarded as one of the most distinctive voices on the Polish music scene."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=q78cnYIoF9Y"
+    },
+    {
+        "code":  "PT",
+        "country":  "Portugal",
+        "artist":  "Bandidos do Cante",
+        "song":  "Rosa",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/bandidos-do-cante/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/foto-bandidos-do-cantejpg/Foto%20Bandidos%20do%20Cante-fill_size%3D2560x1600-focal_point%3D1050x559-focal_size%3D333x310-fill_size%3D2560x1600-focal_point%3D1050x559-focal_size%3D333x310.jpg",
+        "biography":  [
+                          "Portugal",
+                          "Vienna 2026",
+                          "Bandidos do Cante is a group made up of Miguel Costa, Duarte Farias, Francisco Raposo, Luís Aleixo and Francisco Pestana."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=jyHaE6GqaaQ"
+    },
+    {
+        "code":  "RO",
+        "country":  "Romania",
+        "artist":  "Alexandra Căpitănescu",
+        "song":  "Choke Me",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/alexandra-c%C4%83pit%C4%83nescu/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/romaniajpg/Romania-fill_size%3D2560x1600-focal_point%3D1659x838-focal_size%3D348x296-fill_size%3D2560x1600-focal_point%3D1659x838-focal_size%3D348x296.jpg",
+        "biography":  [
+                          "Romania",
+                          "Vienna 2026",
+                          "Alexandra Căpitănescu first rose to national fame in 2023, when she won The Voice of Romania ."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=yn0YmI0dPb8"
+    },
+    {
+        "code":  "SM",
+        "country":  "San Marino",
+        "artist":  "SENHIT",
+        "song":  "Superstar",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/senhit/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/san-marinojpg/San%20Marino-fill_size%3D2560x1600-focal_point%3D1335x451-focal_size%3D318x413-fill_size%3D2560x1600-focal_point%3D1335x451-focal_size%3D318x413.jpg",
+        "biography":  [
+                          "San Marino",
+                          "Vienna 2026",
+                          "A name, a face and a voice that will be familiar to many Eurovision fans, SENHIT first graced the Contest a decade and a half ago. The singer represented San Marino with Stand By at Düsseldorf 2011, before returning ten years later at Rotterdam 2021, singing Adrenalina feat. Flo Rida. With the latter, she took San Marino to the Eurovision Song Contest Grand Final and scored a hit which to date has been streamed over 20 million times on Spotify alone."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=wOQe-fQSFxg"
+    },
+    {
+        "code":  "RS",
+        "country":  "Serbia",
+        "artist":  "LAVINA",
+        "song":  "Kraj Mene",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/lavina/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/serbia-lavina-photo-5-by-natasa-stamatovicjpg/Serbia%2C%20Lavina%2C%20photo%205%20by%20Nata%C5%A1a%20Stamatovi%C4%87-fill_size%3D2560x1600-focal_point%3D1905x1014-focal_size%3D345x300-fill_size%3D2560x1600-focal_point%3D1905x1014-focal_size%3D345x300.jpg",
+        "biography":  [
+                          "Serbia",
+                          "Vienna 2026",
+                          "RTS"
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=FJTLKBOOE98"
+    },
+    {
+        "code":  "SE",
+        "country":  "Sweden",
+        "artist":  "FELICIA",
+        "song":  "My System",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/felicia/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/felicia_69ac8624368c5_26_lizzsa7jpg/felicia_69ac8624368c5_26_lIzZSa7-fill_size%3D2560x1600-focal_point%3D840x440-focal_size%3D460x535-fill_size%3D2560x1600-focal_point%3D840x440-focal_size%3D460x535.jpg",
+        "biography":  [
+                          "Sweden",
+                          "Vienna 2026",
+                          "FELICIA, formerly known as Fröken Snusk, has taken Sweden by storm in a short time with her unique voice, charisma and stage presence."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=ibbfS8iG450"
+    },
+    {
+        "code":  "CH",
+        "country":  "Switzerland",
+        "artist":  "Veronica Fusaro",
+        "song":  "Alice",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/veronica-fusaro/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/switzerland_edk0ddyjpg/Switzerland_eDk0DdY-fill_size%3D2560x1600-focal_point%3D1219x615-focal_size%3D436x403-fill_size%3D2560x1600-focal_point%3D1219x615-focal_size%3D436x403.jpg",
+        "biography":  [
+                          "Switzerland",
+                          "Vienna 2026",
+                          "Born and raised in Thun, Veronica Fusaro has built a reputation as one of the most distinctive voices on the Swiss music scene. Blending pop with elements of soul and rock, her songs combine sharp lyricism with emotional clarity and a groove-driven sound. Known for her strong stage presence, the 28-year-old musician balances vulnerability and confidence, creating performances that feel both personal and powerful."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=PfpYGAzW5dM"
+    },
+    {
+        "code":  "UA",
+        "country":  "Ukraine",
+        "artist":  "LELÉKA",
+        "song":  "Ridnym",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/leleka-ukraine/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/ukrainejpg/Ukraine-fill_size%3D2560x1600-focal_point%3D1138x849-focal_size%3D674x715-fill_size%3D2560x1600-focal_point%3D1138x849-focal_size%3D674x715.jpg",
+        "biography":  [
+                          "Ukraine",
+                          "Vienna 2026",
+                          "LELÉKA is the music project of Victoria Leleka, which the artist founded in 2016, while living in Berlin. The singer and songwriter graduated from the Karpenko-Karyi Theatre University in Kyiv and initially went on to work as an actress at the Molodyi Theatre in the Ukrainian capital. LELÉKA continued her education in music by obtaining a master\u0027s degree in jazz composition in Dresden and studying film composition at the Babelsberg Film University. Over the past ten years, she has released five albums, many more songs, and created soundtracks for the popular series And There Will Be People ."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=SoEXezpblAc"
+    },
+    {
+        "code":  "GB",
+        "country":  "United Kingdom",
+        "artist":  "LOOK MUM NO COMPUTER",
+        "song":  "Eins Zwei Drei",
+        "profileUrl":  "https://www.eurovision.com/eurovision-song-contest/vienna-2026/all-participants/look-mum-no-computer/",
+        "imageUrl":  "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/united-kingdomjpg/United%20Kingdom-fill_size%3D2560x1600-focal_point%3D5846x2300-focal_size%3D1616x1638-fill_size%3D2560x1600-focal_point%3D5846x2300-focal_size%3D1616x1638.jpg",
+        "biography":  [
+                          "United Kingdom",
+                          "Vienna 2026",
+                          "LOOK MUM NO COMPUTER is an electronic music artist, experimental singer-songwriter, and inventor of unique musical machines. With a loyal following of fans, he has toured the UK and Europe, playing his custom-made synthesizer \u0027Kosmo\u0027 on stage."
+                      ],
+        "videoUrl":  "https://www.youtube.com/watch?v=niMKvJ-Itq8"
+    }
 ]

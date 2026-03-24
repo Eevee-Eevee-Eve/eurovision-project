@@ -16,13 +16,13 @@
   - custom place picker scrolling and hit targets on iPhone Safari
 - The rebuilt artist sheet needs a real-phone check for:
   - background page scroll must stay locked every time, not just most of the time
-  - full scroll reachability with browser chrome visible after the stronger fixed-body lock
+  - full scroll reachability with browser chrome visible after the lighter touch-lock rollback
   - close button hit area and placement on small iPhones
   - notes/tags visibility before the user reaches the bottom of the sheet
-- Direct song links now go through `/api/video-link`, but still need live verification on prod:
-  - that the resolver finds the correct performance often enough
+- Direct song links now mostly come from imported official `videoUrl` data, but still need live verification on prod:
+  - that the backend serves the imported links for all 35 acts
   - that iPhone opens the resulting YouTube URL naturally
-  - that fallback to YouTube search is acceptable when no direct watch URL can be extracted
+  - that `/api/video-link` fallback is only used when structured data is missing
 
 - В `VoteStudio` ещё нужно руками добить поведение модального окна на разных разрешениях.
 - Кастомный список выбора места в карточке ещё нужно проверить на iPhone:

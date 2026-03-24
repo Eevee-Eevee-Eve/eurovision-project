@@ -165,3 +165,14 @@
   - notes/tags moved higher and kept reachable earlier in the scroll
   - direct YouTube CTA shown before the long background/facts section
   - optional official profile kept only as a quieter secondary link
+
+### 2026-03-24 sheet rollback + official YouTube import pass
+
+- relaxed the `BottomSheet` touch lock again after the iPhone regression:
+  - removed the `body.touchAction = none` freeze
+  - stopped drawing the harsh light borders around the sheet
+  - kept the page locked behind the sheet while allowing the inner scroller to breathe again
+- imported the official direct YouTube song links from `eurovision_2026_official_youtube_links.xlsx`
+  into `backend/backend_core/participants_2026.json`
+- extended `backend/backend_core/catalog.js` so every act payload can now expose `videoUrl`
+  directly from the backend instead of relying only on runtime search fallback

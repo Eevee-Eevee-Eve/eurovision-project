@@ -161,6 +161,7 @@ function buildActsForStage(stageKey) {
       flagUrl: localMedia?.localFlagUrl || `https://flagcdn.com/w160/${entry.code.toLowerCase()}.png`,
       photoUrl: localMedia?.localPhotoUrl || officialParticipant?.imageUrl || null,
       profileUrl: officialParticipant?.profileUrl || null,
+      videoUrl: officialParticipant?.videoUrl || null,
       portrait: {
         type: 'poster',
         initials: artist
