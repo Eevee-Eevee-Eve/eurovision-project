@@ -9,4 +9,5 @@ deploy-secrets.server.env
 .codex-temp-ref/
 eurovision_project_deploy.tar.gz
 eurovision_project_deploy_*.tar.gz
+eurovision_project_code_*.tar.gz
 eurovision_frontend_update_*.tar.gz
