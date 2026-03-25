@@ -31,6 +31,8 @@ function createEmptyState(createRoomState, rooms) {
     sessions: {},
     adminSessions: {},
     passwordResets: {},
+    dynamicRooms: {},
+    roomAccessSessions: {},
     roomStates: rooms.reduce((acc, room) => {
       acc[room.slug] = createRoomState();
       return acc;
@@ -48,10 +50,14 @@ function loadState(createRoomState, rooms) {
 
   try {
     const raw = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+    const dynamicRooms = raw.dynamicRooms && typeof raw.dynamicRooms === 'object' ? raw.dynamicRooms : {};
     const roomStates = rooms.reduce((acc, room) => {
       acc[room.slug] = raw.roomStates?.[room.slug] || createRoomState();
       return acc;
     }, {});
+    Object.keys(dynamicRooms).forEach((roomSlug) => {
+      roomStates[roomSlug] = raw.roomStates?.[roomSlug] || createRoomState();
+    });
 
     return {
       accounts: raw.accounts || {},
@@ -59,6 +65,8 @@ function loadState(createRoomState, rooms) {
       sessions: raw.sessions || {},
       adminSessions: raw.adminSessions || {},
       passwordResets: raw.passwordResets || {},
+      dynamicRooms,
+      roomAccessSessions: raw.roomAccessSessions || {},
       roomStates,
     };
   } catch (error) {
@@ -232,6 +240,11 @@ function pruneExpiredState(state) {
   Object.entries(state.passwordResets).forEach(([key, reset]) => {
     if (new Date(reset.expiresAt).getTime() <= now) {
       delete state.passwordResets[key];
+    }
+  });
+  Object.entries(state.roomAccessSessions || {}).forEach(([key, session]) => {
+    if (!session?.expiresAt || new Date(session.expiresAt).getTime() <= now) {
+      delete state.roomAccessSessions[key];
     }
   });
 }

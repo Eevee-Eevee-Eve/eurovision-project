@@ -19,7 +19,7 @@ const {
   STAGES,
   STAGE_KEYS,
   getAct,
-  getRoomBySlug,
+  getRoomBySlug: getCatalogRoomBySlug,
   getStageLineupMeta,
 } = require('./catalog');
 const {
@@ -66,6 +66,11 @@ const SMTP_SECURE = ['1', 'true', 'yes'].includes(String(process.env.SMTP_SECURE
 const SMTP_USER = String(process.env.SMTP_USER || '').trim();
 const SMTP_PASS = String(process.env.SMTP_PASS || '');
 const SMTP_FROM = String(process.env.SMTP_FROM || '').trim();
+const ROOM_ACCESS_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+const TEMP_ROOM_IDLE_TTL_MS = 1000 * 60 * 60 * 4;
+const TEMP_ROOM_STAGE = DEFAULT_STAGE;
+const ROOM_ACCESS_COOKIE_PREFIX = 'esc_room_access_';
+const TEMP_ROOM_PREFIX = 'room';
 
 const SCORING_PROFILES = {
   balanced: {
@@ -168,6 +173,13 @@ function createRoomState() {
 
 const state = loadState(createRoomState, ROOMS);
 const roomStates = state.roomStates;
+if (!state.dynamicRooms || typeof state.dynamicRooms !== 'object') {
+  state.dynamicRooms = {};
+}
+if (!state.roomAccessSessions || typeof state.roomAccessSessions !== 'object') {
+  state.roomAccessSessions = {};
+}
+const roomPresence = new Map();
 
 function getScoringProfile(profileKey) {
   return SCORING_PROFILES[profileKey] || SCORING_PROFILES[DEFAULT_SCORING_PROFILE];
@@ -221,8 +233,255 @@ function normalizeRoomStateShape(room) {
   return room;
 }
 
+function sanitizeRoomName(value) {
+  return sanitizeText(value, 48);
+}
+
+function sanitizeRoomPassword(value) {
+  return String(value || '').trim().slice(0, 128);
+}
+
+function buildTemporaryRoomSlug() {
+  let slug = '';
+  do {
+    slug = `${TEMP_ROOM_PREFIX}-${crypto.randomBytes(3).toString('hex')}`;
+  } while (getCatalogRoomBySlug(slug) || state.dynamicRooms[slug]);
+  return slug;
+}
+
+function buildTemporaryRoomSummary({
+  slug = buildTemporaryRoomSlug(),
+  name,
+  passwordHash = null,
+  passwordSalt = null,
+  defaultStage = TEMP_ROOM_STAGE,
+}) {
+  const now = new Date().toISOString();
+  const safeName = sanitizeRoomName(name) || 'Private Eurovision room';
+  const passwordRequired = Boolean(passwordHash && passwordSalt);
+
+  return {
+    slug,
+    name: safeName,
+    tagline: safeName,
+    cityLabel: passwordRequired ? 'Private room' : 'Temporary room',
+    seasonYear: 2026,
+    seasonLabel: 'Morozov Eurovision 2026',
+    defaultStage: normalizeStage(defaultStage) || TEMP_ROOM_STAGE,
+    isTemporary: true,
+    passwordRequired,
+    passwordHash,
+    passwordSalt,
+    createdAt: now,
+    updatedAt: now,
+    lastActiveAt: now,
+  };
+}
+
+function normalizeDynamicRoomShape(room) {
+  if (!room || typeof room !== 'object') {
+    return null;
+  }
+
+  const slug = sanitizeText(room.slug, 48).toLowerCase();
+  if (!slug || getCatalogRoomBySlug(slug)) {
+    return null;
+  }
+
+  return {
+    slug,
+    name: sanitizeRoomName(room.name) || 'Private Eurovision room',
+    tagline: sanitizeText(room.tagline, 80) || sanitizeRoomName(room.name) || 'Private Eurovision room',
+    cityLabel: sanitizeText(room.cityLabel, 80) || (room.passwordRequired ? 'Private room' : 'Temporary room'),
+    seasonYear: Number.isFinite(Number(room.seasonYear)) ? Number(room.seasonYear) : 2026,
+    seasonLabel: sanitizeText(room.seasonLabel, 80) || 'Morozov Eurovision 2026',
+    defaultStage: normalizeStage(room.defaultStage) || TEMP_ROOM_STAGE,
+    isTemporary: true,
+    passwordRequired: Boolean(room.passwordRequired && room.passwordHash && room.passwordSalt),
+    passwordHash: room.passwordHash || null,
+    passwordSalt: room.passwordSalt || null,
+    createdAt: room.createdAt || new Date().toISOString(),
+    updatedAt: room.updatedAt || room.createdAt || new Date().toISOString(),
+    lastActiveAt: room.lastActiveAt || room.updatedAt || room.createdAt || new Date().toISOString(),
+  };
+}
+
+function toPublicRoomSummary(room) {
+  if (!room) return null;
+  return {
+    slug: room.slug,
+    name: room.name,
+    tagline: room.tagline,
+    cityLabel: room.cityLabel,
+    seasonYear: room.seasonYear,
+    seasonLabel: room.seasonLabel,
+    defaultStage: room.defaultStage,
+    isTemporary: Boolean(room.isTemporary),
+    passwordRequired: Boolean(room.passwordRequired),
+  };
+}
+
+function getAllRooms() {
+  const dynamicRooms = Object.values(state.dynamicRooms)
+    .map((room) => normalizeDynamicRoomShape(room))
+    .filter(Boolean)
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
+
+  return [...ROOMS.map((room) => ({ ...room, isTemporary: false, passwordRequired: false })), ...dynamicRooms];
+}
+
+function getRoomBySlug(roomSlug) {
+  return getCatalogRoomBySlug(roomSlug) || normalizeDynamicRoomShape(state.dynamicRooms[roomSlug]) || null;
+}
+
+function isTemporaryRoom(roomSlug) {
+  return Boolean(state.dynamicRooms[roomSlug]);
+}
+
+function touchRoomActivity(roomSlug) {
+  if (!isTemporaryRoom(roomSlug)) return;
+  const room = state.dynamicRooms[roomSlug];
+  if (!room) return;
+  const now = new Date().toISOString();
+  room.updatedAt = now;
+  room.lastActiveAt = now;
+}
+
+function getRoomAccessCookieName(roomSlug) {
+  return `${ROOM_ACCESS_COOKIE_PREFIX}${roomSlug}`;
+}
+
+function setRoomAccessCookie(res, roomSlug, token) {
+  res.cookie(getRoomAccessCookieName(roomSlug), token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: IS_PRODUCTION,
+    maxAge: ROOM_ACCESS_SESSION_TTL_MS,
+    path: '/',
+  });
+}
+
+function clearRoomAccessCookie(res, roomSlug) {
+  res.cookie(getRoomAccessCookieName(roomSlug), '', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: IS_PRODUCTION,
+    expires: new Date(0),
+    path: '/',
+  });
+}
+
+function createRoomAccessSession(roomSlug) {
+  const rawToken = crypto.randomBytes(24).toString('base64url');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  state.roomAccessSessions[tokenHash] = {
+    roomSlug,
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + ROOM_ACCESS_SESSION_TTL_MS).toISOString(),
+  };
+  return rawToken;
+}
+
+function getRoomAccessSessionFromRequest(roomSlug, req) {
+  const cookies = parseCookies(req.headers.cookie);
+  const rawToken = cookies[getRoomAccessCookieName(roomSlug)];
+  if (!rawToken) return null;
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const session = state.roomAccessSessions[tokenHash];
+  if (!session || session.roomSlug !== roomSlug) {
+    return null;
+  }
+  if (new Date(session.expiresAt).getTime() <= Date.now()) {
+    delete state.roomAccessSessions[tokenHash];
+    return null;
+  }
+  return session;
+}
+
+function verifyRoomPassword(room, password) {
+  if (!room?.passwordRequired) {
+    return true;
+  }
+  if (!room.passwordSalt || !room.passwordHash) {
+    return false;
+  }
+  const { hash } = hashPassword(password, room.passwordSalt);
+  return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(room.passwordHash, 'hex'));
+}
+
+function canAccessRoom(roomSlug, req) {
+  const room = getRoomBySlug(roomSlug);
+  if (!room) return false;
+  if (!room.passwordRequired) return true;
+  return Boolean(getRoomAccessSessionFromRequest(roomSlug, req));
+}
+
+function enforceRoomAccess(roomSlug, req, res) {
+  const room = getRoomBySlug(roomSlug);
+  if (!room) {
+    res.status(404).json({ error: 'Unknown room' });
+    return false;
+  }
+  if (room.passwordRequired && !canAccessRoom(roomSlug, req)) {
+    res.status(403).json({
+      error: 'Room password required',
+      code: 'ROOM_PASSWORD_REQUIRED',
+      room: toPublicRoomSummary(room),
+    });
+    return false;
+  }
+  touchRoomActivity(roomSlug);
+  return true;
+}
+
+function getRoomPresenceCount(roomSlug) {
+  return roomPresence.get(roomSlug) || 0;
+}
+
+function removeDynamicRoom(roomSlug) {
+  delete state.dynamicRooms[roomSlug];
+  delete state.roomStates[roomSlug];
+  delete roomStates[roomSlug];
+  roomPresence.delete(roomSlug);
+  Object.entries(state.roomAccessSessions).forEach(([key, session]) => {
+    if (session.roomSlug === roomSlug) {
+      delete state.roomAccessSessions[key];
+    }
+  });
+}
+
+function pruneInactiveDynamicRooms() {
+  const now = Date.now();
+  Object.values(state.dynamicRooms).forEach((rawRoom) => {
+    const room = normalizeDynamicRoomShape(rawRoom);
+    if (!room) return;
+    if (getRoomPresenceCount(room.slug) > 0) return;
+    const lastActiveAt = new Date(room.lastActiveAt || room.updatedAt || room.createdAt).getTime();
+    if (now - lastActiveAt >= TEMP_ROOM_IDLE_TTL_MS) {
+      removeDynamicRoom(room.slug);
+    }
+  });
+}
+
 ROOMS.forEach((room) => {
   roomStates[room.slug] = normalizeRoomStateShape(roomStates[room.slug]);
+  state.roomStates[room.slug] = roomStates[room.slug];
+});
+
+Object.entries(state.dynamicRooms).forEach(([roomSlug, rawRoom]) => {
+  const room = normalizeDynamicRoomShape(rawRoom);
+  if (!room) {
+    delete state.dynamicRooms[roomSlug];
+    delete state.roomStates[roomSlug];
+    delete roomStates[roomSlug];
+    return;
+  }
+
+  state.dynamicRooms[room.slug] = room;
+  if (room.slug !== roomSlug) {
+    delete state.dynamicRooms[roomSlug];
+  }
+  roomStates[room.slug] = normalizeRoomStateShape(roomStates[room.slug] || state.roomStates[room.slug]);
   state.roomStates[room.slug] = roomStates[room.slug];
 });
 
@@ -241,7 +500,14 @@ function pruneExpiredAdminSessions() {
 
 pruneExpiredState(state);
 pruneExpiredAdminSessions();
+pruneInactiveDynamicRooms();
 saveState(state);
+setInterval(() => {
+  pruneExpiredState(state);
+  pruneExpiredAdminSessions();
+  pruneInactiveDynamicRooms();
+  saveState(state);
+}, 60_000 * 5).unref();
 
 app.set('trust proxy', 1);
 
@@ -568,7 +834,7 @@ function ensureRoomMembership(roomSlug, account) {
 }
 
 function syncAccountAcrossRooms(account) {
-  ROOMS.forEach((room) => {
+  getAllRooms().forEach((room) => {
     if (roomStates[room.slug].users[account.id]) {
       roomStates[room.slug].users[account.id] = buildRoomUserFromAccount(account);
     }
@@ -612,7 +878,7 @@ function resetAccountInRoom(roomSlug, accountId, stageKey = null) {
 }
 
 function removeAccountEverywhere(accountId) {
-  ROOMS.forEach((room) => {
+  getAllRooms().forEach((room) => {
     dropAccountFromRoom(room.slug, accountId);
     delete getRoomState(room.slug).removedAccounts[accountId];
   });
@@ -1032,8 +1298,14 @@ io.on('connection', (socket) => {
     socket.disconnect(true);
     return;
   }
+  if (!canAccessRoom(roomSlug, { headers: { cookie: socket.handshake.headers.cookie || '' } })) {
+    socket.disconnect(true);
+    return;
+  }
 
   socket.join(roomSlug);
+  roomPresence.set(roomSlug, getRoomPresenceCount(roomSlug) + 1);
+  touchRoomActivity(roomSlug);
 
   const room = getRoomState(roomSlug);
   socket.emit('toggle', {
@@ -1048,6 +1320,15 @@ io.on('connection', (socket) => {
       stage,
       results: buildStageResults(roomSlug, stage),
     });
+  });
+
+  socket.on('disconnect', () => {
+    const nextCount = Math.max(0, getRoomPresenceCount(roomSlug) - 1);
+    if (nextCount === 0) {
+      roomPresence.delete(roomSlug);
+    } else {
+      roomPresence.set(roomSlug, nextCount);
+    }
   });
 });
 
@@ -1075,7 +1356,7 @@ app.get('/api/admin/session', (req, res) => {
   const adminSession = getAdminSessionFromRequest(req);
   return res.json({
     authenticated: Boolean(adminSession),
-    rooms: ROOMS,
+    rooms: getAllRooms().map(toPublicRoomSummary),
     authMethods: getAdminAuthMethods(),
     scoringProfiles: getScoringProfilePayload(),
   });
@@ -1099,7 +1380,7 @@ app.post('/api/admin/session', (req, res) => {
 
   return res.json({
     authenticated: true,
-    rooms: ROOMS,
+    rooms: getAllRooms().map(toPublicRoomSummary),
     authMethods: getAdminAuthMethods(),
     scoringProfiles: getScoringProfilePayload(),
   });
@@ -1136,6 +1417,9 @@ app.post('/api/auth/register', (req, res) => {
   }
   if (req.body.roomSlug && !roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });
+  }
+  if (roomSlug && !enforceRoomAccess(roomSlug, req, res)) {
+    return;
   }
   if (getAccountByEmail(email)) {
     return res.status(409).json({ error: 'An account with this email already exists' });
@@ -1183,6 +1467,9 @@ app.post('/api/auth/login', (req, res) => {
   }
   if (req.body.roomSlug && !roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });
+  }
+  if (roomSlug && !enforceRoomAccess(roomSlug, req, res)) {
+    return;
   }
 
   account.lastLoginAt = new Date().toISOString();
@@ -1350,7 +1637,7 @@ app.patch('/api/account', requireAuth, (req, res) => {
 
   syncAccountAcrossRooms(req.account);
   persistState();
-  ROOMS.forEach((room) => emitLeaderboard(room.slug));
+  getAllRooms().forEach((room) => emitLeaderboard(room.slug));
 
   return res.json({ account: toAccountProfile(req.account) });
 });
@@ -1369,7 +1656,7 @@ app.post('/api/account/avatar', requireAuth, (req, res) => {
   req.account.updatedAt = new Date().toISOString();
   syncAccountAcrossRooms(req.account);
   persistState();
-  ROOMS.forEach((room) => emitLeaderboard(room.slug));
+  getAllRooms().forEach((room) => emitLeaderboard(room.slug));
 
   return res.json({ account: toAccountProfile(req.account) });
 });
@@ -1380,7 +1667,7 @@ app.delete('/api/account/avatar', requireAuth, (req, res) => {
   req.account.updatedAt = new Date().toISOString();
   syncAccountAcrossRooms(req.account);
   persistState();
-  ROOMS.forEach((room) => emitLeaderboard(room.slug));
+  getAllRooms().forEach((room) => emitLeaderboard(room.slug));
 
   return res.json({ account: toAccountProfile(req.account) });
 });
@@ -1404,7 +1691,7 @@ app.delete('/api/account', requireAuth, (req, res) => {
   });
   removeAccountEverywhere(accountId);
   persistState();
-  ROOMS.forEach((room) => emitRoomState(room.slug));
+  getAllRooms().forEach((room) => emitRoomState(room.slug));
   clearSessionCookie(res);
 
   return res.json({ ok: true });
@@ -1414,6 +1701,9 @@ app.post('/api/rooms/:roomSlug/join', requireAuth, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.params.roomSlug);
   if (!roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });
+  }
+  if (!enforceRoomAccess(roomSlug, req, res)) {
+    return;
   }
 
   const membership = ensureRoomMembership(roomSlug, req.account);
@@ -1435,8 +1725,66 @@ app.post('/api/rooms/:roomSlug/join', requireAuth, (req, res) => {
 app.get('/api/rooms', (req, res) => {
   return res.json({
     defaultRoom: DEFAULT_ROOM_SLUG,
-    rooms: ROOMS,
+    rooms: getAllRooms().map(toPublicRoomSummary),
   });
+});
+
+app.post('/api/rooms', (req, res) => {
+  const name = sanitizeRoomName(req.body.name);
+  const password = sanitizeRoomPassword(req.body.password);
+  const defaultStage = normalizeStage(req.body.defaultStage) || TEMP_ROOM_STAGE;
+
+  if (!name) {
+    return res.status(400).json({ error: 'Room name is required' });
+  }
+
+  const passwordData = password ? hashPassword(password) : null;
+  const room = buildTemporaryRoomSummary({
+    name,
+    passwordHash: passwordData?.hash || null,
+    passwordSalt: passwordData?.salt || null,
+    defaultStage,
+  });
+
+  state.dynamicRooms[room.slug] = room;
+  roomStates[room.slug] = normalizeRoomStateShape(createRoomState());
+  state.roomStates[room.slug] = roomStates[room.slug];
+
+  if (room.passwordRequired) {
+    const token = createRoomAccessSession(room.slug);
+    setRoomAccessCookie(res, room.slug, token);
+  }
+
+  persistState();
+
+  return res.status(201).json({
+    room: toPublicRoomSummary(room),
+  });
+});
+
+app.post('/api/rooms/:roomSlug/access', (req, res) => {
+  const roomSlug = normalizeRoomSlug(req.params.roomSlug);
+  if (!roomSlug) {
+    return res.status(404).json({ error: 'Unknown room' });
+  }
+
+  const room = getRoomBySlug(roomSlug);
+  if (!room.passwordRequired) {
+    touchRoomActivity(roomSlug);
+    return res.json({ ok: true, room: toPublicRoomSummary(room) });
+  }
+
+  if (!verifyRoomPassword(room, req.body.password)) {
+    clearRoomAccessCookie(res, roomSlug);
+    return res.status(401).json({ error: 'Invalid room password' });
+  }
+
+  const token = createRoomAccessSession(roomSlug);
+  setRoomAccessCookie(res, roomSlug, token);
+  touchRoomActivity(roomSlug);
+  persistState();
+
+  return res.json({ ok: true, room: toPublicRoomSummary(room) });
 });
 
 app.get('/api/room/:roomSlug', (req, res) => {
@@ -1444,12 +1792,15 @@ app.get('/api/room/:roomSlug', (req, res) => {
   if (!roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });
   }
+  if (!enforceRoomAccess(roomSlug, req, res)) {
+    return;
+  }
 
   const room = getRoomBySlug(roomSlug);
   const stateForRoom = getRoomState(roomSlug);
 
   return res.json({
-    ...room,
+    ...toPublicRoomSummary(room),
     predictionWindows: getRoomPredictionWindows(stateForRoom),
     showState: buildShowState(roomSlug),
     stages: STAGE_KEYS,
@@ -1467,6 +1818,9 @@ app.get('/api/status', (req, res) => {
   const roomSlug = normalizeRoomSlug(req.query.room);
   if (!roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });
+  }
+  if (!enforceRoomAccess(roomSlug, req, res)) {
+    return;
   }
 
   const room = getRoomState(roomSlug);
@@ -1494,6 +1848,9 @@ app.get('/api/acts', (req, res) => {
   }
   if (!stageKey) {
     return res.status(400).json({ error: 'Unknown stage' });
+  }
+  if (!enforceRoomAccess(roomSlug, req, res)) {
+    return;
   }
 
   return res.json({
@@ -1529,6 +1886,9 @@ app.get('/api/results', (req, res) => {
   if (!stageKey) {
     return res.status(400).json({ error: 'Unknown stage' });
   }
+  if (!enforceRoomAccess(roomSlug, req, res)) {
+    return;
+  }
 
   return res.json({
     roomSlug,
@@ -1553,6 +1913,9 @@ app.get('/api/predictions/me', requireAuth, (req, res) => {
   }
   if (!stageKey) {
     return res.status(400).json({ error: 'Unknown stage' });
+  }
+  if (!enforceRoomAccess(roomSlug, req, res)) {
+    return;
   }
 
   if (isAccountRemovedFromRoom(roomSlug, req.account.id)) {
@@ -1583,6 +1946,9 @@ app.post('/api/predictions/me', requireAuth, (req, res) => {
   }
   if (!stageKey) {
     return res.status(400).json({ error: 'Unknown stage' });
+  }
+  if (!enforceRoomAccess(roomSlug, req, res)) {
+    return;
   }
 
   const room = getRoomState(roomSlug);
@@ -1656,6 +2022,7 @@ app.post('/api/results', requireAdmin, (req, res) => {
   }
 
   const room = getRoomState(roomSlug);
+  touchRoomActivity(roomSlug);
   const validation = validateRanking(stageKey, req.body.ranking || [], { allowPartial: true });
   if (!validation.ok) {
     return res.status(400).json({ error: validation.error });
@@ -1691,6 +2058,7 @@ app.post('/api/toggle', requireAdmin, (req, res) => {
   }
 
   const room = getRoomState(roomSlug);
+  touchRoomActivity(roomSlug);
   const nextOpen = typeof req.body.open === 'boolean'
     ? req.body.open
     : !room.predictionWindows[stageKey];
@@ -1714,6 +2082,7 @@ app.post('/api/reset', requireAdmin, (req, res) => {
 
   roomStates[roomSlug] = normalizeRoomStateShape(createRoomState());
   state.roomStates[roomSlug] = roomStates[roomSlug];
+  touchRoomActivity(roomSlug);
   persistState();
   emitRoomState(roomSlug);
 
@@ -1732,6 +2101,7 @@ app.post('/api/admin/show-state', requireAdmin, (req, res) => {
   }
 
   const room = getRoomState(roomSlug);
+  touchRoomActivity(roomSlug);
   room.showState = normalizeShowStateShape({
     ...room.showState,
     stageKey,
@@ -1754,6 +2124,7 @@ app.get('/api/admin/room-state', requireAdmin, (req, res) => {
   if (!roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });
   }
+  touchRoomActivity(roomSlug);
 
   return res.json(buildAdminRoomSnapshot(roomSlug));
 });
@@ -1767,6 +2138,7 @@ app.post('/api/admin/scoring', requireAdmin, (req, res) => {
   }
 
   const room = getRoomState(roomSlug);
+  touchRoomActivity(roomSlug);
   room.scoringProfile = scoringProfile;
   recomputeScores(roomSlug);
   persistState();
@@ -1784,6 +2156,7 @@ app.get('/api/users', requireAdmin, (req, res) => {
   if (!roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });
   }
+  touchRoomActivity(roomSlug);
 
   return res.json(buildAdminUserList(roomSlug));
 });
@@ -1843,6 +2216,9 @@ app.get('/api/leaderboard', (req, res) => {
   if (req.query.stage && !stageKey) {
     return res.status(400).json({ error: 'Unknown stage' });
   }
+  if (!enforceRoomAccess(roomSlug, req, res)) {
+    return;
+  }
 
   return res.json(buildLeaderboard(roomSlug, stageKey));
 });
@@ -1851,6 +2227,9 @@ app.get('/api/stats/season', (req, res) => {
   const roomSlug = normalizeRoomSlug(req.query.room);
   if (!roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });
+  }
+  if (!enforceRoomAccess(roomSlug, req, res)) {
+    return;
   }
 
   return res.json(buildSeasonStats(roomSlug));

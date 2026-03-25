@@ -3,6 +3,21 @@
 > Current focus:
 > `vote/acts` UX on real screens. Infrastructure and deploy are stable enough; the main remaining risk is the companion flow itself.
 
+## 2026-03-25 new room flow risks
+
+- Temporary rooms are new and need a real end-to-end smoke test:
+  - create open room
+  - create password-protected room
+  - unlock room from a second browser/device
+  - make sure `vote`, `live`, `players`, and `room` all respect the room password gate
+- Room inactivity cleanup needs runtime verification on the deployed server:
+  - confirm a temporary room survives while a socket is connected
+  - confirm it disappears after the idle timeout when nobody is inside
+- `RoomChrome` now performs an access check before rendering child routes.
+  - this needs a real UX pass for loading / locked / missing-room states on phone and desktop
+- The new landing page and room page were simplified heavily.
+  - need a design pass on spacing, copy, and visual hierarchy after real-device review
+
 ## Актуальные
 
 - Need a real device smoke test for the new `placed acts` model:
