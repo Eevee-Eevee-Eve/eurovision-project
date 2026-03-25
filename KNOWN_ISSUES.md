@@ -8,6 +8,10 @@
   - does country read first without losing artist/song clarity
   - is the drag handle still obvious enough after the visual compression
   - is the sticky submit block still too tall on smaller phones
+- The returned quick place select in the main list needs real-device validation:
+  - placeholder must stay clearly empty before the first user choice
+  - option labels must stay readable on narrow iPhones
+  - native picker behavior should still feel lighter than the previous oversized control
 
 ## Актуальные
 

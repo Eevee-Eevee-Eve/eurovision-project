@@ -18,6 +18,15 @@
 - Preserved drag-and-drop for already placed acts
 - Local `next build` passed after the refactor
 
+### Follow-up List-Control Pass
+
+- Brought quick place selection back into the main compact acts list
+- Changed row hierarchy so country reads before artist and song
+- Reduced poster footprint and right-side control width for phone screens
+- Kept drag-and-drop as a secondary action for already placed acts only
+- Fixed the vote tab switcher grid to match the actual number of tabs
+- Added a site-wide audit thread for technical/loading copy outside `VoteStudio`
+
 ## 2026-03-24
 
 ### Latest UX pass
