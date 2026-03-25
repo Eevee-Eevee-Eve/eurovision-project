@@ -148,9 +148,6 @@ function SortableOrderRow({
   isPlaced,
   onOpen,
   onAddToRanking,
-  placeLabel,
-  placeOptions,
-  onPlaceChange,
 }: {
   act: ActEntry;
   rank: number;
@@ -159,13 +156,10 @@ function SortableOrderRow({
   finalContext: string | null;
   locked: boolean;
   dragLabel: string;
-  addToRankingLabel?: string;
+  addToRankingLabel: string;
   isPlaced: boolean;
   onOpen: () => void;
-  onAddToRanking?: () => void;
-  placeLabel?: string;
-  placeOptions?: PlaceOption[];
-  onPlaceChange?: (value: number) => void;
+  onAddToRanking: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: act.code,
@@ -173,7 +167,6 @@ function SortableOrderRow({
   });
   const flagUrl = resolveMediaUrl(act.flagUrl);
   const photoUrl = resolveMediaUrl(act.photoUrl);
-  const resolvedPlaceLabel = placeLabel || "Choose place";
 
   return (
     <article
@@ -189,17 +182,17 @@ function SortableOrderRow({
           type="button"
           onClick={onOpen}
           className={`grid min-w-0 items-center gap-2.5 text-left ${
-            isPlaced ? "grid-cols-[2.3rem_3.55rem_minmax(0,1fr)] md:grid-cols-[2.6rem_3.9rem_minmax(0,1fr)]" : "grid-cols-[3.55rem_minmax(0,1fr)] md:grid-cols-[3.9rem_minmax(0,1fr)]"
+            isPlaced ? "grid-cols-[2.45rem_3.7rem_minmax(0,1fr)] md:grid-cols-[2.65rem_4rem_minmax(0,1fr)]" : "grid-cols-[3.7rem_minmax(0,1fr)] md:grid-cols-[4rem_minmax(0,1fr)]"
           }`}
         >
           {isPlaced ? (
-            <div className="show-rank h-[2.3rem] w-[2.3rem] shrink-0 md:h-[2.6rem] md:w-[2.6rem]">
+            <div className="show-rank h-[2.45rem] w-[2.45rem] shrink-0 md:h-[2.65rem] md:w-[2.65rem]">
               <span className="display-copy text-[0.95rem] font-black text-arenaText md:text-base">{rank}</span>
             </div>
           ) : null}
 
           <div
-            className="relative h-[3.55rem] w-[3.55rem] shrink-0 overflow-hidden rounded-[1.15rem] border border-white/10 bg-white/5 md:h-[3.9rem] md:w-[3.9rem]"
+            className="relative h-[3.7rem] w-[3.7rem] shrink-0 overflow-hidden rounded-[1.2rem] border border-white/10 bg-white/5 md:h-[4rem] md:w-[4rem]"
             style={{
               backgroundImage: photoUrl
                 ? undefined
@@ -224,7 +217,7 @@ function SortableOrderRow({
 
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="inline-flex min-w-0 items-center gap-2 text-[0.95rem] font-semibold leading-tight text-white">
+              <span className="inline-flex min-w-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-white/94">
                 <span className="h-4 w-4 shrink-0 overflow-hidden rounded-[0.35rem] border border-white/10 bg-white/10">
                   <img
                     src={flagUrl || undefined}
@@ -236,65 +229,17 @@ function SortableOrderRow({
                 </span>
                 <span className="truncate">{countryName}</span>
               </span>
-              {noteBadge ? (
-                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-arenaBeam" title={noteBadge}>
-                  <NotebookPen size={10} />
-                </span>
-              ) : null}
+              {noteBadge ? <span className="show-chip hidden px-2 py-1 text-[10px] text-white sm:inline-flex">{noteBadge}</span> : null}
             </div>
-            <p className="mt-1 line-clamp-1 text-[0.84rem] font-medium leading-tight text-white/82 md:text-[0.88rem]">{act.artist}</p>
+            <p className="mt-1.5 line-clamp-1 text-[0.92rem] font-medium leading-tight text-white/84 md:text-[0.98rem]">{act.artist}</p>
             <div className="mt-0.5 flex min-w-0 items-center gap-2">
-              <p className="min-w-0 flex-1 line-clamp-1 text-[0.75rem] leading-5 text-arenaMuted md:text-[0.8rem]">{act.song}</p>
+              <p className="min-w-0 flex-1 line-clamp-1 text-[0.78rem] leading-5 text-arenaMuted md:text-[0.82rem]">{act.song}</p>
               {finalContext ? <span className="hidden truncate text-[10px] text-arenaMuted md:inline">{finalContext}</span> : null}
             </div>
           </div>
         </button>
 
         <div className="flex shrink-0 items-center gap-2">
-          {placeOptions?.length && onPlaceChange ? (
-            <>
-              <label className="sr-only" htmlFor={`place-${act.code}`}>{resolvedPlaceLabel}</label>
-              <div className="relative">
-                <select
-                  id={`place-${act.code}`}
-                  value={isPlaced ? String(rank) : ""}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    if (!Number.isNaN(value) && value > 0) {
-                      onPlaceChange(value);
-                    }
-                  }}
-                  disabled={locked}
-                  className="arena-input h-10 min-w-[6.4rem] max-w-[6.9rem] appearance-none pl-3 pr-8 text-[11px] font-medium text-white md:h-11 md:min-w-[7.4rem] md:max-w-[7.8rem] md:text-xs"
-                  aria-label={resolvedPlaceLabel}
-                >
-                  <option value="">{isPlaced ? `#${rank}` : resolvedPlaceLabel}</option>
-                  {placeOptions.map((option) => (
-                    <option key={`${act.code}-place-${option.value}`} value={option.value}>
-                      {option.state === "free"
-                        ? option.caption
-                        : `#${option.value} — ${option.countryName || option.artist || option.caption}`}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-arenaMuted" />
-              </div>
-            </>
-          ) : null}
-
-          {!placeOptions?.length && onAddToRanking ? (
-            <button
-              type="button"
-              onClick={onAddToRanking}
-              className="arena-button-secondary inline-flex h-10 items-center justify-center rounded-[1rem] px-3.5 text-[11px] font-medium md:h-11 md:px-4 md:text-xs"
-              disabled={locked}
-              aria-label={addToRankingLabel}
-              title={addToRankingLabel}
-            >
-              {addToRankingLabel}
-            </button>
-          ) : null}
-
           {isPlaced ? (
             <button
               type="button"
@@ -307,7 +252,18 @@ function SortableOrderRow({
             >
               <GripVertical size={16} />
             </button>
-          ) : null}
+          ) : (
+            <button
+              type="button"
+              onClick={onAddToRanking}
+              className="arena-button-secondary inline-flex h-10 items-center justify-center rounded-[1rem] px-3.5 text-[11px] font-medium md:h-11 md:px-4 md:text-xs"
+              disabled={locked}
+              aria-label={addToRankingLabel}
+              title={addToRankingLabel}
+            >
+              {addToRankingLabel}
+            </button>
+          )}
         </div>
       </div>
     </article>
@@ -1165,10 +1121,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                       locked={locked}
                       dragLabel={language === "ru" ? "РџРµСЂРµС‚Р°С‰РёС‚СЊ" : "Drag to reorder"}
                       onOpen={() => setSelectedActCode(act.code)}
-                      placeLabel={text.choosePlacePlaceholder}
-                      placeOptions={getPlaceOptions(act.code)}
+                      addToRankingLabel={language === "ru" ? "Р’ СЂРµР№С‚РёРЅРі" : "Add"}
                       isPlaced
-                      onPlaceChange={(value) => placeArtistAt(act.code, value - 1)}
+                      onAddToRanking={() => placeArtistAt(act.code, placedActsCount)}
                     />
                   );
                 })}
@@ -1225,11 +1180,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 finalContext={finalContext}
                 locked={locked}
                 dragLabel={language === "ru" ? "РџРµСЂРµС‚Р°С‰РёС‚СЊ" : "Drag to reorder"}
-                placeLabel={text.choosePlacePlaceholder}
-                placeOptions={getPlaceOptions(act.code)}
+                addToRankingLabel={language === "ru" ? "Р’ СЂРµР№С‚РёРЅРі" : "Add"}
                 isPlaced={false}
                 onOpen={() => setSelectedActCode(act.code)}
-                onPlaceChange={(value) => placeArtistAt(act.code, value - 1)}
+                onAddToRanking={() => placeArtistAt(act.code, placedActsCount)}
               />
             );
           })}
@@ -1576,7 +1530,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       )}
 
       <section className="show-card p-3">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {([
             { key: "acts", icon: Sparkles },
             { key: "notes", icon: NotebookPen },
