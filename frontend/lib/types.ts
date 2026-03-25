@@ -19,6 +19,8 @@ export interface RoomSummary {
   seasonYear?: number;
   seasonLabel?: string;
   defaultStage: StageKey;
+  isTemporary?: boolean;
+  passwordRequired?: boolean;
 }
 
 export interface ShowState {

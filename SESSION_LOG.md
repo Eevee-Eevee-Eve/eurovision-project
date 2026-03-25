@@ -176,3 +176,23 @@
   into `backend/backend_core/participants_2026.json`
 - extended `backend/backend_core/catalog.js` so every act payload can now expose `videoUrl`
   directly from the backend instead of relying only on runtime search fallback
+
+### 2026-03-25 room flow pass
+
+- added temporary room support in the backend:
+  - room creation from `/api/rooms`
+  - optional password on creation
+  - per-room access sessions via cookie
+  - automatic cleanup after 4 hours without room activity and without connected viewers
+- kept the static `neon-arena` room intact as the permanent main room
+- redesigned the landing page around the simplified public product model:
+  - start
+  - voting
+  - results
+  - admin as backstage
+- added temporary room creation UI on the landing page
+- simplified the room page so it now hands users mainly into:
+  - voting
+  - results
+  while keeping acts / players / admin as quieter secondary routes
+- added a room password gate to `RoomChrome`, so protected rooms now block room routes cleanly instead of failing deeper in child components

@@ -17,6 +17,20 @@ import type {
   StageResultsPayload,
 } from "./types";
 
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  payload?: unknown;
+
+  constructor(message: string, status: number, code?: string, payload?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+    this.payload = payload;
+  }
+}
+
 export function getApiBase() {
   const envBase = process.env.NEXT_PUBLIC_API_BASE?.trim();
   if (envBase) {
@@ -35,11 +49,18 @@ async function readJson<T>(path: string, init?: RequestInit) {
     credentials: "include",
     ...init,
   });
+  const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(`Request failed: ${path} (${response.status})`);
+    const errorPayload = payload as { error?: string; code?: string };
+    throw new ApiError(
+      errorPayload.error || `Request failed: ${path} (${response.status})`,
+      response.status,
+      errorPayload.code,
+      payload,
+    );
   }
 
-  return response.json() as Promise<T>;
+  return payload as T;
 }
 
 async function sendJson<T>(path: string, init?: RequestInit) {
@@ -49,13 +70,39 @@ async function sendJson<T>(path: string, init?: RequestInit) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error((payload as { error?: string }).error || `Request failed: ${path} (${response.status})`);
+    const errorPayload = payload as { error?: string; code?: string };
+    throw new ApiError(
+      errorPayload.error || `Request failed: ${path} (${response.status})`,
+      response.status,
+      errorPayload.code,
+      payload,
+    );
   }
   return payload as T;
 }
 
 export async function fetchRooms() {
   return readJson<{ defaultRoom: string; rooms: RoomSummary[] }>("/api/rooms");
+}
+
+export async function createTemporaryRoom(payload: {
+  name: string;
+  password?: string;
+  defaultStage?: StageKey;
+}) {
+  return sendJson<{ room: RoomSummary }>("/api/rooms", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function unlockRoom(roomSlug: string, password: string) {
+  return sendJson<{ ok: true; room: RoomSummary }>(`/api/rooms/${roomSlug}/access`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
 }
 
 export async function fetchRoom(roomSlug: string) {
