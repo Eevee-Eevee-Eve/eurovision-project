@@ -3,12 +3,6 @@
 > Current focus:
 > `vote/acts` UX on real screens. Infrastructure and deploy are stable enough; the main remaining risk is the companion flow itself.
 
-- The new compact `acts` list pass still needs a real-phone smoke test:
-  - is the row density finally low enough
-  - does country read first without losing artist/song clarity
-  - is the drag handle still obvious enough after the visual compression
-  - is the sticky submit block still too tall on smaller phones
-
 ## Актуальные
 
 - Need a real device smoke test for the new `placed acts` model:
