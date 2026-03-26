@@ -196,3 +196,24 @@
   - results
   while keeping acts / players / admin as quieter secondary routes
 - added a room password gate to `RoomChrome`, so protected rooms now block room routes cleanly instead of failing deeper in child components
+
+### 2026-03-26 room-first IA pass
+
+- reframed the public product flow around:
+  - home = create room / join room
+  - room = choose voting or results
+  - admin = backstage
+- rebuilt the landing page so the first two primary actions are now:
+  - create room
+  - join room
+- added room code / full-link entry on the landing page:
+  - normalizes pasted room URLs
+  - sends users straight into `/{roomSlug}`
+- simplified `RoomChrome`:
+  - top nav now exposes only `Voting` and `Results`
+  - room identity and account state are shown as contextual info instead of route noise
+- simplified `RoomLanding`:
+  - removed the old “many equal routes” feel
+  - room page now acts as a clear container with two main actions
+  - admin stays present only as a quieter host/backstage route
+- kept the temporary-room backend, password gate, and 4-hour cleanup logic intact
