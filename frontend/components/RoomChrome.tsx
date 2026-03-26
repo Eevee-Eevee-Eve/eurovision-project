@@ -1,8 +1,8 @@
 'use client';
 
 import Link from "next/link";
-import { Monitor, NotebookPen, Trophy, Users } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { MonitorPlay, NotebookPen } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { getAccountCopy } from "../lib/account-copy";
 import { ApiError, fetchRoom, unlockRoom } from "../lib/api";
 import type { RoomSummary, StageKey } from "../lib/types";
@@ -12,10 +12,8 @@ import { useLanguage } from "./LanguageProvider";
 import { UserAvatar } from "./UserAvatar";
 
 const navItems = [
-  { key: "vote", labelRu: "Голосование", labelEn: "Vote", icon: NotebookPen },
-  { key: "acts", labelRu: "Артисты", labelEn: "Acts", icon: Users },
-  { key: "live", labelRu: "Эфир", labelEn: "Live", icon: Trophy },
-  { key: "players", labelRu: "Участники", labelEn: "Players", icon: Monitor },
+  { key: "vote", labelRu: "Голосование", labelEn: "Voting", icon: NotebookPen },
+  { key: "live", labelRu: "Результаты", labelEn: "Results", icon: MonitorPlay },
 ] as const;
 
 export function RoomChrome({
@@ -95,28 +93,48 @@ export function RoomChrome({
     }
   }
 
+  const activeStage = useMemo(
+    () => stageKey || roomSummary?.defaultStage || "semi1",
+    [roomSummary?.defaultStage, stageKey],
+  );
+
   const unlockCopy = language === "ru"
     ? {
         loading: "Проверяю доступ к комнате...",
         missingTitle: "Комната не найдена",
         missingText: "Эта комната уже исчезла или ссылка неверная.",
-        lockedTitle: "Закрытая комната",
-        lockedText: "У этой комнаты есть пароль. Введи его один раз, и дальше можно будет спокойно открыть голосование и экран результатов.",
+        lockedTitle: "Комната закрыта паролем",
+        lockedText:
+          "Сначала открой комнату паролем, а потом уже переходи к голосованию и результатам.",
         passwordLabel: "Пароль комнаты",
         passwordPlaceholder: "Введите пароль",
         open: "Открыть комнату",
         backHome: "На главную",
+        roomInfo: "Комната",
+        accountInfo: "Аккаунт",
+        stageLabel: "Текущий этап",
+        temporary: "Временная",
+        privateRoom: "С паролем",
+        guest: "Гость",
+        accountHint: "Войти можно позже, прямо перед отправкой бюллетеня.",
       }
     : {
         loading: "Checking room access...",
         missingTitle: "Room not found",
         missingText: "This room has expired or the link is invalid.",
-        lockedTitle: "Private room",
-        lockedText: "This room is protected with a password. Enter it once to open voting and results routes.",
+        lockedTitle: "Room is password-protected",
+        lockedText: "Unlock the room first, then continue into voting or results.",
         passwordLabel: "Room password",
         passwordPlaceholder: "Enter password",
         open: "Open room",
         backHome: "Back home",
+        roomInfo: "Room",
+        accountInfo: "Account",
+        stageLabel: "Current stage",
+        temporary: "Temporary",
+        privateRoom: "Password",
+        guest: "Guest",
+        accountHint: "You can sign in later, right before submitting a ballot.",
       };
 
   return (
@@ -124,60 +142,96 @@ export function RoomChrome({
       <div className="mx-auto max-w-7xl">
         <div className="glass-panel ghost-grid rounded-shell border border-white/10 p-4 md:p-5">
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href="/"
-                  className="label-copy inline-flex rounded-full bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-arenaMuted transition hover:bg-white/10 hover:text-white"
-                >
+            <div className="flex items-center justify-between gap-3">
+              <Link
+                href="/"
+                className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 transition hover:bg-white/[0.08]"
+              >
+                <span className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
                   {language === "ru" ? "Евровидение у Морозовых 2026" : "Morozov Eurovision 2026"}
-                </Link>
-                <Link
-                  href={`/${roomSlug}`}
-                  className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-sm text-white/90 transition hover:bg-white/[0.08]"
-                >
-                  {language === "ru" ? "Комната" : "Room"}: {roomSlug}
-                </Link>
-                {stageKey ? (
-                  <span className="label-copy inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] uppercase tracking-[0.22em] text-arenaBeam">
-                    {getStageLabel(stageKey)}
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                {!isDisplayMode ? (
-                  <Link
-                    href="/account"
-                    className="show-chip px-3 py-2 text-sm text-white transition hover:bg-white/10"
-                  >
-                    {account ? (
-                      <>
-                        <UserAvatar
-                          name={account.publicName}
-                          emoji={account.emoji}
-                          avatarUrl={account.avatarUrl}
-                          avatarTheme={account.avatarTheme}
-                          className="h-9 w-9"
-                          textClass="text-xs"
-                        />
-                        <span className="max-w-[10rem] truncate">{account.publicName}</span>
-                      </>
-                    ) : (
-                      accountCopy.navAccount
-                    )}
-                  </Link>
-                ) : null}
-                <LanguageSwitcher />
-              </div>
+                </span>
+              </Link>
+              <LanguageSwitcher />
             </div>
+
+            {!checkingAccess && !roomMissing && roomSummary ? (
+              <div className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
+                <div className="show-panel p-4">
+                  <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
+                    {unlockCopy.roomInfo}
+                  </p>
+                  <h1 className="display-copy mt-3 text-2xl font-black text-white md:text-3xl">
+                    {roomSummary.name}
+                  </h1>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaBeam">
+                      {unlockCopy.stageLabel}: {getStageLabel(activeStage)}
+                    </span>
+                    <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaMuted">
+                      {roomSlug}
+                    </span>
+                    {roomSummary.isTemporary ? (
+                      <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaMuted">
+                        {unlockCopy.temporary}
+                      </span>
+                    ) : null}
+                    {roomSummary.passwordRequired ? (
+                      <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaMuted">
+                        {unlockCopy.privateRoom}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                {!isDisplayMode ? (
+                  <div className="show-panel p-4">
+                    <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaPulse">
+                      {unlockCopy.accountInfo}
+                    </p>
+                    <div className="mt-4 flex items-center gap-3">
+                      {account ? (
+                        <>
+                          <UserAvatar
+                            name={account.publicName}
+                            emoji={account.emoji}
+                            avatarUrl={account.avatarUrl}
+                            avatarTheme={account.avatarTheme}
+                            className="h-12 w-12"
+                            textClass="text-sm"
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate text-base font-semibold text-white">
+                              {account.publicName}
+                            </p>
+                            <p className="text-sm text-arenaMuted">{account.email}</p>
+                          </div>
+                        </>
+                      ) : (
+                        <div>
+                          <p className="text-base font-semibold text-white">{unlockCopy.guest}</p>
+                          <p className="mt-1 text-sm leading-6 text-arenaMuted">
+                            {unlockCopy.accountHint}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4">
+                      <Link
+                        href="/account"
+                        className="arena-button-secondary inline-flex h-11 items-center justify-center px-4 text-sm"
+                      >
+                        {account ? accountCopy.navAccount : accountCopy.auth.signIn}
+                      </Link>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="flex flex-wrap gap-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                const href = item.key === "players"
-                  ? `/${roomSlug}/players/overall`
-                  : `/${roomSlug}/${item.key}/${stageKey || "semi1"}`;
+                const href = `/${roomSlug}/${item.key}/${activeStage}`;
                 const isActive = pageKey === item.key;
 
                 return (
@@ -204,17 +258,24 @@ export function RoomChrome({
                 <div className="show-card p-6 text-sm text-arenaMuted">{unlockCopy.loading}</div>
               ) : roomMissing ? (
                 <div className="show-card p-6">
-                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{unlockCopy.missingTitle}</p>
+                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
+                    {unlockCopy.missingTitle}
+                  </p>
                   <p className="mt-4 text-sm leading-7 text-arenaMuted">{unlockCopy.missingText}</p>
                   <div className="mt-5">
-                    <Link href="/" className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm">
+                    <Link
+                      href="/"
+                      className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm"
+                    >
                       {unlockCopy.backHome}
                     </Link>
                   </div>
                 </div>
               ) : needsRoomPassword ? (
                 <div className="show-card max-w-2xl p-6">
-                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{unlockCopy.lockedTitle}</p>
+                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
+                    {unlockCopy.lockedTitle}
+                  </p>
                   <h2 className="display-copy mt-3 text-3xl font-black text-white">
                     {roomSummary?.name || roomSlug}
                   </h2>
@@ -230,7 +291,11 @@ export function RoomChrome({
                         className="arena-input"
                       />
                     </label>
-                    {unlockError ? <div className="rounded-[1.2rem] bg-rose-400/10 px-4 py-3 text-sm text-rose-100">{unlockError}</div> : null}
+                    {unlockError ? (
+                      <div className="rounded-[1.2rem] bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+                        {unlockError}
+                      </div>
+                    ) : null}
                     <div className="flex flex-wrap gap-3">
                       <button
                         type="button"
@@ -240,7 +305,10 @@ export function RoomChrome({
                       >
                         {submitting ? "..." : unlockCopy.open}
                       </button>
-                      <Link href="/" className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm">
+                      <Link
+                        href="/"
+                        className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm"
+                      >
                         {unlockCopy.backHome}
                       </Link>
                     </div>

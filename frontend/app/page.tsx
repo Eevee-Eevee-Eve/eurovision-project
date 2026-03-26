@@ -1,26 +1,40 @@
 'use client';
 
 import Link from "next/link";
-import { Lock, MonitorPlay, PlusCircle, Radio, Sparkles, Vote } from "lucide-react";
+import { ArrowRight, Lock, PlusCircle, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import LanguageSwitcher from "../components/LanguageSwitcher";
-import Leaderboard from "../components/Leaderboard";
-import { useLanguage } from "../components/LanguageProvider";
 import { createTemporaryRoom, fetchRooms } from "../lib/api";
 import { FALLBACK_ROOM } from "../lib/rooms";
 import type { RoomSummary } from "../lib/types";
+import { useLanguage } from "../components/LanguageProvider";
+
+function normalizeRoomInput(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  const withoutOrigin = trimmed.replace(/^https?:\/\/[^/]+/i, "");
+  const firstSegment = withoutOrigin
+    .split("?")[0]
+    .split("#")[0]
+    .replace(/^\/+/, "")
+    .split("/")[0];
+
+  return firstSegment.trim().toLowerCase();
+}
 
 export default function Home() {
   const router = useRouter();
   const { language, getRoomCityLabel } = useLanguage();
   const [rooms, setRooms] = useState<RoomSummary[]>([FALLBACK_ROOM]);
-  const [defaultRoomSlug, setDefaultRoomSlug] = useState(FALLBACK_ROOM.slug);
   const [loadError, setLoadError] = useState("");
   const [roomName, setRoomName] = useState("");
   const [roomPassword, setRoomPassword] = useState("");
+  const [joinRoomCode, setJoinRoomCode] = useState("");
   const [createPending, setCreatePending] = useState(false);
   const [createError, setCreateError] = useState("");
+  const [joinError, setJoinError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -30,17 +44,15 @@ export default function Home() {
         const payload = await fetchRooms();
         if (!active) return;
         setRooms(payload.rooms.length ? payload.rooms : [FALLBACK_ROOM]);
-        setDefaultRoomSlug(payload.defaultRoom || FALLBACK_ROOM.slug);
         setLoadError("");
       } catch (error) {
         if (!active) return;
         console.error(error);
         setRooms([FALLBACK_ROOM]);
-        setDefaultRoomSlug(FALLBACK_ROOM.slug);
         setLoadError(
           language === "ru"
-            ? "Комнаты сейчас недоступны, поэтому показываю основную комнату по умолчанию."
-            : "Rooms are unavailable right now, so the main room is shown by default.",
+            ? "Список комнат сейчас недоступен. Ниже всё равно можно создать новую комнату или открыть основную."
+            : "The room list is unavailable right now. You can still create a new room or open the main one below.",
         );
       }
     };
@@ -52,98 +64,90 @@ export default function Home() {
     };
   }, [language]);
 
-  const defaultRoom = useMemo(
-    () => rooms.find((room) => room.slug === defaultRoomSlug) || FALLBACK_ROOM,
-    [defaultRoomSlug, rooms],
+  const text = useMemo(
+    () =>
+      language === "ru"
+        ? {
+            kicker: "Евровидение у Морозовых 2026",
+            title: "Сначала комната. Потом голосование и результаты.",
+            intro:
+              "Это вход в вашу вечеринку. Один человек создаёт комнату, остальные подключаются, а уже внутри появляются личный бюллетень и общий экран результатов.",
+            createTitle: "Создать комнату",
+            createBody:
+              "Запусти новую комнату для друзей. Пароль можно добавить сразу, а можно оставить комнату открытой.",
+            createNameLabel: "Название комнаты",
+            createNamePlaceholder: "Например: Полуфинал у Морозовых",
+            createPasswordLabel: "Пароль комнаты",
+            createPasswordPlaceholder: "Необязательно",
+            createButton: "Создать комнату",
+            createHint:
+              "Если в комнате никого нет больше 4 часов, она исчезает автоматически.",
+            joinTitle: "Войти в комнату",
+            joinBody:
+              "Вставь код комнаты или целую ссылку. Если комната закрыта паролем, сайт попросит его уже на следующем шаге.",
+            joinLabel: "Код комнаты или ссылка",
+            joinPlaceholder: "Например: neon-arena",
+            joinButton: "Войти в комнату",
+            activeRoomsTitle: "Активные комнаты",
+            activeRoomsBody:
+              "Это не главный сценарий, а быстрый список уже существующих комнат, если ты знаешь, куда идёшь.",
+            openRoom: "Открыть комнату",
+            temporary: "Временная",
+            privateRoom: "С паролем",
+            noRooms: "Пока видна только основная комната.",
+            whyTitle: "Как это устроено",
+            whyItems: [
+              "Создаёшь комнату или входишь в уже существующую.",
+              "Внутри комнаты открываешь голосование или большой экран результатов.",
+              "Хост управляет эфиром отдельно, не мешая гостям.",
+            ],
+          }
+        : {
+            kicker: "Morozov Eurovision 2026",
+            title: "Start with a room. Then go into voting and results.",
+            intro:
+              "This is the entry point to your watch party. One person creates a room, everyone else joins, and only then do voting and the shared results screen make sense.",
+            createTitle: "Create a room",
+            createBody:
+              "Spin up a room for friends. Add a password if you want privacy, or leave it open.",
+            createNameLabel: "Room name",
+            createNamePlaceholder: "Example: Semi-final watch party",
+            createPasswordLabel: "Room password",
+            createPasswordPlaceholder: "Optional",
+            createButton: "Create room",
+            createHint:
+              "If nobody stays in the room for 4 hours, it disappears automatically.",
+            joinTitle: "Join a room",
+            joinBody:
+              "Paste a room code or a full link. If the room is private, the password prompt will appear on the next step.",
+            joinLabel: "Room code or link",
+            joinPlaceholder: "Example: neon-arena",
+            joinButton: "Join room",
+            activeRoomsTitle: "Active rooms",
+            activeRoomsBody:
+              "This is a secondary shortcut for people who already know where they are going.",
+            openRoom: "Open room",
+            temporary: "Temporary",
+            privateRoom: "Password",
+            noRooms: "Only the main room is visible right now.",
+            whyTitle: "How it works",
+            whyItems: [
+              "Create a room or enter one that already exists.",
+              "Inside the room, switch between voting and the results screen.",
+              "The host controls the live flow separately.",
+            ],
+          },
+    [language],
   );
 
-  const text = language === "ru"
-    ? {
-        kicker: "Евровидение у Морозовых 2026",
-        title: "Красивый экран вечеринки, личный бюллетень и общий reveal в одной системе",
-        intro:
-          "С телефона голосуешь и оставляешь заметки. На большом экране смотришь движение мест и общую таблицу. Хост управляет этапами отдельно.",
-        primaryCta: "Перейти к голосованию",
-        secondaryCta: "Открыть результаты",
-        whatTitle: "Как это устроено",
-        whatBody: "Стартовая ведёт в два главных режима: личное голосование и экран результатов. Всё остальное остаётся вспомогательным слоем.",
-        createTitle: "Создать временную комнату",
-        createBody: "Своя комната для друзей. Пароль можно поставить, а можно оставить комнату открытой.",
-        nameLabel: "Название комнаты",
-        namePlaceholder: "Например: Полуфинал у Морозовых",
-        passwordLabel: "Пароль комнаты",
-        passwordPlaceholder: "Необязательно",
-        createCta: "Создать комнату",
-        createHint: "Если в комнате никого нет больше 4 часов, она исчезает автоматически.",
-        roomsTitle: "Комнаты",
-        openRoom: "Открыть",
-        goVote: "Голосование",
-        goResults: "Результаты",
-        temporary: "Временная",
-        privateRoom: "С паролем",
-        leaderboardTitle: "Таблица друзей",
-        badges: [
-          {
-            icon: Vote,
-            title: "Голосование",
-            text: "Основной личный сценарий с телефона.",
-          },
-          {
-            icon: MonitorPlay,
-            title: "Результаты",
-            text: "Общий экран для reveal и движения таблицы.",
-          },
-          {
-            icon: Radio,
-            title: "Админка",
-            text: "Отдельный backstage для хоста.",
-          },
-        ],
-      }
-    : {
-        kicker: "Morozov Eurovision 2026",
-        title: "A polished party screen, a personal ballot, and a shared reveal in one system",
-        intro:
-          "Phones are for voting and notes. The big screen is for rank movement and room results. The host controls the flow separately.",
-        primaryCta: "Open voting",
-        secondaryCta: "Open results",
-        whatTitle: "How it works",
-        whatBody: "The landing page leads into two primary modes: personal voting and the shared results screen. Everything else stays secondary.",
-        createTitle: "Create a temporary room",
-        createBody: "Spin up a room for friends. Add a password if you want privacy, or leave it open.",
-        nameLabel: "Room name",
-        namePlaceholder: "Example: Semi-final watch party",
-        passwordLabel: "Room password",
-        passwordPlaceholder: "Optional",
-        createCta: "Create room",
-        createHint: "Temporary rooms disappear automatically after 4 hours with nobody inside.",
-        roomsTitle: "Rooms",
-        openRoom: "Open",
-        goVote: "Vote",
-        goResults: "Results",
-        temporary: "Temporary",
-        privateRoom: "Password",
-        leaderboardTitle: "Friends leaderboard",
-        badges: [
-          {
-            icon: Vote,
-            title: "Voting",
-            text: "The main personal flow on your phone.",
-          },
-          {
-            icon: MonitorPlay,
-            title: "Results",
-            text: "The shared reveal screen for the room.",
-          },
-          {
-            icon: Radio,
-            title: "Admin",
-            text: "A separate backstage surface for the host.",
-          },
-        ],
-      };
-
   async function handleCreateRoom() {
+    if (!roomName.trim()) {
+      setCreateError(
+        language === "ru" ? "Сначала назови комнату." : "Give the room a name first.",
+      );
+      return;
+    }
+
     setCreatePending(true);
     setCreateError("");
 
@@ -162,115 +166,169 @@ export default function Home() {
     }
   }
 
+  function handleJoinRoom() {
+    const normalized = normalizeRoomInput(joinRoomCode);
+    if (!normalized) {
+      setJoinError(
+        language === "ru"
+          ? "Введи код комнаты или ссылку."
+          : "Enter a room code or a room link.",
+      );
+      return;
+    }
+
+    setJoinError("");
+    router.push(`/${normalized}`);
+  }
+
   return (
     <main className="min-h-screen bg-arena-grid px-4 pb-24 pt-6 text-arenaText md:px-8">
-      <div className="mx-auto grid max-w-7xl gap-6">
+      <div className="mx-auto grid max-w-6xl gap-6">
         <section className="glass-panel ghost-grid rounded-shell border border-white/10 p-6 md:p-8">
-          <div className="grid gap-6 xl:grid-cols-[1.12fr_0.88fr] xl:items-end">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2">
+              <Sparkles size={15} className="text-arenaPulse" />
+              <span className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
+                {text.kicker}
+              </span>
+            </div>
+            <LanguageSwitcher />
+          </div>
+
+          <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr] xl:items-start">
             <div className="max-w-4xl">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="label-copy text-[11px] uppercase tracking-[0.35em] text-arenaPulse">{text.kicker}</p>
-                <LanguageSwitcher />
-              </div>
-              <h1 className="display-copy mt-4 max-w-4xl text-4xl font-black tracking-tight md:text-7xl">
+              <h1 className="display-copy text-4xl font-black tracking-tight md:text-7xl">
                 {text.title}
               </h1>
               <p className="mt-4 max-w-3xl text-base text-arenaText/90 md:text-xl">
                 {text.intro}
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link
-                  href={`/${defaultRoom.slug}/vote/${defaultRoom.defaultStage}`}
-                  className="arena-button-primary inline-flex h-14 items-center justify-center px-8 text-sm"
-                >
-                  {text.primaryCta}
-                </Link>
-                <Link
-                  href={`/${defaultRoom.slug}/live/${defaultRoom.defaultStage}`}
-                  className="arena-button-secondary inline-flex h-14 items-center justify-center px-6 text-sm"
-                >
-                  {text.secondaryCta}
-                </Link>
-              </div>
-              {loadError ? <p className="mt-4 text-sm text-amber-200">{loadError}</p> : null}
             </div>
 
             <div className="show-card p-5 md:p-6">
-              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">{text.whatTitle}</p>
-              <p className="mt-3 text-sm leading-7 text-arenaMuted">{text.whatBody}</p>
-              <div className="mt-5 grid gap-3">
-                {text.badges.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={item.title} className="show-panel p-4">
-                      <div className="flex items-center gap-3 text-white">
-                        <Icon size={16} />
-                        <span className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaMuted">{item.title}</span>
-                      </div>
-                      <p className="mt-3 text-sm text-arenaMuted">{item.text}</p>
+              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">
+                {text.whyTitle}
+              </p>
+              <div className="mt-4 grid gap-3">
+                {text.whyItems.map((item, index) => (
+                  <div key={item} className="show-panel flex items-start gap-3 p-4">
+                    <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/5 text-xs font-semibold text-white">
+                      {index + 1}
                     </div>
-                  );
-                })}
+                    <p className="text-sm leading-7 text-arenaMuted">{item}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
+        <section className="grid gap-4 xl:grid-cols-2">
           <div className="show-card p-5 md:p-6">
-            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.createTitle}</p>
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
+              {text.createTitle}
+            </p>
             <p className="mt-3 max-w-xl text-sm leading-7 text-arenaMuted">{text.createBody}</p>
             <div className="mt-5 grid gap-3">
               <label className="grid gap-2 text-sm text-arenaMuted">
-                <span>{text.nameLabel}</span>
+                <span>{text.createNameLabel}</span>
                 <input
                   value={roomName}
                   onChange={(event) => setRoomName(event.target.value)}
-                  placeholder={text.namePlaceholder}
+                  placeholder={text.createNamePlaceholder}
                   className="arena-input"
                 />
               </label>
               <label className="grid gap-2 text-sm text-arenaMuted">
-                <span>{text.passwordLabel}</span>
+                <span>{text.createPasswordLabel}</span>
                 <input
                   type="password"
                   value={roomPassword}
                   onChange={(event) => setRoomPassword(event.target.value)}
-                  placeholder={text.passwordPlaceholder}
+                  placeholder={text.createPasswordPlaceholder}
                   className="arena-input"
                 />
               </label>
-              {createError ? <div className="rounded-[1.2rem] bg-rose-400/10 px-4 py-3 text-sm text-rose-100">{createError}</div> : null}
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={handleCreateRoom}
-                  disabled={createPending}
-                  className="arena-button-primary inline-flex h-12 items-center justify-center gap-2 px-5 text-sm"
-                >
-                  <PlusCircle size={16} />
-                  {createPending ? "..." : text.createCta}
-                </button>
-              </div>
+              {createError ? (
+                <div className="rounded-[1.2rem] bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+                  {createError}
+                </div>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleCreateRoom}
+                disabled={createPending}
+                className="arena-button-primary inline-flex h-12 items-center justify-center gap-2 px-5 text-sm"
+              >
+                <PlusCircle size={16} />
+                {createPending ? "..." : text.createButton}
+              </button>
               <p className="text-xs leading-6 text-arenaMuted">{text.createHint}</p>
             </div>
           </div>
 
           <div className="show-card p-5 md:p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">{text.roomsTitle}</p>
-                <h2 className="display-copy mt-2 text-2xl font-black">{text.roomsTitle}</h2>
-              </div>
-            </div>
-
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">
+              {text.joinTitle}
+            </p>
+            <p className="mt-3 max-w-xl text-sm leading-7 text-arenaMuted">{text.joinBody}</p>
             <div className="mt-5 grid gap-3">
-              {rooms.map((room) => (
+              <label className="grid gap-2 text-sm text-arenaMuted">
+                <span>{text.joinLabel}</span>
+                <input
+                  value={joinRoomCode}
+                  onChange={(event) => setJoinRoomCode(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleJoinRoom();
+                    }
+                  }}
+                  placeholder={text.joinPlaceholder}
+                  className="arena-input"
+                />
+              </label>
+              {joinError ? (
+                <div className="rounded-[1.2rem] bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+                  {joinError}
+                </div>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleJoinRoom}
+                className="arena-button-secondary inline-flex h-12 items-center justify-center gap-2 px-5 text-sm"
+              >
+                <ArrowRight size={16} />
+                {text.joinButton}
+              </button>
+              {loadError ? <p className="text-xs leading-6 text-amber-200">{loadError}</p> : null}
+            </div>
+          </div>
+        </section>
+
+        <section className="show-card p-5 md:p-6">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaMuted">
+                {text.activeRoomsTitle}
+              </p>
+              <h2 className="display-copy mt-2 text-2xl font-black text-white">
+                {text.activeRoomsTitle}
+              </h2>
+            </div>
+            <p className="max-w-2xl text-sm leading-7 text-arenaMuted">{text.activeRoomsBody}</p>
+          </div>
+
+          <div className="mt-5 grid gap-3">
+            {rooms.length ? (
+              rooms.map((room) => (
                 <div key={room.slug} className="show-panel p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-xl font-semibold text-white">{room.name}</p>
-                      <p className="mt-2 text-sm text-arenaMuted">{getRoomCityLabel(room.slug, room.cityLabel)}</p>
+                      <p className="text-lg font-semibold text-white">{room.name}</p>
+                      <p className="mt-2 text-sm text-arenaMuted">
+                        {getRoomCityLabel(room.slug, room.cityLabel)}
+                      </p>
                       <div className="mt-3 flex flex-wrap gap-2 text-xs">
                         <span className="show-chip">{room.defaultStage}</span>
                         {room.isTemporary ? <span className="show-chip">{text.temporary}</span> : null}
@@ -282,34 +340,19 @@ export default function Home() {
                         ) : null}
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Link href={`/${room.slug}`} className="arena-button-secondary inline-flex h-10 items-center justify-center px-4 text-xs">
-                        {text.openRoom}
-                      </Link>
-                      <Link href={`/${room.slug}/vote/${room.defaultStage}`} className="arena-button-secondary inline-flex h-10 items-center justify-center px-4 text-xs">
-                        {text.goVote}
-                      </Link>
-                      <Link href={`/${room.slug}/live/${room.defaultStage}`} className="arena-button-secondary inline-flex h-10 items-center justify-center px-4 text-xs">
-                        {text.goResults}
-                      </Link>
-                    </div>
+                    <Link
+                      href={`/${room.slug}`}
+                      className="arena-button-secondary inline-flex h-10 items-center justify-center px-4 text-xs"
+                    >
+                      {text.openRoom}
+                    </Link>
                   </div>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              <div className="show-panel p-4 text-sm text-arenaMuted">{text.noRooms}</div>
+            )}
           </div>
-        </section>
-
-        <section className="grid gap-4 xl:grid-cols-[0.86fr_1.14fr]">
-          <div className="show-card p-5 md:p-6">
-            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.leaderboardTitle}</p>
-            <p className="mt-3 text-sm leading-7 text-arenaMuted">
-              {language === "ru"
-                ? "Это уже не главный вход, а спокойный вторичный слой: кто из друзей точнее всего угадывает сезон."
-                : "This is a quieter secondary layer: who is predicting the season best so far."}
-            </p>
-          </div>
-          <Leaderboard roomSlug={defaultRoom.slug} />
         </section>
       </div>
     </main>

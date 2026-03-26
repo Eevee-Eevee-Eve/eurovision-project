@@ -18,6 +18,17 @@
 - The new landing page and room page were simplified heavily.
   - need a design pass on spacing, copy, and visual hierarchy after real-device review
 
+## 2026-03-26 room-first IA risks
+
+- The new home page now prioritizes `Create room` / `Join room`.
+  - need a live check that first-time users really understand the flow without additional explanation
+- `RoomChrome` top navigation now hides `Acts` / `Players` from the primary row.
+  - make sure no important user path was accidentally made too hard to discover
+- `RoomLanding` now behaves more like a session container than a feature hub.
+  - needs a phone + desktop pass for hierarchy, spacing, and clarity
+- The join-room input accepts full URLs and room slugs.
+  - verify odd pasted values and whitespace trimming on real devices
+
 ## Актуальные
 
 - Need a real device smoke test for the new `placed acts` model:

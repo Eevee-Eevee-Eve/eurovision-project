@@ -1,19 +1,18 @@
 'use client';
 
 import Link from "next/link";
-import { ArrowRight, MonitorPlay, NotebookPen, Radio, Users } from "lucide-react";
+import { ArrowRight, Copy, MonitorPlay, NotebookPen, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
-import { fetchActs, fetchRoom } from "../lib/api";
-import type { ActEntry, RoomDetails } from "../lib/types";
-import { ActPoster } from "./ActPoster";
-import Leaderboard from "./Leaderboard";
+import { fetchRoom } from "../lib/api";
+import type { RoomDetails } from "../lib/types";
 import { useLanguage } from "./LanguageProvider";
 
 export function RoomLanding({ roomSlug }: { roomSlug: string }) {
-  const { getCountryName, getStageLabel, language } = useLanguage();
+  const { getStageLabel, language } = useLanguage();
   const [room, setRoom] = useState<RoomDetails | null>(null);
-  const [previewActs, setPreviewActs] = useState<ActEntry[]>([]);
   const [error, setError] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+  const [roomUrl, setRoomUrl] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -24,16 +23,6 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         if (!active) return;
         setRoom(roomPayload);
         setError(false);
-
-        try {
-          const actsPayload = await fetchActs(roomSlug, roomPayload.defaultStage);
-          if (!active) return;
-          setPreviewActs(actsPayload.acts.slice(0, 3));
-        } catch (actsError) {
-          if (!active) return;
-          console.error(actsError);
-          setPreviewActs([]);
-        }
       } catch (loadError) {
         if (!active) return;
         console.error(loadError);
@@ -48,10 +37,16 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
     };
   }, [roomSlug]);
 
+  useEffect(() => {
+    setRoomUrl(`${window.location.origin}/${roomSlug}`);
+  }, [roomSlug]);
+
   if (error) {
     return (
       <div className="rounded-[1.8rem] bg-rose-400/10 p-5 text-sm text-rose-100">
-        {language === "ru" ? "Сейчас не удалось загрузить комнату." : "Unable to load the room right now."}
+        {language === "ru"
+          ? "Сейчас не удалось загрузить комнату."
+          : "Unable to load the room right now."}
       </div>
     );
   }
@@ -61,54 +56,78 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
   const text = language === "ru"
     ? {
         kicker: "Комната",
-        title: "Здесь всё начинается просто: голосование или экран результатов",
+        title: "Сначала все попадают в комнату. Уже внутри — голосование и результаты.",
         description:
-          "Комната больше не должна выглядеть как панель из семи одинаково громких режимов. Основной вход — либо в личный бюллетень на телефоне, либо в общий экран результатов.",
+          "Эта страница больше не должна быть хабом из семи равнозначных режимов. Комната — это контейнер вашей сессии: отсюда вы либо открываете личный бюллетень, либо общий экран результатов.",
         currentStage: "Текущий этап",
         roomStatus: "Статус комнаты",
         statusFallback: "Комната готова к следующему reveal.",
         vote: "Голосование",
-        voteText: "Главный личный сценарий: расставить артистов, оставить заметки и отправить бюллетень.",
+        voteText: "Личный бюллетень на телефоне: расставить артистов, оставить заметки и отправить порядок.",
         results: "Результаты",
-        resultsText: "Большой экран для reveal, движения мест и общей таблицы друзей.",
-        acts: "Артисты",
-        actsText: "Отдельный гид с карточками и подробностями по участникам.",
-        players: "Участники",
-        playersText: "Таблица друзей и очков комнаты.",
-        admin: "Админка",
-        adminText: "Отдельный backstage для хоста.",
+        resultsText: "Общий экран для очков, движения мест и reveal вашей компании.",
         open: "Открыть",
-        secondary: "Второстепенные маршруты",
-        preview: "Несколько артистов этого этапа",
+        roomLink: "Ссылка в комнату",
+        roomLinkText: "Скопируй ссылку и отправь друзьям, чтобы они вошли в ту же сессию.",
+        copy: "Скопировать ссылку",
+        copied: "Скопировано",
+        copyError: "Не удалось скопировать",
+        roomCode: "Код комнаты",
+        hostTools: "Для хоста",
+        hostText: "Пульт и служебные настройки остаются backstage и не мешают гостям.",
+        admin: "Открыть админку",
+        temporary: "Временная комната",
+        privateRoom: "С паролем",
+        roomExpires:
+          "Если в этой комнате никого не будет больше 4 часов, она исчезнет автоматически.",
       }
     : {
         kicker: "Room",
-        title: "Keep it simple here: vote or open the results screen",
+        title: "Everyone enters the room first. Inside it, they choose voting or results.",
         description:
-          "The room page should not feel like seven equally loud options. The main handoff is either the personal ballot on a phone or the shared results screen.",
+          "This page should not feel like a hub of seven equal routes. A room is the container for your session: from here, people either open the personal ballot or the shared results screen.",
         currentStage: "Current stage",
         roomStatus: "Room status",
         statusFallback: "The room is ready for the next reveal.",
         vote: "Voting",
-        voteText: "The personal flow: rank acts, keep notes, and submit a ballot.",
+        voteText: "The personal phone ballot: rank acts, keep notes, and submit a final order.",
         results: "Results",
-        resultsText: "The big screen for reveal, movement, and the shared leaderboard.",
-        acts: "Acts",
-        actsText: "A separate guide with artist cards and details.",
-        players: "Players",
-        playersText: "The room leaderboard and scores.",
-        admin: "Admin",
-        adminText: "A separate backstage surface for the host.",
+        resultsText: "The shared screen for points, movement, and your room reveal.",
         open: "Open",
-        secondary: "Secondary routes",
-        preview: "A few acts from this stage",
+        roomLink: "Room link",
+        roomLinkText: "Copy the link and send it to friends so they join the same session.",
+        copy: "Copy link",
+        copied: "Copied",
+        copyError: "Unable to copy",
+        roomCode: "Room code",
+        hostTools: "For the host",
+        hostText: "The control room stays backstage and does not compete with the guest flow.",
+        admin: "Open admin",
+        temporary: "Temporary room",
+        privateRoom: "Password",
+        roomExpires:
+          "If nobody stays in this room for more than 4 hours, it disappears automatically.",
       };
+
+  async function handleCopyRoomLink() {
+    try {
+      await navigator.clipboard.writeText(roomUrl || `/${roomSlug}`);
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 1800);
+    } catch (copyError) {
+      console.error(copyError);
+      setCopyState("error");
+      window.setTimeout(() => setCopyState("idle"), 1800);
+    }
+  }
 
   return (
     <div className="grid gap-5">
-      <section className="grid gap-4 xl:grid-cols-[1.04fr_0.96fr]">
+      <section className="grid gap-4 xl:grid-cols-[1.06fr_0.94fr]">
         <div className="show-card p-5 md:p-6">
-          <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.kicker}</p>
+          <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
+            {text.kicker}
+          </p>
           <h2 className="display-copy mt-3 text-3xl font-black md:text-6xl">
             {room?.name || roomSlug}
           </h2>
@@ -120,20 +139,26 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
             <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">
               {text.currentStage}: {getStageLabel(defaultStage)}
             </span>
+            <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+              {text.roomCode}: {roomSlug}
+            </span>
             {room?.isTemporary ? (
               <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-                {language === "ru" ? "Временная комната" : "Temporary room"}
+                {text.temporary}
               </span>
             ) : null}
             {room?.passwordRequired ? (
               <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-                {language === "ru" ? "С паролем" : "Password"}
+                {text.privateRoom}
               </span>
             ) : null}
           </div>
 
           <div className="mt-6 grid gap-3 md:grid-cols-2">
-            <Link href={`/${roomSlug}/vote/${defaultStage}`} className="show-panel p-5 transition hover:-translate-y-0.5 hover:bg-white/[0.08]">
+            <Link
+              href={`/${roomSlug}/vote/${defaultStage}`}
+              className="show-panel p-5 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
+            >
               <div className="inline-flex rounded-full bg-white/5 p-3 text-arenaPulse">
                 <NotebookPen size={20} />
               </div>
@@ -145,7 +170,10 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
               </div>
             </Link>
 
-            <Link href={`/${roomSlug}/live/${defaultStage}`} className="show-panel p-5 transition hover:-translate-y-0.5 hover:bg-white/[0.08]">
+            <Link
+              href={`/${roomSlug}/live/${defaultStage}`}
+              className="show-panel p-5 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
+            >
               <div className="inline-flex rounded-full bg-white/5 p-3 text-arenaBeam">
                 <MonitorPlay size={20} />
               </div>
@@ -161,79 +189,80 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
 
         <div className="grid gap-4">
           <div className="show-card p-5 md:p-6">
-            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">{text.roomStatus}</p>
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">
+              {text.roomStatus}
+            </p>
             <p className="mt-4 text-base leading-7 text-white">{showStatus || text.statusFallback}</p>
           </div>
-          <Leaderboard roomSlug={roomSlug} />
+
+          <div className="show-card p-5 md:p-6">
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
+              {text.roomLink}
+            </p>
+            <p className="mt-3 text-sm leading-7 text-arenaMuted">{text.roomLinkText}</p>
+            <div className="mt-4 rounded-[1.4rem] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/90">
+              {roomUrl || `/${roomSlug}`}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleCopyRoomLink}
+                className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
+              >
+                <Copy size={16} />
+                {copyState === "copied"
+                  ? text.copied
+                  : copyState === "error"
+                    ? text.copyError
+                    : text.copy}
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
         <div className="show-card p-5 md:p-6">
-          <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaMuted">{text.secondary}</p>
-          <div className="mt-5 grid gap-3">
-            {[
-              {
-                title: text.acts,
-                description: text.actsText,
-                href: `/${roomSlug}/acts/${defaultStage}`,
-                icon: Users,
-              },
-              {
-                title: text.players,
-                description: text.playersText,
-                href: `/${roomSlug}/players/overall`,
-                icon: MonitorPlay,
-              },
-              {
-                title: text.admin,
-                description: text.adminText,
-                href: `/admin?room=${roomSlug}`,
-                icon: Radio,
-              },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.title}
-                  href={item.href}
-                  className="show-panel flex items-center justify-between gap-4 p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-full bg-white/5 p-2 text-arenaMuted">
-                      <Icon size={16} />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-white">{item.title}</p>
-                      <p className="mt-1 text-sm text-arenaMuted">{item.description}</p>
-                    </div>
-                  </div>
-                  <ArrowRight size={16} className="text-arenaMuted" />
-                </Link>
-              );
-            })}
+          <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaMuted">
+            {text.hostTools}
+          </p>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-arenaMuted">{text.hostText}</p>
+          <div className="mt-5">
+            <Link
+              href={`/admin?room=${roomSlug}`}
+              className="show-panel flex items-center justify-between gap-4 p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
+            >
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-white/5 p-2 text-arenaMuted">
+                  <Radio size={16} />
+                </div>
+                <div>
+                  <p className="font-semibold text-white">{text.admin}</p>
+                  <p className="mt-1 text-sm text-arenaMuted">{text.hostText}</p>
+                </div>
+              </div>
+              <ArrowRight size={16} className="text-arenaMuted" />
+            </Link>
           </div>
         </div>
 
-        <div className="show-card p-5 md:p-6">
-          <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.preview}</p>
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            {previewActs.map((act) => (
-              <Link
-                key={act.code}
-                href={`/${roomSlug}/acts/${defaultStage}`}
-                className="show-panel p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
-              >
-                <ActPoster act={act} mode="hero" contentDensity="compact" />
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <span className="show-chip text-xs text-arenaBeam">{getCountryName(act.code, act.country)}</span>
-                </div>
-                <p className="mt-4 text-lg font-semibold text-white">{act.artist}</p>
-                <p className="mt-1 text-sm text-arenaMuted">{act.song}</p>
-              </Link>
-            ))}
+        {room?.isTemporary ? (
+          <div className="show-card p-5 md:p-6">
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">
+              {text.temporary}
+            </p>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-arenaMuted">{text.roomExpires}</p>
           </div>
-        </div>
+        ) : (
+          <div className="show-card p-5 md:p-6">
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">
+              {text.roomCode}
+            </p>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-arenaMuted">
+              {roomSlug}
+            </p>
+          </div>
+        )}
       </section>
     </div>
   );
