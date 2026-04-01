@@ -89,8 +89,6 @@ export default function Home() {
               "Нужно вводить не название комнаты, а её адрес. Например: neon-arena.",
             joinButton: "Войти в комнату",
             activeRoomsTitle: "Активные комнаты",
-            activeRoomsBody:
-              "Это не главный сценарий, а быстрый список уже существующих комнат, если ты знаешь, куда идёшь.",
             currentStage: "Сейчас идёт",
             openRoom: "Открыть комнату",
             temporary: "Временная",
@@ -125,8 +123,6 @@ export default function Home() {
               "Enter the room address, not the display name. Example: neon-arena.",
             joinButton: "Join room",
             activeRoomsTitle: "Active rooms",
-            activeRoomsBody:
-              "This is a secondary shortcut for people who already know where they are going.",
             currentStage: "Now playing",
             openRoom: "Open room",
             temporary: "Temporary",
@@ -223,16 +219,13 @@ export default function Home() {
         </section>
 
         <section className="show-card p-5 md:p-6">
-          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaMuted">
-                {text.activeRoomsTitle}
-              </p>
-              <h2 className="display-copy mt-2 text-2xl font-black text-white">
-                {text.activeRoomsTitle}
-              </h2>
-            </div>
-            <p className="max-w-2xl text-sm leading-7 text-arenaMuted">{text.activeRoomsBody}</p>
+          <div>
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaMuted">
+              {text.activeRoomsTitle}
+            </p>
+            <h2 className="display-copy mt-2 text-2xl font-black text-white">
+              {text.activeRoomsTitle}
+            </h2>
           </div>
 
           <div className="mt-5 grid gap-3">
