@@ -70,6 +70,14 @@ select {
   box-shadow: 0 0 0 1px rgba(129, 236, 255, 0.22), 0 0 18px rgba(199, 153, 255, 0.2);
 }
 
+.home-input-create:focus {
+  box-shadow: 0 0 0 1px rgba(255, 99, 194, 0.26), 0 0 20px rgba(255, 99, 194, 0.18);
+}
+
+.home-input-join:focus {
+  box-shadow: 0 0 0 1px rgba(129, 236, 255, 0.28), 0 0 20px rgba(129, 236, 255, 0.18);
+}
+
 .arena-button-primary {
   border: 0;
   border-radius: 9999px;
@@ -109,6 +117,36 @@ select {
 .arena-button-secondary:hover:not(:disabled) {
   transform: translateY(-1px);
   background: rgba(255, 255, 255, 0.1);
+}
+
+.arena-button-join {
+  border: 1px solid rgba(129, 236, 255, 0.16);
+  border-radius: 9999px;
+  background:
+    linear-gradient(135deg, rgba(129, 236, 255, 0.16), rgba(87, 122, 255, 0.18)),
+    rgba(255, 255, 255, 0.04);
+  color: #effcff;
+  font-family: var(--font-label), "Segoe UI", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease;
+}
+
+.arena-button-join:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 0 24px rgba(129, 236, 255, 0.16);
+  background:
+    linear-gradient(135deg, rgba(129, 236, 255, 0.2), rgba(87, 122, 255, 0.22)),
+    rgba(255, 255, 255, 0.06);
+}
+
+.arena-button-join:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .display-copy {
@@ -157,6 +195,34 @@ select {
     radial-gradient(circle at top right, rgba(129, 236, 255, 0.08), transparent 28%),
     linear-gradient(130deg, rgba(255, 99, 194, 0.08), transparent 38%);
   pointer-events: none;
+}
+
+.home-flow-create {
+  border-color: rgba(255, 99, 194, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 40px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(255, 99, 194, 0.04);
+}
+
+.home-flow-create::before {
+  background:
+    radial-gradient(circle at top left, rgba(255, 99, 194, 0.16), transparent 26%),
+    linear-gradient(145deg, rgba(199, 153, 255, 0.12), transparent 42%);
+}
+
+.home-flow-join {
+  border-color: rgba(129, 236, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 40px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(129, 236, 255, 0.05);
+}
+
+.home-flow-join::before {
+  background:
+    radial-gradient(circle at top right, rgba(129, 236, 255, 0.18), transparent 28%),
+    linear-gradient(145deg, rgba(87, 122, 255, 0.12), transparent 44%);
 }
 
 .show-panel {
