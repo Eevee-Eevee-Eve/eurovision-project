@@ -5,56 +5,10 @@ import { ArrowRight, Lock, PlusCircle, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import LanguageSwitcher from "../components/LanguageSwitcher";
-import { createTemporaryRoom, fetchRooms } from "../lib/api";
+import { ApiError, createTemporaryRoom, fetchRooms, resolveRoomByName } from "../lib/api";
 import { FALLBACK_ROOM } from "../lib/rooms";
 import type { RoomSummary } from "../lib/types";
 import { useLanguage } from "../components/LanguageProvider";
-
-function normalizeRoomInput(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-
-  const withoutOrigin = trimmed.replace(/^https?:\/\/[^/]+/i, "");
-  const firstSegment = withoutOrigin
-    .split("?")[0]
-    .split("#")[0]
-    .replace(/^\/+/, "")
-    .split("/")[0];
-
-  return firstSegment.trim().toLowerCase();
-}
-
-function normalizeLookupText(value: string) {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function resolveRoomInput(value: string, rooms: RoomSummary[]) {
-  const slugCandidate = normalizeRoomInput(value);
-  const normalizedQuery = normalizeLookupText(value);
-
-  if (!slugCandidate && !normalizedQuery) {
-    return { slug: "", ambiguous: false };
-  }
-
-  const slugMatch = rooms.find((room) => room.slug === slugCandidate);
-  if (slugMatch) {
-    return { slug: slugMatch.slug, ambiguous: false };
-  }
-
-  const nameMatches = rooms.filter((room) => normalizeLookupText(room.name) === normalizedQuery);
-  if (nameMatches.length === 1) {
-    return { slug: nameMatches[0].slug, ambiguous: false };
-  }
-  if (nameMatches.length > 1) {
-    return { slug: "", ambiguous: true };
-  }
-
-  if (/^[a-z0-9-]+$/.test(slugCandidate)) {
-    return { slug: slugCandidate, ambiguous: false };
-  }
-
-  return { slug: "", ambiguous: false };
-}
 
 export default function Home() {
   const router = useRouter();
@@ -63,9 +17,10 @@ export default function Home() {
   const [loadError, setLoadError] = useState("");
   const [roomName, setRoomName] = useState("");
   const [roomPassword, setRoomPassword] = useState("");
-  const [joinRoomCode, setJoinRoomCode] = useState("");
+  const [joinRoomName, setJoinRoomName] = useState("");
   const [createPending, setCreatePending] = useState(false);
   const [createError, setCreateError] = useState("");
+  const [joinPending, setJoinPending] = useState(false);
   const [joinError, setJoinError] = useState("");
 
   useEffect(() => {
@@ -104,21 +59,21 @@ export default function Home() {
             title: "Создай комнату или войди в уже существующую.",
             createTitle: "Создать комнату",
             createBody:
-              "Задай комнате имя для друзей. После создания в неё можно будет зайти по ссылке, короткому адресу или названию из списка активных комнат. Пароль можно добавить сразу, а можно оставить комнату открытой.",
+              "Задай комнате имя для друзей. Именно по этому названию они будут входить в комнату. Пароль можно добавить сразу, а можно оставить комнату открытой.",
             createNameLabel: "Название комнаты",
             createNamePlaceholder: "Например: Полуфинал у Морозовых",
             createPasswordLabel: "Пароль комнаты",
             createPasswordPlaceholder: "Необязательно",
             createButton: "Создать комнату",
             createHint:
-              "После создания ты получишь ссылку на комнату. Если в ней никого нет больше 4 часов, она исчезает автоматически.",
+              "Комнаты с одинаковыми именами нельзя создавать. Если в ней никого нет больше 4 часов, она исчезает автоматически.",
             joinTitle: "Войти в комнату",
             joinBody:
-              "Вставь ссылку-приглашение, короткий адрес или точное название комнаты. Если комната закрыта паролем, сайт попросит его уже на следующем шаге.",
-            joinLabel: "Ссылка, адрес или название комнаты",
-            joinPlaceholder: "Например: neon-arena",
+              "Введи точное название комнаты из списка активных комнат. Если комната закрыта паролем, сайт попросит его уже на следующем шаге.",
+            joinLabel: "Название комнаты",
+            joinPlaceholder: "Например: Neon Arena",
             joinHint:
-              "Можно вставить ссылку, короткий адрес вроде neon-arena или точное название комнаты из списка выше.",
+              "Нужно ввести именно название комнаты, как оно написано в списке активных комнат.",
             joinButton: "Войти в комнату",
             activeRoomsTitle: "Активные комнаты",
             currentStage: "Сейчас идёт",
@@ -138,21 +93,21 @@ export default function Home() {
             title: "Create a room or join one that already exists.",
             createTitle: "Create a room",
             createBody:
-              "Give the room a friendly name. After creation, people will be able to join it by link, short address, or its name from the active rooms list. Add a password if you want privacy, or leave it open.",
+              "Give the room a friendly name. People will use that exact name to join it later. Add a password if you want privacy, or leave it open.",
             createNameLabel: "Room name",
             createNamePlaceholder: "Example: Semi-final watch party",
             createPasswordLabel: "Room password",
             createPasswordPlaceholder: "Optional",
             createButton: "Create room",
             createHint:
-              "After creation, you will get a room link to share. If nobody stays in the room for 4 hours, it disappears automatically.",
+              "Rooms cannot share the same name. If nobody stays in the room for 4 hours, it disappears automatically.",
             joinTitle: "Join a room",
             joinBody:
-              "Paste an invite link, a short room address, or the exact room name. If the room is private, the password prompt will appear on the next step.",
-            joinLabel: "Link, address, or room name",
-            joinPlaceholder: "Example: neon-arena",
+              "Enter the exact room name from the active rooms list. If the room is private, the password prompt will appear on the next step.",
+            joinLabel: "Room name",
+            joinPlaceholder: "Example: Neon Arena",
             joinHint:
-              "You can use a link, a short address such as neon-arena, or an exact room name from the list above.",
+              "Use the room name exactly as it appears in the active rooms list.",
             joinButton: "Join room",
             activeRoomsTitle: "Active rooms",
             currentStage: "Now playing",
@@ -190,34 +145,56 @@ export default function Home() {
       router.push(`/${payload.room.slug}`);
     } catch (error) {
       console.error(error);
-      setCreateError(error instanceof Error ? error.message : "Unable to create room.");
+      if (error instanceof ApiError && error.code === "ROOM_NAME_TAKEN") {
+        setCreateError(
+          language === "ru"
+            ? "Комната с таким именем уже существует. Выбери другое название."
+            : "A room with this name already exists. Choose a different name.",
+        );
+      } else {
+        setCreateError(error instanceof Error ? error.message : "Unable to create room.");
+      }
     } finally {
       setCreatePending(false);
     }
   }
 
-  function handleJoinRoom() {
-    const resolved = resolveRoomInput(joinRoomCode, rooms);
-    if (resolved.ambiguous) {
+  async function handleJoinRoom() {
+    if (!joinRoomName.trim()) {
       setJoinError(
         language === "ru"
-          ? "Есть несколько комнат с таким названием. Лучше используй ссылку или короткий адрес."
-          : "More than one room has this name. Use a link or the short room address instead.",
+          ? "Введи точное название комнаты."
+          : "Enter the exact room name.",
       );
       return;
     }
 
-    if (!resolved.slug) {
-      setJoinError(
-        language === "ru"
-          ? "Вставь ссылку, адрес или точное название комнаты."
-          : "Enter a room link, room address, or exact room name.",
-      );
-      return;
-    }
-
+    setJoinPending(true);
     setJoinError("");
-    router.push(`/${resolved.slug}`);
+
+    try {
+      const payload = await resolveRoomByName(joinRoomName);
+      router.push(`/${payload.room.slug}`);
+    } catch (error) {
+      console.error(error);
+      if (error instanceof ApiError && error.code === "ROOM_NOT_FOUND") {
+        setJoinError(
+          language === "ru"
+            ? "Комната с таким именем не найдена. Проверь название в списке активных комнат."
+            : "No room with this name was found. Check the active rooms list.",
+        );
+      } else if (error instanceof ApiError && error.code === "ROOM_NAME_AMBIGUOUS") {
+        setJoinError(
+          language === "ru"
+            ? "Есть несколько комнат с таким именем. Сначала переименуй одну из них."
+            : "More than one room has this name. Rename one of the rooms first.",
+        );
+      } else {
+        setJoinError(error instanceof Error ? error.message : "Unable to find the room.");
+      }
+    } finally {
+      setJoinPending(false);
+    }
   }
 
   return (
@@ -360,8 +337,8 @@ export default function Home() {
               <label className="grid gap-2 text-sm text-arenaMuted">
                 <span>{text.joinLabel}</span>
                 <input
-                  value={joinRoomCode}
-                  onChange={(event) => setJoinRoomCode(event.target.value)}
+                  value={joinRoomName}
+                  onChange={(event) => setJoinRoomName(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
                       event.preventDefault();
@@ -377,14 +354,15 @@ export default function Home() {
                   {joinError}
                 </div>
               ) : null}
-              <button
-                type="button"
-                onClick={handleJoinRoom}
-                className="arena-button-secondary inline-flex h-12 items-center justify-center gap-2 px-5 text-sm"
-              >
-                <ArrowRight size={16} />
-                {text.joinButton}
-              </button>
+                <button
+                  type="button"
+                  onClick={handleJoinRoom}
+                  disabled={joinPending}
+                  className="arena-button-secondary inline-flex h-12 items-center justify-center gap-2 px-5 text-sm"
+                >
+                  <ArrowRight size={16} />
+                  {joinPending ? "..." : text.joinButton}
+                </button>
               <p className="text-xs leading-6 text-arenaMuted">{text.joinHint}</p>
               {loadError ? <p className="text-xs leading-6 text-amber-200">{loadError}</p> : null}
             </div>
