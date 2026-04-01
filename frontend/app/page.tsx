@@ -72,21 +72,21 @@ export default function Home() {
             title: "Создай комнату или войди в уже существующую.",
             createTitle: "Создать комнату",
             createBody:
-              "Запусти новую комнату для друзей. Пароль можно добавить сразу, а можно оставить комнату открытой.",
-            createNameLabel: "Название комнаты",
+              "Задай комнате имя для друзей. Сайт сам создаст ссылку, которой можно будет поделиться. Пароль можно добавить сразу, а можно оставить комнату открытой.",
+            createNameLabel: "Название комнаты для гостей",
             createNamePlaceholder: "Например: Полуфинал у Морозовых",
             createPasswordLabel: "Пароль комнаты",
             createPasswordPlaceholder: "Необязательно",
             createButton: "Создать комнату",
             createHint:
-              "Если в комнате никого нет больше 4 часов, она исчезает автоматически.",
+              "После создания ты получишь ссылку на комнату. Если в ней никого нет больше 4 часов, она исчезает автоматически.",
             joinTitle: "Войти в комнату",
             joinBody:
-              "Вставь полную ссылку на комнату или её короткий адрес. Если комната закрыта паролем, сайт попросит его уже на следующем шаге.",
-            joinLabel: "Ссылка или адрес комнаты",
+              "Вставь ссылку-приглашение или короткий адрес комнаты. Если комната закрыта паролем, сайт попросит его уже на следующем шаге.",
+            joinLabel: "Ссылка-приглашение или адрес",
             joinPlaceholder: "Например: neon-arena",
             joinHint:
-              "Нужно вводить не название комнаты, а её адрес. Например: neon-arena.",
+              "Название комнаты сюда не подходит. Нужна ссылка или короткий адрес вроде neon-arena.",
             joinButton: "Войти в комнату",
             activeRoomsTitle: "Активные комнаты",
             currentStage: "Сейчас идёт",
@@ -106,21 +106,21 @@ export default function Home() {
             title: "Create a room or join one that already exists.",
             createTitle: "Create a room",
             createBody:
-              "Spin up a room for friends. Add a password if you want privacy, or leave it open.",
-            createNameLabel: "Room name",
+              "Give the room a friendly name. The site will generate a shareable link automatically. Add a password if you want privacy, or leave it open.",
+            createNameLabel: "Room name for guests",
             createNamePlaceholder: "Example: Semi-final watch party",
             createPasswordLabel: "Room password",
             createPasswordPlaceholder: "Optional",
             createButton: "Create room",
             createHint:
-              "If nobody stays in the room for 4 hours, it disappears automatically.",
+              "After creation, you will get a room link to share. If nobody stays in the room for 4 hours, it disappears automatically.",
             joinTitle: "Join a room",
             joinBody:
-              "Paste the full room link or its short room address. If the room is private, the password prompt will appear on the next step.",
-            joinLabel: "Room link or room address",
+              "Paste an invite link or the room's short address. If the room is private, the password prompt will appear on the next step.",
+            joinLabel: "Invite link or room address",
             joinPlaceholder: "Example: neon-arena",
             joinHint:
-              "Enter the room address, not the display name. Example: neon-arena.",
+              "Do not enter the display name here. Use a link or a short address such as neon-arena.",
             joinButton: "Join room",
             activeRoomsTitle: "Active rooms",
             currentStage: "Now playing",
@@ -169,8 +169,8 @@ export default function Home() {
     if (!normalized) {
       setJoinError(
         language === "ru"
-          ? "Введи код комнаты или ссылку."
-          : "Enter a room code or a room link.",
+          ? "Вставь ссылку или адрес комнаты."
+          : "Enter a room link or room address.",
       );
       return;
     }
