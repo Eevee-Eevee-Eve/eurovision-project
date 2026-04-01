@@ -4,7 +4,7 @@ import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Check, CheckCircle2, ChevronDown, ExternalLink, GripVertical, Lock, NotebookPen, PlayCircle, Radio, RotateCcw, Search, Send, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, CheckCircle2, ChevronDown, ExternalLink, GripVertical, Lock, NotebookPen, PlayCircle, RotateCcw, Search, Send, Sparkles } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
   createRoomSocket,
@@ -258,7 +258,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           kicker: "Телефон / бюллетень",
           title: "Личный бюллетень",
           description:
-            "Смотри артистов, веди заметки как на бумаге и собирай свой полный порядок мест. Это companion-экран для телефона, а не сценический экран.",
+            "Расставляй артистов по местам. Тап по артисту открывает карточку с описанием, заметкой и видео.",
           stageForming: "Состав этапа ещё формируется",
           stageFormingText: (count: number, total: number) => `Сейчас подтверждено ${count} из ${total} участников. Как только состав будет полным, бюллетень автоматически подстроится под официальный этап.`,
           roomLabel: "Комната",
@@ -272,9 +272,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           lockedState: "Бюллетень уже зафиксирован",
           lineupLabel: "Состав этапа",
           notesCount: "Заметки",
-          rankingCount: "Артистов расставлено",
+          rankingCount: "Мест выбрано",
           tabs: {
-            acts: "Артисты",
+            acts: "Бюллетень",
             notes: "Заметки",
             order: "Мой порядок",
           },
@@ -332,6 +332,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           savedBadge: "Есть заметка",
           placeUnknown: "Пока не расставлено",
           placeUnknownHint: "Выбери место в своём рейтинге",
+          openActHint: "Тапни по артисту, чтобы открыть карточку, заметки и видео.",
+          pickedSection: "Уже выбрано",
+          remainingSection: "Остальные артисты",
           placeOptionCurrent: (place: number) => `#${place} — сейчас здесь`,
           placeOptionOccupied: (place: number, artist: string) => `#${place} — сейчас ${artist}`,
           placeOptionFree: (place: number) => `#${place} — свободно`,
@@ -345,7 +348,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           kicker: "Phone / ballot",
           title: "Personal ballot",
           description:
-            "Browse acts, keep notes like on paper, and build your full ranking. This is the personal companion screen, not the projector view.",
+            "Place acts in your ballot. Tap any act to open the card with details, notes, and video.",
           stageForming: "This stage lineup is still forming",
           stageFormingText: (count: number, total: number) => `${count} of ${total} acts are confirmed right now. Once the lineup is complete, the ballot will align to the official stage.`,
           roomLabel: "Room",
@@ -359,9 +362,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           lockedState: "Ballot already locked",
           lineupLabel: "Stage lineup",
           notesCount: "Notes",
-          rankingCount: "Placed acts",
+          rankingCount: "Picked places",
           tabs: {
-            acts: "Acts",
+            acts: "Ballot",
             notes: "Notes",
             order: "My order",
           },
@@ -419,6 +422,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           savedBadge: "Note saved",
           placeUnknown: "Not placed yet",
           placeUnknownHint: "Choose a place in your ranking",
+          openActHint: "Tap any act to open the card, notes, and video.",
+          pickedSection: "Already placed",
+          remainingSection: "Still unplaced",
           placeOptionCurrent: (place: number) => `#${place} — currently here`,
           placeOptionOccupied: (place: number, artist: string) => `#${place} — now ${artist}`,
           placeOptionFree: (place: number) => `#${place} — free`,
@@ -549,6 +555,16 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     setError("");
   }
 
+  function openActCard(code: string) {
+    setPlacePickerOpen(false);
+    setSelectedActCode(code);
+  }
+
+  function openActPlacePicker(code: string) {
+    setSelectedActCode(code);
+    setPlacePickerOpen(true);
+  }
+
   function moveArtistBy(code: string, delta: number) {
     persistRanking(moveCodeBy(ranking, code, delta), [code]);
   }
@@ -657,10 +673,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     if (!nextIndex) return;
     placeArtistAt(activeCode, nextIndex - 1);
   }
-
-  useEffect(() => {
-    setPlacePickerOpen(false);
-  }, [selectedActCode]);
 
   useEffect(() => {
     let active = true;
@@ -825,10 +837,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     );
   }, [acts, placedActsSet, rankingMap]);
 
-  useEffect(() => {
-    setPlacePickerOpen(false);
-  }, [selectedActCode]);
-
   const placedFilteredActs = useMemo(() => {
     return filteredActs.filter((act) => placedActsSet.has(act.code));
   }, [filteredActs, placedActsSet]);
@@ -859,8 +867,8 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           : !lineupReady
             ? text.submitDisabledLineup
             : !hasStartedRanking
-              ? (language === "ru" ? "Сначала поставь хотя бы одного артиста в рейтинг" : "Start placing at least one act in your ranking")
-            : null;
+              ? (language === "ru" ? "Сначала выбери место хотя бы для одного артиста" : "Choose a place for at least one act first")
+              : null;
 
   async function handleSubmit() {
     if (submitDisabledReason) {
@@ -888,41 +896,12 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     return (
       <div className="grid gap-4">
         {hasStartedRanking ? (
-          <section className="show-card p-3.5 md:p-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0">
-                <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.orderTitle}</p>
-                <p className="mt-2 text-xs leading-6 text-arenaMuted">
-                  {language === "ru"
-                    ? "Здесь твой текущий порядок. Перетаскивай артистов прямо в списке или двигай их кнопками на шаг выше и ниже."
-                    : "This is your current order. Drag acts right here in the list or nudge them up and down."}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="show-chip text-xs text-white">
-                  {language === "ru" ? `Расставлено ${placedActsCount} из ${acts.length}` : `${placedActsCount} of ${acts.length} placed`}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setConfirmResetOpen(true)}
-                  disabled={locked}
-                  className="arena-button-secondary inline-flex h-10 items-center justify-center gap-2 px-4 text-sm"
-                >
-                  <RotateCcw size={15} />
-                  {text.resetRanking}
-                </button>
-              </div>
-            </div>
-          </section>
-        ) : null}
-
-        {hasStartedRanking ? (
           <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={handleOrderDragEnd}>
             <SortableContext items={placedFilteredActs.map((act) => act.code)} strategy={verticalListSortingStrategy}>
               <section className="grid gap-3">
                 {placedFilteredActs.length ? (
                   <p className="px-1 text-[11px] uppercase tracking-[0.28em] text-arenaPulse">
-                    {language === "ru" ? "Уже в твоём рейтинге" : "Already in your ranking"}
+                    {text.pickedSection}
                   </p>
                 ) : null}
                 {placedFilteredActs.map((act) => {
@@ -938,10 +917,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                       finalContext={act.stageKey === "final" ? getActContext(act).value : null}
                       locked={locked}
                       dragLabel={language === "ru" ? "Перетащить" : "Drag to reorder"}
-                      onOpen={() => setSelectedActCode(act.code)}
-                      addToRankingLabel={language === "ru" ? "В рейтинг" : "Add"}
+                      onOpen={() => openActCard(act.code)}
+                      addToRankingLabel={text.choosePlace}
                       isPlaced
-                      onAddToRanking={() => placeArtistAt(act.code, placedActsCount)}
+                      onAddToRanking={() => openActPlacePicker(act.code)}
                     />
                   );
                 })}
@@ -965,23 +944,17 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         {((!hasStartedRanking && filteredActs.length === 0) || (hasStartedRanking && placedFilteredActs.length === 0 && unplacedFilteredActs.length === 0)) ? (
           <section className="show-card p-5 text-sm text-arenaMuted">
             {hasStartedRanking && !deferredQuery.trim()
-              ? (language === "ru" ? "Все артисты уже добавлены в твой порядок." : "All acts are already added to your order.")
+              ? (language === "ru" ? "Все артисты уже получили места в бюллетене." : "Every act already has a place in your ballot.")
               : text.emptyActs}
           </section>
         ) : null}
 
-        {hasStartedRanking ? (
-          <section className="px-1 text-xs leading-6 text-arenaMuted">
-            {language === "ru"
-              ? `Осталось добавить в рейтинг: ${acts.length - placedActsCount}. Ниже список тех, кто ещё не расставлен.`
-              : `${acts.length - placedActsCount} acts are still unplaced. Add them from the list below.`}
-          </section>
-        ) : null}
+        <section className="px-1 text-xs leading-6 text-arenaMuted">{text.openActHint}</section>
 
         <section className="grid gap-3">
           {hasStartedRanking && unplacedFilteredActs.length ? (
             <p className="px-1 text-[11px] uppercase tracking-[0.28em] text-arenaMuted">
-              {language === "ru" ? "Ещё не выбрано" : "Still unplaced"}
+              {text.remainingSection}
             </p>
           ) : null}
           {(hasStartedRanking ? unplacedFilteredActs : filteredActs).map((act) => {
@@ -998,10 +971,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 finalContext={finalContext}
                 locked={locked}
                 dragLabel={language === "ru" ? "Перетащить" : "Drag to reorder"}
-                addToRankingLabel={language === "ru" ? "В рейтинг" : "Add"}
+                addToRankingLabel={text.choosePlacePlaceholder}
                 isPlaced={false}
-                onOpen={() => setSelectedActCode(act.code)}
-                onAddToRanking={() => placeArtistAt(act.code, placedActsCount)}
+                onOpen={() => openActCard(act.code)}
+                onAddToRanking={() => openActPlacePicker(act.code)}
               />
             );
           })}
@@ -1023,6 +996,17 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 <Send size={16} />
                 {submitting ? "..." : text.submitButton}
               </button>
+              {hasStartedRanking ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmResetOpen(true)}
+                  disabled={locked}
+                  className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
+                >
+                  <RotateCcw size={15} />
+                  {text.resetRanking}
+                </button>
+              ) : null}
               <p className="text-sm text-arenaMuted">{submitDisabledReason || text.saveOrderHint}</p>
             </div>
           </div>
@@ -1052,7 +1036,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   <button
                     type="button"
                     className="text-left"
-                    onClick={() => setSelectedActCode(act.code)}
+                    onClick={() => openActCard(act.code)}
                   >
                     <ActPoster act={act} compact />
                   </button>
@@ -1196,10 +1180,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                     finalContext={act.stageKey === "final" ? getActContext(act).value : null}
                     locked={locked}
                     dragLabel={language === "ru" ? "Перетащить" : "Drag to reorder"}
-                    onOpen={() => setSelectedActCode(act.code)}
-                    addToRankingLabel={language === "ru" ? "В рейтинг" : "Add"}
+                    onOpen={() => openActCard(act.code)}
+                    addToRankingLabel={text.choosePlace}
                     isPlaced
-                    onAddToRanking={() => placeArtistAt(act.code, placedActsCount)}
+                    onAddToRanking={() => openActPlacePicker(act.code)}
                   />
                 );
               })}
@@ -1250,37 +1234,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       <StageSwitch roomSlug={roomSlug} currentStage={stageKey} section="vote" />
 
       <section className="show-card p-5 md:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.kicker}</p>
-            <h2 className="display-copy mt-3 text-3xl font-black md:text-5xl">{text.title}</h2>
-            <p className="mt-4 text-sm leading-7 text-arenaMuted md:text-base">{text.description}</p>
-            <div className="mt-4 flex flex-wrap gap-2 text-sm text-arenaMuted">
-              {room ? <span>{text.roomLabel}: {room.name}</span> : null}
-              <span className="show-chip text-xs text-arenaBeam">{getStageLabel(stageKey)}</span>
-              <span className="show-chip text-xs text-white">
-                <Radio size={14} className="text-arenaDanger" />
-                {room?.showState?.stageKey === stageKey ? text.stageStatusLive : text.stageStatusIdle}
-              </span>
-            </div>
+        <div className="max-w-3xl">
+          <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.kicker}</p>
+          <h2 className="display-copy mt-3 text-2xl font-black md:text-4xl">{text.title}</h2>
+          <div className="mt-4 flex flex-wrap gap-2 text-sm text-arenaMuted">
+            {room ? <span>{text.roomLabel}: {room.name}</span> : null}
+            <span className="show-chip text-xs text-arenaBeam">{getStageLabel(stageKey)}</span>
           </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href={`/${roomSlug}/acts/${stageKey}`}
-              className="arena-button-secondary inline-flex items-center justify-center px-5 py-3 text-sm"
-            >
-              <Sparkles size={16} />
-              {text.openGuide}
-            </Link>
-            <Link
-              href={`/${roomSlug}/live/${stageKey}`}
-              className="arena-button-secondary inline-flex items-center justify-center px-5 py-3 text-sm"
-            >
-              <Radio size={16} />
-              {text.openShow}
-            </Link>
-          </div>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-arenaMuted">{text.description}</p>
         </div>
       </section>
 
@@ -1294,27 +1255,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           <p className="mt-2">{text.stageFormingText(currentEntries, expectedEntries)}</p>
         </section>
       ) : null}
-
-      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <div className="show-card p-3.5 md:p-4">
-          <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaMuted">{text.summaryTitle}</p>
-          <p className="mt-2 text-sm font-semibold leading-6 text-white md:text-lg">
-            {locked ? text.lockedState : currentStageOpen ? text.liveWindowOpen : text.liveWindowClosed}
-          </p>
-        </div>
-        <div className="show-card p-3.5 md:p-4">
-          <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaMuted">{text.lineupLabel}</p>
-          <p className="display-copy mt-2 text-3xl font-black md:text-4xl">{currentEntries}/{expectedEntries}</p>
-        </div>
-        <div className="show-card p-3.5 md:p-4">
-          <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaMuted">{text.notesCount}</p>
-          <p className="display-copy mt-2 text-3xl font-black md:text-4xl">{noteCount}</p>
-        </div>
-        <div className="show-card p-3.5 md:p-4">
-          <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaMuted">{text.rankingCount}</p>
-          <p className="display-copy mt-2 text-3xl font-black md:text-4xl">{placedActsCount}</p>
-        </div>
-      </section>
 
       {!account ? (
         <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
@@ -1348,7 +1288,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       )}
 
       <section className="show-card p-3">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {([
             { key: "acts", icon: Sparkles },
             { key: "notes", icon: NotebookPen },
@@ -1383,7 +1323,13 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       {selectedTab === "acts" ? renderActsTab() : null}
       {selectedTab === "notes" ? renderNotesTab() : null}
 
-      <BottomSheet open={Boolean(selectedAct)} onClose={() => setSelectedActCode(null)}>
+      <BottomSheet
+        open={Boolean(selectedAct)}
+        onClose={() => {
+          setSelectedActCode(null);
+          setPlacePickerOpen(false);
+        }}
+      >
         {selectedAct ? (
           <div className="grid gap-4 md:gap-5">
             <div className="grid grid-cols-[4.75rem_1fr] items-start gap-3 sm:grid-cols-[5.5rem_1fr] sm:gap-4">
