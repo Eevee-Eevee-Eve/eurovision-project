@@ -237,6 +237,10 @@ function sanitizeRoomName(value) {
   return sanitizeText(value, 48);
 }
 
+function normalizeRoomNameLookup(value) {
+  return sanitizeRoomName(value).toLowerCase().replace(/\s+/g, ' ');
+}
+
 function sanitizeRoomPassword(value) {
   return String(value || '').trim().slice(0, 128);
 }
@@ -332,6 +336,18 @@ function getAllRooms() {
 
 function getRoomBySlug(roomSlug) {
   return getCatalogRoomBySlug(roomSlug) || normalizeDynamicRoomShape(state.dynamicRooms[roomSlug]) || null;
+}
+
+function findRoomsByName(roomName) {
+  const lookup = normalizeRoomNameLookup(roomName);
+  if (!lookup) return [];
+  return getAllRooms().filter((room) => normalizeRoomNameLookup(room.name) === lookup);
+}
+
+function hasRoomNameConflict(roomName, excludeSlug = null) {
+  const lookup = normalizeRoomNameLookup(roomName);
+  if (!lookup) return false;
+  return getAllRooms().some((room) => room.slug !== excludeSlug && normalizeRoomNameLookup(room.name) === lookup);
 }
 
 function isTemporaryRoom(roomSlug) {
@@ -1735,7 +1751,10 @@ app.post('/api/rooms', (req, res) => {
   const defaultStage = normalizeStage(req.body.defaultStage) || TEMP_ROOM_STAGE;
 
   if (!name) {
-    return res.status(400).json({ error: 'Room name is required' });
+    return res.status(400).json({ error: 'Room name is required', code: 'ROOM_NAME_REQUIRED' });
+  }
+  if (hasRoomNameConflict(name)) {
+    return res.status(409).json({ error: 'A room with this name already exists', code: 'ROOM_NAME_TAKEN' });
   }
 
   const passwordData = password ? hashPassword(password) : null;
@@ -1760,6 +1779,23 @@ app.post('/api/rooms', (req, res) => {
   return res.status(201).json({
     room: toPublicRoomSummary(room),
   });
+});
+
+app.get('/api/rooms/resolve', (req, res) => {
+  const roomName = sanitizeRoomName(req.query.name);
+  if (!roomName) {
+    return res.status(400).json({ error: 'Room name is required', code: 'ROOM_NAME_REQUIRED' });
+  }
+
+  const matches = findRoomsByName(roomName);
+  if (!matches.length) {
+    return res.status(404).json({ error: 'Room not found', code: 'ROOM_NOT_FOUND' });
+  }
+  if (matches.length > 1) {
+    return res.status(409).json({ error: 'More than one room has this name', code: 'ROOM_NAME_AMBIGUOUS' });
+  }
+
+  return res.json({ room: toPublicRoomSummary(matches[0]) });
 });
 
 app.post('/api/rooms/:roomSlug/access', (req, res) => {

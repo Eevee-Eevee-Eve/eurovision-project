@@ -97,6 +97,11 @@ export async function createTemporaryRoom(payload: {
   });
 }
 
+export async function resolveRoomByName(name: string) {
+  const query = new URLSearchParams({ name });
+  return readJson<{ room: RoomSummary }>(`/api/rooms/resolve?${query.toString()}`);
+}
+
 export async function unlockRoom(roomSlug: string, password: string) {
   return sendJson<{ ok: true; room: RoomSummary }>(`/api/rooms/${roomSlug}/access`, {
     method: "POST",
