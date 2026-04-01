@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { ArrowRight, Copy, MonitorPlay, NotebookPen, Radio } from "lucide-react";
+import { ArrowRight, Copy, MonitorPlay, NotebookPen } from "lucide-react";
 import { useEffect, useState } from "react";
 import { fetchRoom } from "../lib/api";
 import type { RoomDetails } from "../lib/types";
@@ -52,7 +52,6 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
   }
 
   const defaultStage = room?.defaultStage || "semi1";
-  const showStatus = room?.showState?.statusText;
   const roomName = room?.name || roomSlug;
   const text = language === "ru"
     ? {
@@ -61,8 +60,6 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         description:
           "Здесь начинается ваша сессия: на телефоне вы собираете личный бюллетень, а на большом экране следите за reveal и движением мест.",
         currentStage: "Сейчас идёт",
-        roomStatus: "Статус эфира",
-        statusFallback: "Комната готова к началу вечера.",
         vote: "Голосование",
         voteText: "Личный бюллетень на телефоне: расставить артистов, оставить заметки и отправить порядок.",
         results: "Результаты",
@@ -74,11 +71,6 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         copied: "Скопировано",
         copyError: "Не удалось скопировать",
         roomName: "Имя комнаты",
-        roomDetails: "О комнате",
-        roomDetailsText: "В комнате остаются только два главных режима: личное голосование и общий экран результатов.",
-        hostTools: "Для хоста",
-        hostText: "Пульт остаётся за кулисами и не мешает гостям.",
-        admin: "Открыть пульт",
         temporary: "Временная комната",
         privateRoom: "С паролем",
         roomExpires:
@@ -91,8 +83,6 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         description:
           "This is the start of your session: phones stay focused on personal ballots, while the big screen follows reveals and leaderboard movement.",
         currentStage: "Now playing",
-        roomStatus: "Live status",
-        statusFallback: "The room is ready for the night to begin.",
         vote: "Voting",
         voteText: "The personal phone ballot: rank acts, keep notes, and submit a final order.",
         results: "Results",
@@ -104,11 +94,6 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         copied: "Copied",
         copyError: "Unable to copy",
         roomName: "Room name",
-        roomDetails: "About the room",
-        roomDetailsText: "Inside the room, only two guest-facing modes stay in the spotlight: personal voting and the shared results screen.",
-        hostTools: "For the host",
-        hostText: "The control room stays backstage and out of the guest flow.",
-        admin: "Open control room",
         temporary: "Temporary room",
         privateRoom: "Password",
         roomExpires:
@@ -158,15 +143,7 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
             ) : null}
           </div>
 
-          <div className="mt-6 grid gap-3 lg:grid-cols-[0.92fr_1.08fr]">
-            <div className="show-panel room-lobby-status p-5">
-              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">
-                {text.roomStatus}
-              </p>
-              <p className="mt-4 text-base leading-7 text-white">{showStatus || text.statusFallback}</p>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
+          <div className="mt-6 grid gap-3 md:grid-cols-2">
             <Link
               href={`/${roomSlug}/vote/${defaultStage}`}
               className="show-panel room-lobby-action room-lobby-vote p-5 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
@@ -196,7 +173,6 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
                 <ArrowRight size={15} />
               </div>
             </Link>
-            </div>
           </div>
         </div>
 
@@ -229,55 +205,30 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
                     : text.copy}
               </button>
             </div>
-          </div>
-          <div className="grid gap-4">
-            <div className="show-card p-5 md:p-6">
-              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">
-                {text.roomDetails}
-              </p>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-arenaMuted">{text.roomDetailsText}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
+            {(room?.isTemporary || room?.passwordRequired) ? (
+              <div className="mt-4 show-panel-muted p-4">
+                <div className="flex flex-wrap gap-2">
+                  {room?.isTemporary ? (
+                    <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+                      {text.temporary}
+                    </span>
+                  ) : null}
+                  {room?.passwordRequired ? (
+                    <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+                      {text.privateRoom}
+                    </span>
+                  ) : null}
+                </div>
                 {room?.isTemporary ? (
-                  <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-                    {text.temporary}
-                  </span>
+                  <p className="mt-4 text-sm leading-7 text-arenaMuted">{text.roomExpires}</p>
                 ) : null}
                 {room?.passwordRequired ? (
-                  <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-                    {text.privateRoom}
-                  </span>
+                  <p className={`${room?.isTemporary ? "mt-3" : "mt-4"} text-sm leading-7 text-arenaMuted`}>
+                    {text.roomPrivateText}
+                  </p>
                 ) : null}
               </div>
-              {room?.isTemporary ? (
-                <p className="mt-4 text-sm leading-7 text-arenaMuted">{text.roomExpires}</p>
-              ) : null}
-              {room?.passwordRequired ? (
-                <p className="mt-3 text-sm leading-7 text-arenaMuted">{text.roomPrivateText}</p>
-              ) : null}
-            </div>
-
-            <div className="show-panel-muted p-4">
-              <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaMuted">
-                {text.hostTools}
-              </p>
-              <div className="mt-4 flex items-center justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-full bg-white/5 p-2 text-arenaMuted">
-                    <Radio size={16} />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white">{text.admin}</p>
-                    <p className="mt-1 text-sm text-arenaMuted">{text.hostText}</p>
-                  </div>
-                </div>
-                <Link
-                  href={`/admin?room=${roomSlug}`}
-                  className="arena-button-secondary inline-flex h-11 items-center justify-center px-4 text-sm"
-                >
-                  <ArrowRight size={16} />
-                </Link>
-              </div>
-            </div>
+            ) : null}
           </div>
         </div>
       </section>
