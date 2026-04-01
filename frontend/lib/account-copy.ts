@@ -4,10 +4,10 @@ const ACCOUNT_COPY = {
   ru: {
     navAccount: "Аккаунт",
     auth: {
-      createTitle: "Создай аккаунт для сезона",
-      createText: "Аккаунт хранится на сервере, а не только на этом телефоне. Ты сможешь войти снова, изменить профиль и восстановить доступ позже.",
+      createTitle: "Создай аккаунт, чтобы сохранить свой выбор",
+      createText: "Один аккаунт работает для всех этапов сезона и твоих комнат. С ним можно вернуться позже, изменить профиль и восстановить доступ.",
       loginTitle: "Войти в аккаунт",
-      loginText: "Используй email и пароль, чтобы вернуться к своему профилю и бюллетеням.",
+      loginText: "Используй email и пароль, чтобы вернуться к своему профилю и сохранённым ответам.",
       resetTitle: "Восстановление доступа",
       resetText: "Мы создадим ссылку для сброса пароля. В локальном режиме она покажется прямо здесь.",
       email: "Email",
@@ -70,10 +70,10 @@ const ACCOUNT_COPY = {
   en: {
     navAccount: "Account",
     auth: {
-      createTitle: "Create your season account",
-      createText: "This account lives on the server, not only on this phone. You can sign in again later, update your profile, and recover access if needed.",
+      createTitle: "Create an account to save your picks",
+      createText: "One account works across the whole season and across your rooms. You can come back later, update your profile, and recover access if needed.",
       loginTitle: "Sign in to your account",
-      loginText: "Use your email and password to get back to your profile and ballots.",
+      loginText: "Use your email and password to return to your profile and saved picks.",
       resetTitle: "Recover access",
       resetText: "We will create a password reset link. In local mode it appears right here.",
       email: "Email",
