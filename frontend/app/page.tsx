@@ -285,7 +285,7 @@ export default function Home() {
         </section>
 
         <section className="grid gap-4 xl:grid-cols-2">
-          <div className="show-card p-5 md:p-6">
+          <div className="show-card home-flow-create p-5 md:p-6">
             <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
               {text.createTitle}
             </p>
@@ -297,7 +297,7 @@ export default function Home() {
                   value={roomName}
                   onChange={(event) => setRoomName(event.target.value)}
                   placeholder={text.createNamePlaceholder}
-                  className="arena-input"
+                  className="arena-input home-input-create"
                 />
               </label>
               <label className="grid gap-2 text-sm text-arenaMuted">
@@ -307,7 +307,7 @@ export default function Home() {
                   value={roomPassword}
                   onChange={(event) => setRoomPassword(event.target.value)}
                   placeholder={text.createPasswordPlaceholder}
-                  className="arena-input"
+                  className="arena-input home-input-create"
                 />
               </label>
               {createError ? (
@@ -328,7 +328,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="show-card p-5 md:p-6">
+          <div className="show-card home-flow-join p-5 md:p-6">
             <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">
               {text.joinTitle}
             </p>
@@ -346,7 +346,7 @@ export default function Home() {
                     }
                   }}
                   placeholder={text.joinPlaceholder}
-                  className="arena-input"
+                  className="arena-input home-input-join"
                 />
               </label>
               {joinError ? (
@@ -354,15 +354,15 @@ export default function Home() {
                   {joinError}
                 </div>
               ) : null}
-                <button
-                  type="button"
-                  onClick={handleJoinRoom}
-                  disabled={joinPending}
-                  className="arena-button-secondary inline-flex h-12 items-center justify-center gap-2 px-5 text-sm"
-                >
-                  <ArrowRight size={16} />
-                  {joinPending ? "..." : text.joinButton}
-                </button>
+              <button
+                type="button"
+                onClick={handleJoinRoom}
+                disabled={joinPending}
+                className="arena-button-join inline-flex h-12 items-center justify-center gap-2 px-5 text-sm"
+              >
+                <ArrowRight size={16} />
+                {joinPending ? "..." : text.joinButton}
+              </button>
               <p className="text-xs leading-6 text-arenaMuted">{text.joinHint}</p>
               {loadError ? <p className="text-xs leading-6 text-amber-200">{loadError}</p> : null}
             </div>
