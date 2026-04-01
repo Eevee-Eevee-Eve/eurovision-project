@@ -82,9 +82,11 @@ export default function Home() {
               "Если в комнате никого нет больше 4 часов, она исчезает автоматически.",
             joinTitle: "Войти в комнату",
             joinBody:
-              "Вставь код комнаты или целую ссылку. Если комната закрыта паролем, сайт попросит его уже на следующем шаге.",
-            joinLabel: "Код комнаты или ссылка",
+              "Вставь полную ссылку на комнату или её короткий адрес. Если комната закрыта паролем, сайт попросит его уже на следующем шаге.",
+            joinLabel: "Ссылка или адрес комнаты",
             joinPlaceholder: "Например: neon-arena",
+            joinHint:
+              "Нужно вводить не название комнаты, а её адрес. Например: neon-arena.",
             joinButton: "Войти в комнату",
             activeRoomsTitle: "Активные комнаты",
             activeRoomsBody:
@@ -116,9 +118,11 @@ export default function Home() {
               "If nobody stays in the room for 4 hours, it disappears automatically.",
             joinTitle: "Join a room",
             joinBody:
-              "Paste a room code or a full link. If the room is private, the password prompt will appear on the next step.",
-            joinLabel: "Room code or link",
+              "Paste the full room link or its short room address. If the room is private, the password prompt will appear on the next step.",
+            joinLabel: "Room link or room address",
             joinPlaceholder: "Example: neon-arena",
+            joinHint:
+              "Enter the room address, not the display name. Example: neon-arena.",
             joinButton: "Join room",
             activeRoomsTitle: "Active rooms",
             activeRoomsBody:
@@ -347,6 +351,7 @@ export default function Home() {
                 <ArrowRight size={16} />
                 {text.joinButton}
               </button>
+              <p className="text-xs leading-6 text-arenaMuted">{text.joinHint}</p>
               {loadError ? <p className="text-xs leading-6 text-amber-200">{loadError}</p> : null}
             </div>
           </div>
