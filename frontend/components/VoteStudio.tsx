@@ -35,7 +35,7 @@ import { StageSwitch } from "./StageSwitch";
 import { useLanguage } from "./LanguageProvider";
 import { UserAvatar } from "./UserAvatar";
 
-type VoteTab = "acts" | "notes";
+type VoteTab = "acts" | "notes" | "order";
 
 function arraysEqual(left: string[], right: string[]) {
   if (left.length !== right.length) return false;
@@ -1288,14 +1288,15 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       )}
 
       <section className="show-card p-3">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {([
             { key: "acts", icon: Sparkles },
             { key: "notes", icon: NotebookPen },
+            { key: "order", icon: GripVertical },
           ] as const).map((tab) => {
             const Icon = tab.icon;
             const active = selectedTab === tab.key;
-            const counter = tab.key === "notes" ? noteCount : acts.length;
+            const counter = tab.key === "notes" ? noteCount : tab.key === "order" ? placedActsCount : acts.length;
             return (
               <button
                 key={tab.key}
@@ -1322,6 +1323,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
       {selectedTab === "acts" ? renderActsTab() : null}
       {selectedTab === "notes" ? renderNotesTab() : null}
+      {selectedTab === "order" ? renderOrderTab() : null}
 
       <BottomSheet
         open={Boolean(selectedAct)}
