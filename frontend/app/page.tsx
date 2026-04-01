@@ -81,11 +81,11 @@ export default function Home() {
             temporary: "Временная",
             privateRoom: "С паролем",
             noRooms: "Пока видна только основная комната.",
-            whyTitle: "Как это устроено",
+            whyTitle: "Как проходит вечер",
             whyItems: [
-              "Создаёшь комнату или входишь в уже существующую.",
-              "Внутри комнаты открываешь голосование или большой экран результатов.",
-              "Хост управляет эфиром отдельно, не мешая гостям.",
+              "Один человек создаёт комнату, остальные входят по её имени.",
+              "Внутри комнаты открываются голосование и общий экран результатов.",
+              "Гости расставляют своих фаворитов, а хост ведёт эфир отдельно.",
             ],
           }
         : {
@@ -115,11 +115,11 @@ export default function Home() {
             temporary: "Temporary",
             privateRoom: "Password",
             noRooms: "Only the main room is visible right now.",
-            whyTitle: "How it works",
+            whyTitle: "How the night flows",
             whyItems: [
-              "Create a room or enter one that already exists.",
-              "Inside the room, switch between voting and the results screen.",
-              "The host controls the live flow separately.",
+              "One person creates the room, everyone else joins by its name.",
+              "Inside the room, voting and the shared results screen open up.",
+              "Guests rank their favourites while the host runs the live flow.",
             ],
           },
     [language],
