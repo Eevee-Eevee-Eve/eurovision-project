@@ -24,6 +24,38 @@ function normalizeRoomInput(value: string) {
   return firstSegment.trim().toLowerCase();
 }
 
+function normalizeLookupText(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function resolveRoomInput(value: string, rooms: RoomSummary[]) {
+  const slugCandidate = normalizeRoomInput(value);
+  const normalizedQuery = normalizeLookupText(value);
+
+  if (!slugCandidate && !normalizedQuery) {
+    return { slug: "", ambiguous: false };
+  }
+
+  const slugMatch = rooms.find((room) => room.slug === slugCandidate);
+  if (slugMatch) {
+    return { slug: slugMatch.slug, ambiguous: false };
+  }
+
+  const nameMatches = rooms.filter((room) => normalizeLookupText(room.name) === normalizedQuery);
+  if (nameMatches.length === 1) {
+    return { slug: nameMatches[0].slug, ambiguous: false };
+  }
+  if (nameMatches.length > 1) {
+    return { slug: "", ambiguous: true };
+  }
+
+  if (/^[a-z0-9-]+$/.test(slugCandidate)) {
+    return { slug: slugCandidate, ambiguous: false };
+  }
+
+  return { slug: "", ambiguous: false };
+}
+
 export default function Home() {
   const router = useRouter();
   const { language, getRoomCityLabel, getStageLabel } = useLanguage();
@@ -72,8 +104,8 @@ export default function Home() {
             title: "Создай комнату или войди в уже существующую.",
             createTitle: "Создать комнату",
             createBody:
-              "Задай комнате имя для друзей. Сайт сам создаст ссылку, которой можно будет поделиться. Пароль можно добавить сразу, а можно оставить комнату открытой.",
-            createNameLabel: "Название комнаты для гостей",
+              "Задай комнате имя для друзей. После создания в неё можно будет зайти по ссылке, короткому адресу или названию из списка активных комнат. Пароль можно добавить сразу, а можно оставить комнату открытой.",
+            createNameLabel: "Название комнаты",
             createNamePlaceholder: "Например: Полуфинал у Морозовых",
             createPasswordLabel: "Пароль комнаты",
             createPasswordPlaceholder: "Необязательно",
@@ -82,11 +114,11 @@ export default function Home() {
               "После создания ты получишь ссылку на комнату. Если в ней никого нет больше 4 часов, она исчезает автоматически.",
             joinTitle: "Войти в комнату",
             joinBody:
-              "Вставь ссылку-приглашение или короткий адрес комнаты. Если комната закрыта паролем, сайт попросит его уже на следующем шаге.",
-            joinLabel: "Ссылка-приглашение или адрес",
+              "Вставь ссылку-приглашение, короткий адрес или точное название комнаты. Если комната закрыта паролем, сайт попросит его уже на следующем шаге.",
+            joinLabel: "Ссылка, адрес или название комнаты",
             joinPlaceholder: "Например: neon-arena",
             joinHint:
-              "Название комнаты сюда не подходит. Нужна ссылка или короткий адрес вроде neon-arena.",
+              "Можно вставить ссылку, короткий адрес вроде neon-arena или точное название комнаты из списка выше.",
             joinButton: "Войти в комнату",
             activeRoomsTitle: "Активные комнаты",
             currentStage: "Сейчас идёт",
@@ -106,8 +138,8 @@ export default function Home() {
             title: "Create a room or join one that already exists.",
             createTitle: "Create a room",
             createBody:
-              "Give the room a friendly name. The site will generate a shareable link automatically. Add a password if you want privacy, or leave it open.",
-            createNameLabel: "Room name for guests",
+              "Give the room a friendly name. After creation, people will be able to join it by link, short address, or its name from the active rooms list. Add a password if you want privacy, or leave it open.",
+            createNameLabel: "Room name",
             createNamePlaceholder: "Example: Semi-final watch party",
             createPasswordLabel: "Room password",
             createPasswordPlaceholder: "Optional",
@@ -116,11 +148,11 @@ export default function Home() {
               "After creation, you will get a room link to share. If nobody stays in the room for 4 hours, it disappears automatically.",
             joinTitle: "Join a room",
             joinBody:
-              "Paste an invite link or the room's short address. If the room is private, the password prompt will appear on the next step.",
-            joinLabel: "Invite link or room address",
+              "Paste an invite link, a short room address, or the exact room name. If the room is private, the password prompt will appear on the next step.",
+            joinLabel: "Link, address, or room name",
             joinPlaceholder: "Example: neon-arena",
             joinHint:
-              "Do not enter the display name here. Use a link or a short address such as neon-arena.",
+              "You can use a link, a short address such as neon-arena, or an exact room name from the list above.",
             joinButton: "Join room",
             activeRoomsTitle: "Active rooms",
             currentStage: "Now playing",
@@ -165,18 +197,27 @@ export default function Home() {
   }
 
   function handleJoinRoom() {
-    const normalized = normalizeRoomInput(joinRoomCode);
-    if (!normalized) {
+    const resolved = resolveRoomInput(joinRoomCode, rooms);
+    if (resolved.ambiguous) {
       setJoinError(
         language === "ru"
-          ? "Вставь ссылку или адрес комнаты."
-          : "Enter a room link or room address.",
+          ? "Есть несколько комнат с таким названием. Лучше используй ссылку или короткий адрес."
+          : "More than one room has this name. Use a link or the short room address instead.",
+      );
+      return;
+    }
+
+    if (!resolved.slug) {
+      setJoinError(
+        language === "ru"
+          ? "Вставь ссылку, адрес или точное название комнаты."
+          : "Enter a room link, room address, or exact room name.",
       );
       return;
     }
 
     setJoinError("");
-    router.push(`/${normalized}`);
+    router.push(`/${resolved.slug}`);
   }
 
   return (
