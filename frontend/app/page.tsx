@@ -59,21 +59,21 @@ export default function Home() {
             title: "Создай комнату или войди в уже существующую.",
             createTitle: "Создать комнату",
             createBody:
-              "Задай комнате имя для друзей. Именно по этому названию они будут входить в комнату. Пароль можно добавить сразу, а можно оставить комнату открытой.",
-            createNameLabel: "Название комнаты",
+              "Придумай имя комнаты, по которому друзья смогут её найти. Пароль можно добавить сразу или оставить комнату открытой.",
+            createNameLabel: "Имя комнаты",
             createNamePlaceholder: "Например: Полуфинал у Морозовых",
             createPasswordLabel: "Пароль комнаты",
             createPasswordPlaceholder: "Необязательно",
             createButton: "Создать комнату",
             createHint:
-              "Комнаты с одинаковыми именами нельзя создавать. Если в ней никого нет больше 4 часов, она исчезает автоматически.",
+              "Если в комнате никого нет больше 4 часов, она исчезает автоматически.",
             joinTitle: "Войти в комнату",
             joinBody:
-              "Введи точное название комнаты из списка активных комнат. Если комната закрыта паролем, сайт попросит его уже на следующем шаге.",
-            joinLabel: "Название комнаты",
-            joinPlaceholder: "Например: Neon Arena",
+              "Введи имя комнаты, в которую тебя пригласили. Если она закрыта паролем, сайт попросит его на следующем шаге.",
+            joinLabel: "Имя комнаты",
+            joinPlaceholder: "Например: Полуфинал у Морозовых",
             joinHint:
-              "Нужно ввести именно название комнаты, как оно написано в списке активных комнат.",
+              "Используй то же имя комнаты, которое тебе прислал хост.",
             joinButton: "Войти в комнату",
             activeRoomsTitle: "Активные комнаты",
             currentStage: "Сейчас идёт",
@@ -93,21 +93,21 @@ export default function Home() {
             title: "Create a room or join one that already exists.",
             createTitle: "Create a room",
             createBody:
-              "Give the room a friendly name. People will use that exact name to join it later. Add a password if you want privacy, or leave it open.",
+              "Choose a room name your friends can find. Add a password if you want privacy, or leave it open.",
             createNameLabel: "Room name",
-            createNamePlaceholder: "Example: Semi-final watch party",
+            createNamePlaceholder: "Example: Morozov semi-final party",
             createPasswordLabel: "Room password",
             createPasswordPlaceholder: "Optional",
             createButton: "Create room",
             createHint:
-              "Rooms cannot share the same name. If nobody stays in the room for 4 hours, it disappears automatically.",
+              "If nobody stays in the room for 4 hours, it disappears automatically.",
             joinTitle: "Join a room",
             joinBody:
-              "Enter the exact room name from the active rooms list. If the room is private, the password prompt will appear on the next step.",
+              "Enter the room name you were invited to. If the room is private, the password prompt will appear on the next step.",
             joinLabel: "Room name",
-            joinPlaceholder: "Example: Neon Arena",
+            joinPlaceholder: "Example: Morozov semi-final party",
             joinHint:
-              "Use the room name exactly as it appears in the active rooms list.",
+              "Use the same room name the host shared with you.",
             joinButton: "Join room",
             activeRoomsTitle: "Active rooms",
             currentStage: "Now playing",
@@ -163,8 +163,8 @@ export default function Home() {
     if (!joinRoomName.trim()) {
       setJoinError(
         language === "ru"
-          ? "Введи точное название комнаты."
-          : "Enter the exact room name.",
+          ? "Введи имя комнаты."
+          : "Enter the room name.",
       );
       return;
     }
@@ -180,8 +180,8 @@ export default function Home() {
       if (error instanceof ApiError && error.code === "ROOM_NOT_FOUND") {
         setJoinError(
           language === "ru"
-            ? "Комната с таким именем не найдена. Проверь название в списке активных комнат."
-            : "No room with this name was found. Check the active rooms list.",
+            ? "Комната с таким именем не найдена. Проверь, как её назвал хост."
+            : "No room with this name was found. Check the name shared by the host.",
         );
       } else if (error instanceof ApiError && error.code === "ROOM_NAME_AMBIGUOUS") {
         setJoinError(
