@@ -217,3 +217,11 @@
   - room page now acts as a clear container with two main actions
   - admin stays present only as a quieter host/backstage route
 - kept the temporary-room backend, password gate, and 4-hour cleanup logic intact
+
+### 2026-04-01 landing copy + room order polish
+
+- reduced the main landing title size
+- removed the extra explanatory paragraph under the hero
+- moved active rooms above create/join actions
+- localized room stage labels in the active rooms list
+

@@ -26,7 +26,7 @@ function normalizeRoomInput(value: string) {
 
 export default function Home() {
   const router = useRouter();
-  const { language, getRoomCityLabel } = useLanguage();
+  const { language, getRoomCityLabel, getStageLabel } = useLanguage();
   const [rooms, setRooms] = useState<RoomSummary[]>([FALLBACK_ROOM]);
   const [loadError, setLoadError] = useState("");
   const [roomName, setRoomName] = useState("");
@@ -69,9 +69,7 @@ export default function Home() {
       language === "ru"
         ? {
             kicker: "Евровидение у Морозовых 2026",
-            title: "Сначала комната. Потом голосование и результаты.",
-            intro:
-              "Это вход в вашу вечеринку. Один человек создаёт комнату, остальные подключаются, а уже внутри появляются личный бюллетень и общий экран результатов.",
+            title: "Создай комнату или войди в уже существующую.",
             createTitle: "Создать комнату",
             createBody:
               "Запусти новую комнату для друзей. Пароль можно добавить сразу, а можно оставить комнату открытой.",
@@ -91,6 +89,7 @@ export default function Home() {
             activeRoomsTitle: "Активные комнаты",
             activeRoomsBody:
               "Это не главный сценарий, а быстрый список уже существующих комнат, если ты знаешь, куда идёшь.",
+            currentStage: "Сейчас идёт",
             openRoom: "Открыть комнату",
             temporary: "Временная",
             privateRoom: "С паролем",
@@ -104,9 +103,7 @@ export default function Home() {
           }
         : {
             kicker: "Morozov Eurovision 2026",
-            title: "Start with a room. Then go into voting and results.",
-            intro:
-              "This is the entry point to your watch party. One person creates a room, everyone else joins, and only then do voting and the shared results screen make sense.",
+            title: "Create a room or join one that already exists.",
             createTitle: "Create a room",
             createBody:
               "Spin up a room for friends. Add a password if you want privacy, or leave it open.",
@@ -126,6 +123,7 @@ export default function Home() {
             activeRoomsTitle: "Active rooms",
             activeRoomsBody:
               "This is a secondary shortcut for people who already know where they are going.",
+            currentStage: "Now playing",
             openRoom: "Open room",
             temporary: "Temporary",
             privateRoom: "Password",
@@ -197,12 +195,9 @@ export default function Home() {
 
           <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr] xl:items-start">
             <div className="max-w-4xl">
-              <h1 className="display-copy text-4xl font-black tracking-tight md:text-7xl">
+              <h1 className="display-copy text-3xl font-black tracking-tight md:text-6xl">
                 {text.title}
               </h1>
-              <p className="mt-4 max-w-3xl text-base text-arenaText/90 md:text-xl">
-                {text.intro}
-              </p>
             </div>
 
             <div className="show-card p-5 md:p-6">
@@ -220,6 +215,57 @@ export default function Home() {
                 ))}
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="show-card p-5 md:p-6">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaMuted">
+                {text.activeRoomsTitle}
+              </p>
+              <h2 className="display-copy mt-2 text-2xl font-black text-white">
+                {text.activeRoomsTitle}
+              </h2>
+            </div>
+            <p className="max-w-2xl text-sm leading-7 text-arenaMuted">{text.activeRoomsBody}</p>
+          </div>
+
+          <div className="mt-5 grid gap-3">
+            {rooms.length ? (
+              rooms.map((room) => (
+                <div key={room.slug} className="show-panel p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-lg font-semibold text-white">{room.name}</p>
+                      <p className="mt-2 text-sm text-arenaMuted">
+                        {getRoomCityLabel(room.slug, room.cityLabel)}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                        <span className="show-chip">
+                          {text.currentStage}: {getStageLabel(room.defaultStage)}
+                        </span>
+                        {room.isTemporary ? <span className="show-chip">{text.temporary}</span> : null}
+                        {room.passwordRequired ? (
+                          <span className="show-chip">
+                            <Lock size={12} />
+                            {text.privateRoom}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <Link
+                      href={`/${room.slug}`}
+                      className="arena-button-secondary inline-flex h-10 items-center justify-center px-4 text-xs"
+                    >
+                      {text.openRoom}
+                    </Link>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="show-panel p-4 text-sm text-arenaMuted">{text.noRooms}</div>
+            )}
           </div>
         </section>
 
@@ -303,55 +349,6 @@ export default function Home() {
               </button>
               {loadError ? <p className="text-xs leading-6 text-amber-200">{loadError}</p> : null}
             </div>
-          </div>
-        </section>
-
-        <section className="show-card p-5 md:p-6">
-          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaMuted">
-                {text.activeRoomsTitle}
-              </p>
-              <h2 className="display-copy mt-2 text-2xl font-black text-white">
-                {text.activeRoomsTitle}
-              </h2>
-            </div>
-            <p className="max-w-2xl text-sm leading-7 text-arenaMuted">{text.activeRoomsBody}</p>
-          </div>
-
-          <div className="mt-5 grid gap-3">
-            {rooms.length ? (
-              rooms.map((room) => (
-                <div key={room.slug} className="show-panel p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-lg font-semibold text-white">{room.name}</p>
-                      <p className="mt-2 text-sm text-arenaMuted">
-                        {getRoomCityLabel(room.slug, room.cityLabel)}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                        <span className="show-chip">{room.defaultStage}</span>
-                        {room.isTemporary ? <span className="show-chip">{text.temporary}</span> : null}
-                        {room.passwordRequired ? (
-                          <span className="show-chip">
-                            <Lock size={12} />
-                            {text.privateRoom}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                    <Link
-                      href={`/${room.slug}`}
-                      className="arena-button-secondary inline-flex h-10 items-center justify-center px-4 text-xs"
-                    >
-                      {text.openRoom}
-                    </Link>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="show-panel p-4 text-sm text-arenaMuted">{text.noRooms}</div>
-            )}
           </div>
         </section>
       </div>
