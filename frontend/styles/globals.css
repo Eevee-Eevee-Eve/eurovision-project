@@ -240,12 +240,6 @@ select {
     linear-gradient(145deg, rgba(87, 122, 255, 0.08), transparent 46%);
 }
 
-.room-lobby-status {
-  background:
-    radial-gradient(circle at top, rgba(129, 236, 255, 0.1), transparent 55%),
-    rgba(255, 255, 255, 0.05);
-}
-
 .room-lobby-action {
   position: relative;
   overflow: hidden;
