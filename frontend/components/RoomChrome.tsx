@@ -30,6 +30,7 @@ export function RoomChrome({
   const { getStageLabel, language } = useLanguage();
   const { account } = useAccount();
   const accountCopy = getAccountCopy(language);
+  const isRoomLanding = pageKey === "room";
   const isDisplayMode = pageKey === "live" || pageKey === "players";
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [needsRoomPassword, setNeedsRoomPassword] = useState(false);
@@ -154,7 +155,7 @@ export function RoomChrome({
               <LanguageSwitcher />
             </div>
 
-            {!checkingAccess && !roomMissing && roomSummary ? (
+            {!checkingAccess && !roomMissing && roomSummary && !isRoomLanding ? (
               <div className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
                 <div className="show-panel p-4">
                   <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
@@ -228,30 +229,32 @@ export function RoomChrome({
               </div>
             ) : null}
 
-            <div className="flex flex-wrap gap-2">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const href = `/${roomSlug}/${item.key}/${activeStage}`;
-                const isActive = pageKey === item.key;
+            {!isRoomLanding ? (
+              <div className="flex flex-wrap gap-2">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const href = `/${roomSlug}/${item.key}/${activeStage}`;
+                  const isActive = pageKey === item.key;
 
-                return (
-                  <Link
-                    key={item.key}
-                    href={href}
-                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition ${
-                      isActive
-                        ? "bg-arenaSurfaceMax text-white shadow-glow"
-                        : "bg-white/[0.04] text-arenaMuted hover:bg-white/[0.08] hover:text-white"
-                    }`}
-                  >
-                    <Icon size={16} />
-                    <span className="label-copy uppercase tracking-[0.18em]">
-                      {language === "ru" ? item.labelRu : item.labelEn}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
+                  return (
+                    <Link
+                      key={item.key}
+                      href={href}
+                      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition ${
+                        isActive
+                          ? "bg-arenaSurfaceMax text-white shadow-glow"
+                          : "bg-white/[0.04] text-arenaMuted hover:bg-white/[0.08] hover:text-white"
+                      }`}
+                    >
+                      <Icon size={16} />
+                      <span className="label-copy uppercase tracking-[0.18em]">
+                        {language === "ru" ? item.labelRu : item.labelEn}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : null}
 
             <div>
               {checkingAccess ? (
