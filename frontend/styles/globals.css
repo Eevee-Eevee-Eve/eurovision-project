@@ -226,6 +226,7 @@ select {
 }
 
 .room-lobby-hero {
+  position: relative;
   border-color: rgba(129, 236, 255, 0.12);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
@@ -238,6 +239,22 @@ select {
     radial-gradient(circle at top right, rgba(129, 236, 255, 0.14), transparent 24%),
     radial-gradient(circle at bottom left, rgba(255, 99, 194, 0.12), transparent 28%),
     linear-gradient(145deg, rgba(87, 122, 255, 0.08), transparent 46%);
+}
+
+.room-lobby-hero::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, rgba(129, 236, 255, 0.14), transparent 36%),
+    radial-gradient(circle, rgba(255, 99, 194, 0.12), transparent 34%),
+    radial-gradient(circle, rgba(199, 153, 255, 0.1), transparent 30%);
+  background-position: 12% 22%, 82% 18%, 56% 78%;
+  background-size: 38rem 38rem, 30rem 30rem, 24rem 24rem;
+  filter: blur(36px);
+  opacity: 0.45;
+  animation: room-lobby-drift 22s ease-in-out infinite alternate;
 }
 
 .room-lobby-action {
@@ -273,6 +290,118 @@ select {
   background:
     radial-gradient(circle at top left, rgba(255, 99, 194, 0.12), transparent 25%),
     linear-gradient(145deg, rgba(199, 153, 255, 0.08), transparent 44%);
+}
+
+.room-lobby-page {
+  position: relative;
+  isolation: isolate;
+}
+
+.room-lobby-page::before,
+.room-lobby-page::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.room-lobby-page::before {
+  top: 2rem;
+  left: -4rem;
+  width: 18rem;
+  height: 18rem;
+  background: rgba(255, 99, 194, 0.22);
+  animation: room-lobby-drift 18s ease-in-out infinite alternate;
+}
+
+.room-lobby-page::after {
+  right: -4rem;
+  top: 8rem;
+  width: 20rem;
+  height: 20rem;
+  background: rgba(129, 236, 255, 0.18);
+  animation: room-lobby-drift 26s ease-in-out infinite alternate-reverse;
+}
+
+.room-lobby-stage-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  min-height: 16rem;
+}
+
+.room-lobby-stage-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 7.75rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top, rgba(129, 236, 255, 0.12), transparent 55%),
+    rgba(255, 255, 255, 0.04);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 16px 28px rgba(0, 0, 0, 0.2);
+}
+
+.room-lobby-stage-card-main {
+  grid-row: 1 / span 2;
+  min-height: 16rem;
+}
+
+.room-lobby-stage-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 38%, rgba(11, 12, 26, 0.78) 100%);
+  pointer-events: none;
+}
+
+.room-lobby-stage-overlay {
+  position: absolute;
+  left: 0.85rem;
+  right: 0.85rem;
+  bottom: 0.85rem;
+  z-index: 1;
+}
+
+.room-lobby-stage-fallback::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at top right, rgba(129, 236, 255, 0.18), transparent 35%),
+    linear-gradient(145deg, rgba(255, 99, 194, 0.12), transparent 44%);
+}
+
+@media (max-width: 768px) {
+  .room-lobby-stage-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-height: 12rem;
+  }
+
+  .room-lobby-stage-card {
+    min-height: 6.5rem;
+  }
+
+  .room-lobby-stage-card-main {
+    grid-row: auto;
+    grid-column: 1 / span 2;
+    min-height: 9rem;
+  }
+}
+
+@keyframes room-lobby-drift {
+  0% {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(2%, 3%, 0) scale(1.08);
+  }
 }
 
 .show-panel {

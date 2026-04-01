@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { ArrowRight, Copy, MonitorPlay, NotebookPen } from "lucide-react";
 import { useEffect, useState } from "react";
-import { fetchRoom } from "../lib/api";
-import type { RoomDetails } from "../lib/types";
+import { fetchActs, fetchRoom } from "../lib/api";
+import { resolveMediaUrl } from "../lib/media";
+import type { ActEntry, RoomDetails } from "../lib/types";
 import { useLanguage } from "./LanguageProvider";
 
 export function RoomLanding({ roomSlug }: { roomSlug: string }) {
   const { getStageLabel, language } = useLanguage();
   const [room, setRoom] = useState<RoomDetails | null>(null);
+  const [stagePreviewActs, setStagePreviewActs] = useState<ActEntry[]>([]);
   const [error, setError] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
   const [roomUrl, setRoomUrl] = useState("");
@@ -23,10 +25,21 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         if (!active) return;
         setRoom(roomPayload);
         setError(false);
+
+        try {
+          const actsPayload = await fetchActs(roomSlug, roomPayload.defaultStage || "semi1");
+          if (!active) return;
+          setStagePreviewActs(actsPayload.acts.filter((act) => act.photoUrl).slice(0, 3));
+        } catch (actsError) {
+          if (!active) return;
+          console.error(actsError);
+          setStagePreviewActs([]);
+        }
       } catch (loadError) {
         if (!active) return;
         console.error(loadError);
         setError(true);
+        setStagePreviewActs([]);
       }
     };
 
@@ -114,7 +127,7 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-5 room-lobby-page">
       <section className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
         <div className="show-card room-lobby-hero p-5 md:p-7">
           <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
@@ -127,20 +140,57 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
             {text.description}
           </p>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">
-              {text.currentStage}: {getStageLabel(defaultStage)}
-            </span>
-            {room?.isTemporary ? (
-              <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-                {text.temporary}
-              </span>
-            ) : null}
-            {room?.passwordRequired ? (
-              <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-                {text.privateRoom}
-              </span>
-            ) : null}
+          <div className="mt-6 grid gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
+            <div>
+              <div className="flex flex-wrap gap-2">
+                <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">
+                  {text.currentStage}: {getStageLabel(defaultStage)}
+                </span>
+                {room?.isTemporary ? (
+                  <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+                    {text.temporary}
+                  </span>
+                ) : null}
+                {room?.passwordRequired ? (
+                  <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+                    {text.privateRoom}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="room-lobby-stage-grid">
+              {stagePreviewActs.length ? (
+                stagePreviewActs.map((act, index) => {
+                  const photoUrl = resolveMediaUrl(act.photoUrl);
+                  if (!photoUrl) return null;
+
+                  return (
+                    <div
+                      key={act.code}
+                      className={`room-lobby-stage-card ${index === 0 ? "room-lobby-stage-card-main" : ""}`}
+                    >
+                      <img
+                        src={photoUrl}
+                        alt={`${act.artist} — ${act.song}`}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                      <div className="room-lobby-stage-overlay">
+                        <p className="text-sm font-semibold text-white">{act.country}</p>
+                        <p className="mt-1 text-xs text-white/70">{act.artist}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <>
+                  <div className="room-lobby-stage-card room-lobby-stage-card-main room-lobby-stage-fallback" />
+                  <div className="room-lobby-stage-card room-lobby-stage-fallback" />
+                  <div className="room-lobby-stage-card room-lobby-stage-fallback" />
+                </>
+              )}
+            </div>
           </div>
 
           <div className="mt-6 grid gap-3 md:grid-cols-2">
