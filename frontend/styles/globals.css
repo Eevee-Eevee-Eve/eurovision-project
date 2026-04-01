@@ -225,6 +225,62 @@ select {
     linear-gradient(145deg, rgba(87, 122, 255, 0.12), transparent 44%);
 }
 
+.room-lobby-hero {
+  border-color: rgba(129, 236, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 40px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(129, 236, 255, 0.03);
+}
+
+.room-lobby-hero::before {
+  background:
+    radial-gradient(circle at top right, rgba(129, 236, 255, 0.14), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(255, 99, 194, 0.12), transparent 28%),
+    linear-gradient(145deg, rgba(87, 122, 255, 0.08), transparent 46%);
+}
+
+.room-lobby-status {
+  background:
+    radial-gradient(circle at top, rgba(129, 236, 255, 0.1), transparent 55%),
+    rgba(255, 255, 255, 0.05);
+}
+
+.room-lobby-action {
+  position: relative;
+  overflow: hidden;
+}
+
+.room-lobby-action::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.room-lobby-vote::before {
+  background:
+    radial-gradient(circle at top left, rgba(255, 99, 194, 0.14), transparent 30%),
+    linear-gradient(145deg, rgba(199, 153, 255, 0.08), transparent 42%);
+}
+
+.room-lobby-results::before {
+  background:
+    radial-gradient(circle at top right, rgba(129, 236, 255, 0.16), transparent 30%),
+    linear-gradient(145deg, rgba(87, 122, 255, 0.08), transparent 42%);
+}
+
+.room-lobby-invite {
+  border-color: rgba(255, 99, 194, 0.1);
+}
+
+.room-lobby-invite::before {
+  background:
+    radial-gradient(circle at top left, rgba(255, 99, 194, 0.12), transparent 25%),
+    linear-gradient(145deg, rgba(199, 153, 255, 0.08), transparent 44%);
+}
+
 .show-panel {
   border-radius: 1.45rem;
   border: 1px solid rgba(255, 255, 255, 0.06);
