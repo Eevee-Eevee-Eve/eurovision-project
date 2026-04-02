@@ -3,6 +3,39 @@
 > Latest update:
 > Production is live on `morozoveuroparty.ru`. The active workstream is the companion UX in `vote/acts`: modal sheet, notes, draft ranking state, and responsive layout.
 
+## 2026-04-02
+
+### Vote Simplification Pass
+
+- kept `vote` as a single working list instead of multiple page-level modes
+- removed page-level detours for notes and order from the main voting surface
+- left notes only inside the artist card
+- kept drag-and-drop as the main ordering action in the acts list
+- reduced top-page noise on `vote`:
+  - no separate account form on the voting page
+  - search + one list + sticky submit flow
+- tightened copy around ranking/order so the page reads more like a practical ballot and less like a system dashboard
+- kept precise movement inside the artist card:
+  - move up / down
+  - send to exact place
+- local `next build` passed after the pass
+
+### Parallel Work This Round
+
+- reviewed `BottomSheet` as a separate layer:
+  - unified top area
+  - stronger close hit area
+  - preserved internal scroll lock strategy
+- rechecked the homepage:
+  - auth remains present on the start screen alongside create/join room
+
+### Next Manual Check
+
+- real-phone test for the rebuilt single-list `vote` flow
+- verify drag handle feel with and without active search
+- verify artist card scroll, close button, and textarea focus on iPhone
+- verify the new smaller auth message in `vote` is enough once homepage auth is the primary entry path
+
 ## 2026-03-24
 
 ### Latest UX pass

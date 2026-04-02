@@ -3,6 +3,17 @@
 > Current focus:
 > `vote/acts` UX on real screens. Infrastructure and deploy are stable enough; the main remaining risk is the companion flow itself.
 
+## 2026-04-02 single-list vote risks
+
+- The voting page now aims to be one list only.
+  - need real-device confirmation that users understand drag-and-drop immediately without the removed page-level tabs
+- Search now coexists with drag-and-drop more conservatively.
+  - verify that disabling smooth reordering while search is active feels understandable, not broken
+- The page-level auth form was removed from `vote`.
+  - confirm the new homepage-first auth flow is enough for first-time users
+- The artist card still carries precise place controls.
+  - verify they feel secondary and not conflicting with the main drag-and-drop path
+
 ## 2026-03-25 new room flow risks
 
 - Temporary rooms are new and need a real end-to-end smoke test:
