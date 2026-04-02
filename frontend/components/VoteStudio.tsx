@@ -186,7 +186,7 @@ function SortableOrderRow({
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            className="arena-button-secondary inline-flex h-10 w-10 touch-none items-center justify-center rounded-[1rem] px-0 text-sm"
+            className="arena-button-secondary inline-flex h-10 w-10 touch-none items-center justify-center rounded-[1rem] px-0 text-sm enabled:cursor-grab active:enabled:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-45"
             aria-label={dragLabel}
             title={dragLabel}
             disabled={locked}
@@ -772,7 +772,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           </SortableContext>
         </DndContext>
 
-        <section className="show-card sticky bottom-4 z-10 p-5">
+        <section className="show-card sticky bottom-4 z-10 p-4 md:p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-2xl">
               <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.submitTitle}</p>
@@ -791,7 +791,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 type="button"
                 onClick={() => void handleSubmit()}
                 disabled={Boolean(submitDisabledReason) || submitting}
-                className="arena-button-primary flex h-14 items-center justify-center gap-2 px-8 text-sm"
+                className="arena-button-primary flex h-12 items-center justify-center gap-2 px-6 text-sm md:h-14 md:px-8"
               >
                 <Send size={16} />
                 {submitting ? "..." : text.submitButton}
@@ -837,7 +837,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         <div className="max-w-4xl">
           <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.kicker}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-arenaMuted">
-            <h2 className="display-copy text-2xl font-black md:text-4xl">{text.title}</h2>
+            <h2 className="display-copy text-[1.65rem] font-black leading-none md:text-4xl">{text.title}</h2>
             {room ? <span>{text.roomLabel}: {room.name}</span> : null}
             <span className="show-chip text-xs text-arenaBeam">{getStageLabel(stageKey)}</span>
           </div>
