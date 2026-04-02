@@ -1,9 +1,10 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { Activity, MonitorPlay, Radio, Sparkles, Trophy, Users } from "lucide-react";
+import { MonitorPlay, Radio, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createRoomSocket, fetchLeaderboard, fetchRoom, fetchStageResults } from "../lib/api";
+import { useDeviceTier } from "../lib/device";
 import type { ActEntry, LeaderboardEntry, RoomDetails, StageKey } from "../lib/types";
 import { ActPoster } from "./ActPoster";
 import { MovementPill } from "./MovementPill";
@@ -15,10 +16,15 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   const [results, setResults] = useState<ActEntry[]>([]);
   const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
   const [movement, setMovement] = useState<Record<string, number | null>>({});
+  const [leaderMovement, setLeaderMovement] = useState<Record<string, number | null>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const previousRanks = useRef<Record<string, number>>({});
+  const previousLeaderRanks = useRef<Record<string, number>>({});
   const { getCountryName, getStageLabel, language } = useLanguage();
+  const { isTablet, isDesktop } = useDeviceTier();
+  const isWide = isTablet || isDesktop;
+  const isSemi = stageKey === "semi1" || stageKey === "semi2";
 
   useEffect(() => {
     let active = true;
@@ -30,6 +36,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
           fetchStageResults(roomSlug, stageKey),
           fetchLeaderboard(roomSlug, "overall"),
         ]);
+
         if (!active) return;
         setRoom(roomPayload);
         setResults(resultsPayload.results);
@@ -40,7 +47,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         if (!active) return;
         console.error(loadError);
         setLoading(false);
-        setError(language === "ru" ? "Не удалось загрузить экран эфира." : "Unable to load the show screen.");
+        setError(language === "ru" ? "Не удалось загрузить экран результатов." : "Unable to load the results screen.");
       }
     };
 
@@ -87,48 +94,109 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     }, {});
   }, [results]);
 
+  useEffect(() => {
+    const nextMovement = leaders.reduce<Record<string, number | null>>((acc, row) => {
+      const previousRank = previousLeaderRanks.current[row.id];
+      acc[row.id] = previousRank ? previousRank - row.rank : null;
+      return acc;
+    }, {});
+
+    setLeaderMovement(nextMovement);
+    previousLeaderRanks.current = leaders.reduce<Record<string, number>>((acc, row) => {
+      acc[row.id] = row.rank;
+      return acc;
+    }, {});
+  }, [leaders]);
+
   const text = language === "ru"
     ? {
-        kicker: "Show screen",
-        title: "Эфир комнаты",
-        description:
-          "Это главный экран для ТВ и проектора: крупный фокус на текущем артисте, статусе reveal и движении таблицы.",
-        currentAct: "Сейчас на экране",
-        roomLead: "Лидер комнаты",
-        revealProgress: "Reveal",
-        roomPlayers: "Друзья в комнате",
-        stageBoard: "Таблица этапа",
-        waitingStatus: "Ожидаем следующий reveal.",
-        noResults: "Пока нет опубликованных результатов этапа.",
-        roomReady: "Экран готов для проектора",
+        kicker: "Экран результатов",
+        title: isSemi ? "Кто проходит в финал" : "Экран результатов комнаты",
+        description: isSemi
+          ? "В полуфинале главный вопрос — кто проходит дальше. На телефоне сначала видно участников комнаты, а на широком экране слева — квалификации и движение таблицы."
+          : "На широком экране слева и справа видны таблица этапа и участники комнаты. На телефоне сначала показываем людей в комнате, а уже потом общий список этапа.",
+        progressLabel: isSemi ? "Прошли дальше" : "Показано",
+        currentAct: isSemi ? "Квалификация в эфире" : "Сейчас на экране",
+        roomPlayers: "Участники комнаты",
+        stageBoard: isSemi ? "Проходят в финал" : "Таблица этапа",
+        stageHint: isSemi ? "В центре внимания только проход дальше." : "Полная таблица и движение мест.",
+        waitingStatus: isSemi ? "Ждём следующий анонс квалификации." : "Ждём reveal следующего блока.",
+        noResults: isSemi ? "Пока нет опубликованных квалификаций." : "Пока нет опубликованных результатов этапа.",
+        roomReady: "Экран готов для показа",
+        phoneFocus: "Телефон: сначала участники комнаты",
+        wideFocus: "Широкий экран: stage слева, room справа",
+        qualifiersTitle: "Список квалифицированных",
+        points: "баллов",
+        pts: "очков",
+        qualified: "В финале",
       }
     : {
-        kicker: "Show screen",
-        title: "Room broadcast board",
-        description:
-          "This is the main TV and projector screen: one large focal act, one clear status, and the live movement of the stage table.",
-        currentAct: "Now on screen",
-        roomLead: "Room leader",
-        revealProgress: "Reveal",
-        roomPlayers: "Friends in the room",
-        stageBoard: "Stage standings",
-        waitingStatus: "Waiting for the next reveal moment.",
-        noResults: "This stage has no published results yet.",
-        roomReady: "Display route ready",
+        kicker: "Results screen",
+        title: isSemi ? "Who qualifies for the final" : "Room results board",
+        description: isSemi
+          ? "Semi-finals are about qualifiers first. On phones the room participants stay on top, while wide screens show the advancing acts and the table movement side by side."
+          : "On wide screens the stage standings and the room leaderboard sit side by side. On phones we keep the room participants first and the stage list smaller.",
+        progressLabel: isSemi ? "Qualified" : "Shown",
+        currentAct: isSemi ? "Qualifiers on screen" : "Now on screen",
+        roomPlayers: "Room participants",
+        stageBoard: isSemi ? "Advancing to the final" : "Stage standings",
+        stageHint: isSemi ? "The only thing that matters here is who moves on." : "Full ranking and position movement.",
+        waitingStatus: isSemi ? "Waiting for the next qualifier reveal." : "Waiting for the next reveal moment.",
+        noResults: isSemi ? "No qualifiers have been published yet." : "No published results yet.",
+        roomReady: "Ready for display",
+        phoneFocus: "Phone: room participants first",
+        wideFocus: "Wide: stage on the left, room on the right",
+        qualifiersTitle: "Qualified acts",
+        points: "points",
+        pts: "pts",
+        qualified: "Qualified",
       };
 
-  const revealedCount = results.filter((act) => act.revealed).length;
-  const topActs = useMemo(() => results.slice(0, 10), [results]);
-  const compactLeaders = leaders.slice(0, 6);
   const showState = room?.showState?.stageKey === stageKey ? room.showState : null;
+
+  const sortedResults = useMemo(
+    () =>
+      [...results].sort((left, right) => {
+        const leftRank = left.rank ?? Number.POSITIVE_INFINITY;
+        const rightRank = right.rank ?? Number.POSITIVE_INFINITY;
+        return leftRank - rightRank;
+      }),
+    [results]
+  );
+
+  const qualifierRows = useMemo(
+    () => sortedResults.filter((act) => typeof act.rank === "number" && act.rank > 0 && act.rank <= 10),
+    [sortedResults]
+  );
+
+  const stageRows = useMemo(() => {
+    const source = isSemi ? qualifierRows : sortedResults;
+    const limit = isWide ? 10 : 6;
+    return source.slice(0, limit);
+  }, [isSemi, isWide, qualifierRows, sortedResults]);
+
+  const roomRows = useMemo(() => leaders.slice(0, isWide ? 6 : 4), [isWide, leaders]);
+  const progressValue = isSemi
+    ? `${qualifierRows.length}/10`
+    : `${results.filter((act) => act.revealed).length}/${results.length}`;
+
   const featuredAct = useMemo(() => {
     const currentFromState = showState?.currentActCode
-      ? results.find((act) => act.code === showState.currentActCode) || null
+      ? sortedResults.find((act) => act.code === showState.currentActCode) || null
       : null;
 
     if (currentFromState) return currentFromState;
-    return results.find((act) => act.revealed) || results[0] || null;
-  }, [results, showState]);
+    return sortedResults.find((act) => act.revealed) || sortedResults[0] || null;
+  }, [showState, sortedResults]);
+
+  const highlightLabel = showState?.highlightMode
+    ? {
+        stage: language === "ru" ? "Этап" : "Stage",
+        current_act: language === "ru" ? "Текущий артист" : "Current act",
+        results: language === "ru" ? "Результаты" : "Results",
+        players: language === "ru" ? "Участники" : "Players",
+      }[showState.highlightMode]
+    : null;
 
   if (loading) {
     return (
@@ -149,201 +217,212 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     return <div className="rounded-[1.8rem] bg-rose-400/10 p-5 text-sm text-rose-100">{error}</div>;
   }
 
+  const renderRoomRow = (row: LeaderboardEntry) => (
+    <div key={row.id} className="show-panel flex items-center gap-3 p-3 md:gap-4 md:p-4">
+      <div className="show-rank h-10 w-10 shrink-0 text-base font-black text-arenaText md:h-12 md:w-12 md:text-lg">
+        {row.rank}
+      </div>
+      <UserAvatar
+        name={row.name}
+        emoji={row.emoji}
+        avatarUrl={row.avatarUrl}
+        avatarTheme={row.avatarTheme}
+        className="h-10 w-10 shrink-0 md:h-12 md:w-12"
+        textClass="text-sm"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-base font-semibold text-white md:text-lg">{row.name}</p>
+        <p className="text-sm text-arenaMuted">
+          {row.points} {language === "ru" ? "баллов" : "points"}
+        </p>
+      </div>
+      <MovementPill delta={leaderMovement[row.id] ?? null} />
+    </div>
+  );
+
+  const renderStageRow = (act: ActEntry) => {
+    const isQualifier = isSemi && typeof act.rank === "number" && act.rank > 0 && act.rank <= 10;
+
+    return (
+      <motion.div
+        key={act.code}
+        layout
+        className={`show-panel flex items-center gap-3 p-3 md:gap-4 md:p-4 ${act.revealed ? "" : "opacity-80"}`}
+      >
+        <div className="show-rank h-12 w-12 shrink-0 text-lg font-black text-arenaText md:h-14 md:w-14 md:text-2xl">
+          {act.rank || "—"}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaBeam">
+              {getCountryName(act.code, act.country)}
+            </span>
+            {isQualifier ? (
+              <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-emerald-100">
+                <Sparkles size={12} />
+                {text.qualified}
+              </span>
+            ) : null}
+            <MovementPill delta={movement[act.code] ?? null} />
+          </div>
+          <p className="mt-2 text-base font-semibold text-white md:text-lg">{act.artist}</p>
+          <p className="text-sm text-arenaMuted">{act.song}</p>
+        </div>
+        {!isSemi && act.totalPoints != null ? (
+          <div className="text-right">
+            <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">
+              {language === "ru" ? "Очки" : "Points"}
+            </p>
+            <p className="display-copy mt-2 text-2xl font-black text-white md:text-3xl">{act.totalPoints}</p>
+          </div>
+        ) : null}
+      </motion.div>
+    );
+  };
+
+  const stageHero = featuredAct ? (
+    <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.78fr]">
+      <ActPoster act={featuredAct} mode={isWide ? "hero" : "card"} />
+      <div className="grid gap-3">
+        <div className="show-panel p-4">
+          <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
+            {getCountryName(featuredAct.code, featuredAct.country)}
+          </p>
+          <p className="mt-3 text-2xl font-semibold text-white">{featuredAct.artist}</p>
+          <p className="mt-1 text-lg text-arenaMuted">{featuredAct.song}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {featuredAct.rank ? <span className="show-chip text-sm text-white">#{featuredAct.rank}</span> : null}
+            <MovementPill delta={movement[featuredAct.code] ?? null} />
+            {isSemi ? (
+              <span className="show-chip text-sm text-emerald-100">
+                <Sparkles size={12} />
+                {text.qualified}
+              </span>
+            ) : featuredAct.totalPoints != null ? (
+              <span className="show-chip text-sm text-arenaMuted">
+                {featuredAct.totalPoints} {language === "ru" ? text.points : text.pts}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="show-panel p-4">
+          <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaMuted">
+            {showState?.statusText || text.waitingStatus}
+          </p>
+          <p className="mt-2 text-sm leading-7 text-arenaMuted">
+            {isWide ? text.wideFocus : text.phoneFocus}
+          </p>
+          {highlightLabel ? (
+            <div className="mt-4">
+              <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+                <Radio size={13} />
+                {highlightLabel}
+              </span>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div className="show-panel mt-5 p-5 text-sm text-arenaMuted">{text.noResults}</div>
+  );
+
   return (
     <div className="grid gap-5">
-      <section className="grid gap-4 xl:grid-cols-[1.06fr_0.94fr]">
-        <div className="show-card p-5 md:p-6">
-          <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaDanger">{text.kicker}</p>
-          <h2 className="display-copy mt-3 text-3xl font-black md:text-6xl">{text.title}</h2>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-arenaMuted md:text-base">{text.description}</p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">
-              {getStageLabel(stageKey)}
-            </span>
-            <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-              {text.revealProgress}: {revealedCount}/{results.length}
-            </span>
-            <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-              <MonitorPlay size={13} />
-              {text.roomReady}
-            </span>
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-3">
-          {[
-            {
-              label: text.revealProgress,
-              value: `${revealedCount}/${results.length}`,
-              icon: Activity,
-            },
-            {
-              label: text.roomLead,
-              value: compactLeaders[0]?.name || "—",
-              icon: Trophy,
-            },
-            {
-              label: text.roomPlayers,
-              value: String(leaders.length),
-              icon: Users,
-            },
-          ].map((item) => {
-            const Icon = item.icon;
-            return (
-              <div key={item.label} className="show-card p-4">
-                <div className="flex items-center gap-2 text-arenaMuted">
-                  <Icon size={15} />
-                  <span className="label-copy text-[11px] uppercase tracking-[0.24em]">{item.label}</span>
-                </div>
-                <p className="display-copy mt-4 text-3xl font-black text-white">{item.value}</p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-        <div className="show-card p-5 md:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.currentAct}</p>
-              <h3 className="display-copy mt-2 text-2xl font-black md:text-4xl">
-                {featuredAct ? featuredAct.artist : text.noResults}
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-arenaMuted">
-                {showState?.statusText || text.waitingStatus}
-              </p>
-            </div>
-            <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaDanger">
-              <Radio size={13} />
-              {showState?.highlightMode || "stage"}
-            </span>
-          </div>
-
-          {featuredAct ? (
-            <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.78fr]">
-              <ActPoster act={featuredAct} mode="hero" />
-              <div className="grid gap-3">
-                <div className="show-panel p-4">
-                  <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
-                    {getCountryName(featuredAct.code, featuredAct.country)}
-                  </p>
-                  <p className="mt-3 text-2xl font-semibold text-white">{featuredAct.song}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {featuredAct.rank ? (
-                      <span className="show-chip text-sm text-white">#{featuredAct.rank}</span>
-                    ) : null}
-                    <MovementPill delta={movement[featuredAct.code] ?? null} />
-                    {featuredAct.totalPoints != null ? (
-                      <span className="show-chip text-sm text-arenaMuted">
-                        {featuredAct.totalPoints} {language === "ru" ? "баллов" : "pts"}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="show-panel p-4">
-                  <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaMuted">
-                    {text.roomLead}
-                  </p>
-                  {compactLeaders[0] ? (
-                    <div className="mt-3 flex items-center gap-3">
-                      <UserAvatar
-                        name={compactLeaders[0].name}
-                        emoji={compactLeaders[0].emoji}
-                        avatarUrl={compactLeaders[0].avatarUrl}
-                        avatarTheme={compactLeaders[0].avatarTheme}
-                        className="h-12 w-12"
-                        textClass="text-sm"
-                      />
-                      <div>
-                        <p className="text-lg font-semibold text-white">{compactLeaders[0].name}</p>
-                        <p className="text-sm text-arenaMuted">
-                          {compactLeaders[0].points} {language === "ru" ? "баллов" : "points"}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-3 text-sm text-arenaMuted">—</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="show-panel mt-5 p-5 text-sm text-arenaMuted">{text.noResults}</div>
-          )}
-        </div>
-
-        <div className="show-card p-5 md:p-6">
-          <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">{text.roomPlayers}</p>
-          <div className="mt-5 grid gap-3">
-            {compactLeaders.length ? compactLeaders.map((row) => (
-              <div key={row.id} className="show-panel flex items-center gap-3 p-3">
-                <div className="show-rank h-12 w-12 shrink-0 text-lg font-black text-arenaText">{row.rank}</div>
-                <UserAvatar
-                  name={row.name}
-                  emoji={row.emoji}
-                  avatarUrl={row.avatarUrl}
-                  avatarTheme={row.avatarTheme}
-                  className="h-12 w-12 shrink-0"
-                  textClass="text-sm"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-semibold text-white">{row.name}</p>
-                  <p className="text-sm text-arenaMuted">{row.points} {language === "ru" ? "баллов" : "points"}</p>
-                </div>
-              </div>
-            )) : (
-              <div className="show-panel p-4 text-sm text-arenaMuted">{text.noResults}</div>
-            )}
-          </div>
-        </div>
-      </section>
-
       <section className="show-card p-5 md:p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.stageBoard}</p>
-            <h3 className="display-copy mt-2 text-2xl font-black">{getStageLabel(stageKey)}</h3>
-          </div>
-          <Sparkles size={18} className="text-arenaMuted" />
-        </div>
+        <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaDanger">{text.kicker}</p>
+        <h2 className="display-copy mt-3 text-3xl font-black md:text-6xl">{text.title}</h2>
+        <p className="mt-4 max-w-3xl text-sm leading-7 text-arenaMuted md:text-base">{text.description}</p>
 
-        <div className="mt-5 grid gap-3">
-          {topActs.length ? topActs.map((act) => (
-            <motion.div
-              key={act.code}
-              layout
-              className={`show-panel flex items-center gap-4 p-4 ${act.revealed ? "" : "opacity-80"}`}
-            >
-              <div className="show-rank h-14 w-14 shrink-0 text-xl font-black text-arenaText">
-                {act.rank || "—"}
-              </div>
-              <ActPoster act={act} compact />
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaBeam">
-                    {getCountryName(act.code, act.country)}
-                  </span>
-                  <MovementPill delta={movement[act.code] ?? null} />
-                </div>
-                <p className="mt-2 text-lg font-semibold text-white">{act.artist}</p>
-                <p className="text-sm text-arenaMuted">{act.song}</p>
-              </div>
-              {act.totalPoints != null ? (
-                <div className="text-right">
-                  <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">
-                    {language === "ru" ? "Очки" : "Points"}
-                  </p>
-                  <p className="display-copy mt-2 text-3xl font-black text-white">{act.totalPoints}</p>
-                </div>
-              ) : null}
-            </motion.div>
-          )) : (
-            <div className="show-panel p-5 text-sm text-arenaMuted">{text.noResults}</div>
-          )}
+        <div className="mt-5 flex flex-wrap gap-2">
+          <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">
+            {getStageLabel(stageKey)}
+          </span>
+          <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+            {text.progressLabel}: {progressValue}
+          </span>
+          <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+            <MonitorPlay size={13} />
+            {text.roomReady}
+          </span>
+          {highlightLabel ? (
+            <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+              {highlightLabel}
+            </span>
+          ) : null}
         </div>
       </section>
+
+      {isWide ? (
+        <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+          <div className="show-card p-5 md:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.stageBoard}</p>
+                <p className="mt-2 text-sm text-arenaMuted">{text.stageHint}</p>
+              </div>
+              {isSemi ? (
+                <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
+                  <Sparkles size={13} />
+                  {text.qualifiersTitle}
+                </span>
+              ) : null}
+            </div>
+
+            {stageHero}
+
+            <div className="mt-5 grid gap-3">
+              {stageRows.length ? stageRows.map((act) => renderStageRow(act)) : (
+                <div className="show-panel p-5 text-sm text-arenaMuted">{text.noResults}</div>
+              )}
+            </div>
+          </div>
+
+          <div className="show-card p-5 md:p-6">
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">{text.roomPlayers}</p>
+            <div className="mt-5 grid gap-3">
+              {roomRows.length ? roomRows.map(renderRoomRow) : (
+                <div className="show-panel p-4 text-sm text-arenaMuted">{text.noResults}</div>
+              )}
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="grid gap-4">
+          <div className="show-card p-5 md:p-6">
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">{text.roomPlayers}</p>
+            <div className="mt-5 grid gap-3">
+              {roomRows.length ? roomRows.map(renderRoomRow) : (
+                <div className="show-panel p-4 text-sm text-arenaMuted">{text.noResults}</div>
+              )}
+            </div>
+          </div>
+
+          <div className="show-card p-5 md:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.stageBoard}</p>
+                <p className="mt-2 text-sm text-arenaMuted">{text.stageHint}</p>
+              </div>
+              {isSemi ? (
+                <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
+                  <Sparkles size={13} />
+                  {text.qualifiersTitle}
+                </span>
+              ) : null}
+            </div>
+
+            {stageHero}
+
+            <div className="mt-5 grid gap-3">
+              {stageRows.length ? stageRows.map((act) => renderStageRow(act)) : (
+                <div className="show-panel p-4 text-sm text-arenaMuted">{text.noResults}</div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
