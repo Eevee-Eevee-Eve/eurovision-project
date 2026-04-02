@@ -10,7 +10,7 @@ import type { ActEntry, RoomDetails } from "../lib/types";
 import { useLanguage } from "./LanguageProvider";
 
 export function RoomLanding({ roomSlug }: { roomSlug: string }) {
-  const { getStageLabel, language } = useLanguage();
+  const { language } = useLanguage();
   const { isPhone } = useDeviceTier();
   const [room, setRoom] = useState<RoomDetails | null>(null);
   const [stagePreviewActs, setStagePreviewActs] = useState<ActEntry[]>([]);
@@ -77,9 +77,8 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         kicker: "Комната",
         title: isPhone ? "Комната готова" : "Комната готова. Дальше — голосование или общий экран результатов.",
         description: isPhone
-          ? "Выбери, что открыть дальше: голосование на телефоне или результаты на большом экране."
+          ? "Открой голосование на телефоне или результаты на большом экране."
           : "Здесь начинается ваша сессия: на телефоне вы собираете личный выбор, а на большом экране следите за reveal и движением мест.",
-        currentStage: "Сейчас идёт",
         vote: "Голосование",
         voteText: "Личный выбор на телефоне: расставить артистов, оставить заметки и сохранить порядок.",
         results: "Результаты",
@@ -103,7 +102,6 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         description: isPhone
           ? "Choose what to open next: the phone ballot or the shared results view."
           : "This is the start of your session: phones stay focused on personal choices, while the big screen follows reveals and leaderboard movement.",
-        currentStage: "Now playing",
         vote: "Voting",
         voteText: "Personal phone flow: rank acts, keep notes, and save a final order.",
         results: "Results",
@@ -115,10 +113,7 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         copied: "Copied",
         copyError: "Unable to copy",
         roomName: "Room name",
-        temporary: "Temporary room",
         privateRoom: "Password",
-        roomExpires:
-          "If nobody stays in this room for more than 4 hours, it disappears automatically.",
         roomPrivateText: "Guests will be asked for the password on the next step.",
       };
 
@@ -140,12 +135,6 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         {text.roomLink}
       </p>
       <p className="mt-3 text-sm leading-7 text-arenaMuted">{text.roomLinkText}</p>
-      <div className="mt-4 show-panel-muted p-4">
-        <p className="label-copy text-[11px] uppercase tracking-[0.26em] text-arenaMuted">
-          {text.roomName}
-        </p>
-        <p className="mt-2 text-base font-semibold text-white">{roomName}</p>
-      </div>
       <div className="mt-4 rounded-[1.4rem] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/90">
         {roomUrl || `/${roomSlug}`}
       </div>
@@ -163,45 +152,31 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
               : text.copy}
         </button>
       </div>
-      {(room?.isTemporary || room?.passwordRequired) ? (
+      {room?.passwordRequired ? (
         <div className="mt-4 show-panel-muted p-4">
-          <div className="flex flex-wrap gap-2">
-            {room?.isTemporary ? (
-              <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-                {text.temporary}
-              </span>
-            ) : null}
-            {room?.passwordRequired ? (
-              <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-                {text.privateRoom}
-              </span>
-            ) : null}
-          </div>
-          {room?.isTemporary ? (
-            <p className="mt-4 text-sm leading-7 text-arenaMuted">{text.roomExpires}</p>
-          ) : null}
-          {room?.passwordRequired ? (
-            <p className={`${room?.isTemporary ? "mt-3" : "mt-4"} text-sm leading-7 text-arenaMuted`}>
-              {text.roomPrivateText}
-            </p>
-          ) : null}
+          <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+            {text.privateRoom}
+          </span>
+          <p className="mt-4 text-sm leading-7 text-arenaMuted">{text.roomPrivateText}</p>
         </div>
       ) : null}
     </div>
   );
 
   const actionCards = (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid grid-cols-2 gap-2 md:gap-3">
       <Link
         href={`/${roomSlug}/vote/${defaultStage}`}
-        className="show-panel room-lobby-action room-lobby-vote p-5 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
+        className="show-panel room-lobby-action room-lobby-vote p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.08] md:p-5"
       >
-        <div className="inline-flex rounded-full bg-white/5 p-3 text-arenaPulse">
-          <NotebookPen size={20} />
+        <div className="inline-flex rounded-full bg-white/5 p-2.5 text-arenaPulse md:p-3">
+          <NotebookPen size={isPhone ? 16 : 20} />
         </div>
-        <p className="display-copy mt-5 text-2xl font-black text-white">{text.vote}</p>
-        <p className="mt-3 text-sm leading-7 text-arenaMuted">{text.voteText}</p>
-        <div className="mt-4 inline-flex items-center gap-2 text-sm text-white">
+        <p className="display-copy mt-4 text-xl font-black text-white md:mt-5 md:text-2xl">{text.vote}</p>
+        <p className="mt-2 line-clamp-3 text-xs leading-6 text-arenaMuted md:mt-3 md:text-sm md:leading-7">
+          {text.voteText}
+        </p>
+        <div className="mt-3 inline-flex items-center gap-2 text-xs text-white md:mt-4 md:text-sm">
           <span>{text.open}</span>
           <ArrowRight size={15} />
         </div>
@@ -209,14 +184,16 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
 
       <Link
         href={`/${roomSlug}/live/${defaultStage}`}
-        className="show-panel room-lobby-action room-lobby-results p-5 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
+        className="show-panel room-lobby-action room-lobby-results p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.08] md:p-5"
       >
-        <div className="inline-flex rounded-full bg-white/5 p-3 text-arenaBeam">
-          <MonitorPlay size={20} />
+        <div className="inline-flex rounded-full bg-white/5 p-2.5 text-arenaBeam md:p-3">
+          <MonitorPlay size={isPhone ? 16 : 20} />
         </div>
-        <p className="display-copy mt-5 text-2xl font-black text-white">{text.results}</p>
-        <p className="mt-3 text-sm leading-7 text-arenaMuted">{text.resultsText}</p>
-        <div className="mt-4 inline-flex items-center gap-2 text-sm text-white">
+        <p className="display-copy mt-4 text-xl font-black text-white md:mt-5 md:text-2xl">{text.results}</p>
+        <p className="mt-2 line-clamp-3 text-xs leading-6 text-arenaMuted md:mt-3 md:text-sm md:leading-7">
+          {text.resultsText}
+        </p>
+        <div className="mt-3 inline-flex items-center gap-2 text-xs text-white md:mt-4 md:text-sm">
           <span>{text.open}</span>
           <ArrowRight size={15} />
         </div>
@@ -228,22 +205,14 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
     <div className="grid gap-5 room-lobby-page">
       {isPhone ? (
         <section className="grid gap-4">
-          <div className="show-card room-lobby-hero p-5">
-            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
-              {text.kicker}
-            </p>
-            <h2 className="display-copy mt-3 text-3xl font-black">{roomName}</h2>
-            <p className="mt-4 text-sm leading-7 text-arenaMuted">{text.description}</p>
+            <div className="show-card room-lobby-hero p-5">
+              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
+                {text.kicker}
+              </p>
+            <h2 className="display-copy mt-3 text-2xl font-black md:text-3xl">{roomName}</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-arenaMuted">{text.description}</p>
 
-            <div className="mt-5 flex flex-wrap gap-2">
-              <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">
-                {text.currentStage}: {getStageLabel(defaultStage)}
-              </span>
-              {room?.isTemporary ? (
-                <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-                  {text.temporary}
-                </span>
-              ) : null}
+            <div className="mt-4 flex flex-wrap gap-2">
               {room?.passwordRequired ? (
                 <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
                   {text.privateRoom}
@@ -293,21 +262,13 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
 
             <div className="mt-6 grid gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
               <div>
-                <div className="flex flex-wrap gap-2">
-                  <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">
-                    {text.currentStage}: {getStageLabel(defaultStage)}
-                  </span>
-                  {room?.isTemporary ? (
-                    <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-                      {text.temporary}
-                    </span>
-                  ) : null}
-                  {room?.passwordRequired ? (
+                {room?.passwordRequired ? (
+                  <div className="flex flex-wrap gap-2">
                     <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
                       {text.privateRoom}
                     </span>
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
               </div>
 
               <div className="room-lobby-stage-grid">

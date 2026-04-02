@@ -13,6 +13,7 @@ import {
   fetchRoom,
   submitMyPrediction,
 } from "../lib/api";
+import { useDeviceTier } from "../lib/device";
 import { resolveMediaUrl } from "../lib/media";
 import { clearRanking, loadNotes, loadRanking, saveNotes, saveRanking } from "../lib/storage";
 import type { ActEntry, ActNote, NoteTone, RoomDetails, StageKey } from "../lib/types";
@@ -30,9 +31,7 @@ import { useAccount } from "./AccountProvider";
 import { ActPoster } from "./ActPoster";
 import { AuthCard } from "./AuthCard";
 import { BottomSheet } from "./BottomSheet";
-import { StageSwitch } from "./StageSwitch";
 import { useLanguage } from "./LanguageProvider";
-import { UserAvatar } from "./UserAvatar";
 
 function arraysEqual(left: string[], right: string[]) {
   if (left.length !== right.length) return false;
@@ -210,6 +209,7 @@ function SortableOrderRow({
 export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey: StageKey }) {
   const { account, loading: accountLoading } = useAccount();
   const { getActBlurb, getActContext, getActFacts, getCountryName, getStageLabel, language } = useLanguage();
+  const { isPhone } = useDeviceTier();
   const [room, setRoom] = useState<RoomDetails | null>(null);
   const [acts, setActs] = useState<ActEntry[]>([]);
   const [ranking, setRanking] = useState<string[]>([]);
@@ -769,26 +769,26 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     return (
       <div className="grid gap-4">
         {qualificationCutoff ? (
-          <section className="show-panel-muted border border-emerald-300/10 p-3 md:p-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <section className="show-panel-muted border border-emerald-300/10 px-3 py-2.5 md:p-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
                 <CheckCircle2 size={13} />
                 {qualificationCopy.zoneTitle}
               </span>
-              <span className="text-xs leading-6 text-arenaMuted">
+              {!isPhone ? <span className="text-xs leading-6 text-arenaMuted">
                 {language === "ru"
                   ? "Ты всё равно расставляешь все страны по местам, а граница прохода в финал остаётся видна прямо в списке."
                   : "You still rank every act, but the qualification line stays visible across the list."}
-              </span>
+              </span> : null}
             </div>
           </section>
         ) : null}
 
-        <section className="show-card p-4">
+        <section className="show-card px-4 py-3 md:p-4">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-arenaMuted" size={16} />
+            <Search className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-arenaMuted" size={16} />
             <input
-              className="arena-input h-11 pl-12 pr-4 text-sm md:h-12 md:pl-14"
+              className="arena-input h-11 pl-14 pr-4 text-sm md:h-12 md:pl-14"
               placeholder={text.searchPlaceholder}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -802,7 +802,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               </span>
             </div>
           ) : null}
-          <p className="mt-3 text-xs leading-6 text-arenaMuted">{canDrag ? text.openActHint : text.searchDragHint}</p>
+          {!canDrag && deferredQuery.trim().length > 0 ? (
+            <p className="mt-2 text-[11px] leading-5 text-arenaMuted">{text.searchDragHint}</p>
+          ) : null}
         </section>
 
         {filteredActs.length === 0 ? <section className="show-card p-5 text-sm text-arenaMuted">{text.emptyActs}</section> : null}
@@ -843,13 +845,15 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           </SortableContext>
         </DndContext>
 
-        <section className="show-card sticky bottom-4 z-10 p-4 md:p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-2xl">
-              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.submitTitle}</p>
-              <p className="mt-3 text-sm leading-7 text-arenaMuted">{account ? text.submitText : text.loginHint}</p>
-            </div>
-            <div className="flex flex-col gap-3 lg:items-end">
+        <section className={`show-card p-4 md:p-5 ${isPhone ? "" : "sticky bottom-4 z-10"}`}>
+          <div className={`flex flex-col gap-4 ${isPhone ? "" : "lg:flex-row lg:items-center lg:justify-between"}`}>
+            {!isPhone ? (
+              <div className="max-w-2xl">
+                <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.submitTitle}</p>
+                <p className="mt-3 text-sm leading-7 text-arenaMuted">{account ? text.submitText : text.loginHint}</p>
+              </div>
+            ) : null}
+            <div className={`flex flex-col gap-3 ${isPhone ? "" : "lg:items-end"}`}>
               {!account ? (
                 <Link
                   href="/"
@@ -878,7 +882,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   {text.resetRanking}
                 </button>
               ) : null}
-              <p className="text-sm text-arenaMuted">{submitDisabledReason || text.saveOrderHint}</p>
+              <p className={`${isPhone ? "text-xs leading-6" : "text-sm"} text-arenaMuted`}>
+                {submitDisabledReason || text.saveOrderHint}
+              </p>
             </div>
           </div>
         </section>
@@ -902,17 +908,18 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
   return (
     <div className="grid gap-5">
-      <StageSwitch roomSlug={roomSlug} currentStage={stageKey} section="vote" />
-
-      <section className="show-card p-4 md:p-5">
+      <section className="show-card px-4 py-3.5 md:p-5">
         <div className="max-w-4xl">
-          <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.kicker}</p>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-arenaMuted">
+          {!isPhone ? (
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.kicker}</p>
+          ) : null}
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-arenaMuted md:mt-3">
             <h2 className="display-copy text-[1.65rem] font-black leading-none md:text-4xl">{text.title}</h2>
-            {room ? <span>{text.roomLabel}: {room.name}</span> : null}
             <span className="show-chip text-xs text-arenaBeam">{getStageLabel(stageKey)}</span>
           </div>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-arenaMuted">{text.description}</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-arenaMuted">
+            {isPhone ? text.openActHint : text.description}
+          </p>
         </div>
       </section>
 
