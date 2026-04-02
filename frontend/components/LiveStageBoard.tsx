@@ -113,7 +113,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         kicker: "Экран результатов",
         title: isSemi ? "Кто проходит в финал" : "Экран результатов комнаты",
         description: isSemi
-          ? "В полуфинале главный вопрос — кто проходит дальше. На телефоне сначала видно участников комнаты, а на широком экране слева — квалификации и движение таблицы."
+          ? "В полуфинале главный вопрос — кто проходит дальше. Квалификацию объявляют в случайном порядке, а полные детали публикуют уже после финала. На телефоне сначала видно участников комнаты, а на широком экране слева — квалификации и движение таблицы."
           : "На широком экране слева и справа видны таблица этапа и участники комнаты. На телефоне сначала показываем людей в комнате, а уже потом общий список этапа.",
         progressLabel: isSemi ? "Прошли дальше" : "Показано",
         currentAct: isSemi ? "Квалификация в эфире" : "Сейчас на экране",
@@ -126,6 +126,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         phoneFocus: "Телефон: сначала участники комнаты",
         wideFocus: "Широкий экран: stage слева, room справа",
         qualifiersTitle: "Список квалифицированных",
+        semiAnnouncement: "Квалификация идёт в случайном порядке, а полные итоги публикуются после финала.",
         points: "баллов",
         pts: "очков",
         qualified: "В финале",
@@ -134,7 +135,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         kicker: "Results screen",
         title: isSemi ? "Who qualifies for the final" : "Room results board",
         description: isSemi
-          ? "Semi-finals are about qualifiers first. On phones the room participants stay on top, while wide screens show the advancing acts and the table movement side by side."
+          ? "Semi-finals are about qualifiers first. The qualifiers are announced in random order, and the full stage details are published after the Grand Final. On phones the room participants stay on top, while wide screens show the advancing acts and the table movement side by side."
           : "On wide screens the stage standings and the room leaderboard sit side by side. On phones we keep the room participants first and the stage list smaller.",
         progressLabel: isSemi ? "Qualified" : "Shown",
         currentAct: isSemi ? "Qualifiers on screen" : "Now on screen",
@@ -147,6 +148,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         phoneFocus: "Phone: room participants first",
         wideFocus: "Wide: stage on the left, room on the right",
         qualifiersTitle: "Qualified acts",
+        semiAnnouncement: "Qualifiers are revealed in random order, and the full details publish after the final.",
         points: "points",
         pts: "pts",
         qualified: "Qualified",
@@ -320,6 +322,11 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
                 {highlightLabel}
               </span>
             </div>
+          ) : null}
+          {isSemi ? (
+            <p className="mt-3 text-sm leading-7 text-arenaMuted">
+              {text.semiAnnouncement}
+            </p>
           ) : null}
         </div>
       </div>
