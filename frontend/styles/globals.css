@@ -149,6 +149,45 @@ select {
   opacity: 0.5;
 }
 
+.arena-button-room {
+  border: 1px solid rgba(129, 236, 255, 0.16);
+  border-radius: 9999px;
+  background:
+    linear-gradient(135deg, rgba(255, 99, 194, 0.2), rgba(129, 236, 255, 0.22)),
+    rgba(255, 255, 255, 0.04);
+  color: #f7fcff;
+  font-family: var(--font-label), "Segoe UI", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 24px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(129, 236, 255, 0.06);
+  animation: room-cta-glow 4.2s ease-in-out infinite;
+}
+
+.arena-button-room:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 28px rgba(0, 0, 0, 0.24),
+    0 0 28px rgba(129, 236, 255, 0.18);
+  background:
+    linear-gradient(135deg, rgba(255, 99, 194, 0.24), rgba(129, 236, 255, 0.26)),
+    rgba(255, 255, 255, 0.06);
+}
+
+.arena-button-room:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  animation: none;
+}
+
 .display-copy {
   font-family: var(--font-display), "Segoe UI", sans-serif;
 }
@@ -413,10 +452,28 @@ select {
   }
 }
 
+@keyframes room-cta-glow {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 10px 24px rgba(0, 0, 0, 0.22),
+      0 0 0 1px rgba(129, 236, 255, 0.06);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 12px 28px rgba(0, 0, 0, 0.24),
+      0 0 24px rgba(255, 99, 194, 0.14),
+      0 0 36px rgba(129, 236, 255, 0.14);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .room-lobby-page::before,
   .room-lobby-page::after,
-  .room-lobby-hero::after {
+  .room-lobby-hero::after,
+  .arena-button-room {
     animation: none;
   }
 }
