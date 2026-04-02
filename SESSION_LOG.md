@@ -368,6 +368,17 @@
   - semi-final 2: BG, AZ, RO, LU, CZ, AM, CH, CY, LV, DK, AU, UA, AL, MT, NO
 - this automatically updates default ordering and running-order badges anywhere the stage API is used
 
+### 2026-04-02 vote phone first-screen cleanup
+
+- removed the extra room-summary and top route pills from `vote` on phones
+- compacted the phone voting header to:
+  - title
+  - current stage chip
+  - small results shortcut
+- shortened the phone search placeholder to reduce overlap with the search icon
+- folded the semi-final qualification hint into the search block on phones instead of keeping it as a separate big card
+- goal of this pass: show the real voting list almost immediately on the first phone screen
+
 ### 2026-04-02 room shell mobile cleanup
 
 - moved account presence into a compact avatar control in the top bar

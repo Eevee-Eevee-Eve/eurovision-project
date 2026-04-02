@@ -33,6 +33,7 @@ export function RoomChrome({
   const { isPhone } = useDeviceTier();
   const accountCopy = getAccountCopy(language);
   const isRoomLanding = pageKey === "room";
+  const compactVoteShell = isPhone && pageKey === "vote";
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [needsRoomPassword, setNeedsRoomPassword] = useState(false);
   const [roomSummary, setRoomSummary] = useState<RoomSummary | null>(null);
@@ -179,7 +180,7 @@ export function RoomChrome({
               </div>
             </div>
 
-            {!checkingAccess && !roomMissing && roomSummary && !isRoomLanding ? (
+            {!checkingAccess && !roomMissing && roomSummary && !isRoomLanding && !compactVoteShell ? (
               <div className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
                 <div className="show-panel p-4">
                   <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
@@ -215,7 +216,7 @@ export function RoomChrome({
               </div>
             ) : null}
 
-            {!isRoomLanding ? (
+            {!isRoomLanding && !compactVoteShell ? (
               <div className="flex flex-wrap gap-2">
                 {navItems.map((item) => {
                   const Icon = item.icon;
