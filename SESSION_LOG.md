@@ -29,6 +29,19 @@
   - `next build`
   - `node --check backend/backend_core/server.js`
 
+### Semi-Final UX Polish
+
+- refined the semi vote list so the qualification line reads faster:
+  - quieter top explainer
+  - clearer divider after the qualifying zone
+  - subtle visual emphasis for acts currently inside the qualifying cutoff
+  - qualification cue stays visible even while search is active
+- refined the semi live screen across device sizes:
+  - desktop keeps the two-column projector layout
+  - tablet now uses a calmer stacked layout instead of a cramped wide split
+  - phone keeps room players first, but now also shows a compact `qualified so far` block
+  - featured act no longer falsely shows `Qualified` when it is below the cutoff
+
 ### Cross-Page Device Split Pass
 
 - added a shared `frontend/lib/device.ts` tier helper:
