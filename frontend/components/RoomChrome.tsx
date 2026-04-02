@@ -5,6 +5,7 @@ import { MonitorPlay, NotebookPen } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { getAccountCopy } from "../lib/account-copy";
 import { ApiError, fetchRoom, unlockRoom } from "../lib/api";
+import { useDeviceTier } from "../lib/device";
 import type { RoomSummary, StageKey } from "../lib/types";
 import { useAccount } from "./AccountProvider";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -29,9 +30,9 @@ export function RoomChrome({
 }) {
   const { getStageLabel, language } = useLanguage();
   const { account } = useAccount();
+  const { isPhone } = useDeviceTier();
   const accountCopy = getAccountCopy(language);
   const isRoomLanding = pageKey === "room";
-  const isDisplayMode = pageKey === "live" || pageKey === "players";
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [needsRoomPassword, setNeedsRoomPassword] = useState(false);
   const [roomSummary, setRoomSummary] = useState<RoomSummary | null>(null);
@@ -152,7 +153,30 @@ export function RoomChrome({
                   {language === "ru" ? "Евровидение у Морозовых 2026" : "Morozov Eurovision 2026"}
                 </span>
               </Link>
-              <LanguageSwitcher />
+              <div className="flex items-center gap-2">
+                <LanguageSwitcher />
+                <Link
+                  href="/account"
+                  className="inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/[0.04] transition hover:bg-white/[0.08]"
+                  aria-label={account ? accountCopy.navAccount : accountCopy.auth.signIn}
+                  title={account ? accountCopy.navAccount : accountCopy.auth.signIn}
+                >
+                  {account ? (
+                    <UserAvatar
+                      name={account.publicName}
+                      emoji={account.emoji}
+                      avatarUrl={account.avatarUrl}
+                      avatarTheme={account.avatarTheme}
+                      className="h-full w-full"
+                      textClass="text-[0.9rem]"
+                    />
+                  ) : (
+                    <span className="label-copy text-[10px] uppercase tracking-[0.24em] text-white/80">
+                      {language === "ru" ? "Войти" : "Sign in"}
+                    </span>
+                  )}
+                </Link>
+              </div>
             </div>
 
             {!checkingAccess && !roomMissing && roomSummary && !isRoomLanding ? (
@@ -161,20 +185,24 @@ export function RoomChrome({
                   <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
                     {unlockCopy.roomInfo}
                   </p>
-                  <h1 className="display-copy mt-3 text-2xl font-black text-white md:text-3xl">
+                  <h1 className={`display-copy mt-2 font-black text-white ${isPhone ? "text-xl" : "text-2xl md:text-3xl"}`}>
                     {roomSummary.name}
                   </h1>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-3 flex flex-wrap gap-2">
                     <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaBeam">
                       {unlockCopy.stageLabel}: {getStageLabel(activeStage)}
                     </span>
-                    <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaMuted">
-                      {roomSlug}
-                    </span>
-                    {roomSummary.isTemporary ? (
-                      <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaMuted">
-                        {unlockCopy.temporary}
-                      </span>
+                    {!isPhone ? (
+                      <>
+                        <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaMuted">
+                          {roomSlug}
+                        </span>
+                        {roomSummary.isTemporary ? (
+                          <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaMuted">
+                            {unlockCopy.temporary}
+                          </span>
+                        ) : null}
+                      </>
                     ) : null}
                     {roomSummary.passwordRequired ? (
                       <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaMuted">
@@ -184,48 +212,6 @@ export function RoomChrome({
                   </div>
                 </div>
 
-                {!isDisplayMode ? (
-                  <div className="show-panel p-4">
-                    <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaPulse">
-                      {unlockCopy.accountInfo}
-                    </p>
-                    <div className="mt-4 flex items-center gap-3">
-                      {account ? (
-                        <>
-                          <UserAvatar
-                            name={account.publicName}
-                            emoji={account.emoji}
-                            avatarUrl={account.avatarUrl}
-                            avatarTheme={account.avatarTheme}
-                            className="h-12 w-12"
-                            textClass="text-sm"
-                          />
-                          <div className="min-w-0">
-                            <p className="truncate text-base font-semibold text-white">
-                              {account.publicName}
-                            </p>
-                            <p className="text-sm text-arenaMuted">{account.email}</p>
-                          </div>
-                        </>
-                      ) : (
-                        <div>
-                          <p className="text-base font-semibold text-white">{unlockCopy.guest}</p>
-                          <p className="mt-1 text-sm leading-6 text-arenaMuted">
-                            {unlockCopy.accountHint}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-4">
-                      <Link
-                        href="/account"
-                        className="arena-button-secondary inline-flex h-11 items-center justify-center px-4 text-sm"
-                      >
-                        {account ? accountCopy.navAccount : accountCopy.auth.signIn}
-                      </Link>
-                    </div>
-                  </div>
-                ) : null}
               </div>
             ) : null}
 

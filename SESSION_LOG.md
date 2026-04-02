@@ -346,3 +346,20 @@
 - homepage auth card no longer forces registration-only mode
 - added a visible `sign in / create account` switch directly inside `AuthCard`
 - set the homepage default auth view to `sign in`, while keeping registration one tap away
+
+### 2026-04-02 room + vote mobile cleanup pass
+
+- moved room/account presence into a compact top bar avatar instead of a separate mobile account panel
+- trimmed the mobile room lobby: smaller room title, side-by-side `Voting / Results`, less duplicate room metadata, simpler invite card
+- removed the extra stage-switch row from `vote`
+- compacted the `vote` hero on phone, removed duplicate room naming there, and kept only the stage chip plus a short hint
+- cleaned the search block spacing so the icon no longer sits on top of the placeholder text
+- made the semi-final qualification banner lighter on phone
+- disabled sticky submit behavior on phone so the save block stops covering the last acts in the list
+
+### 2026-04-02 room shell mobile cleanup
+
+- moved account presence into a compact avatar control in the top bar
+- removed the separate account panel from the room shell
+- reduced the room title emphasis on phone screens
+- removed stage-chip clutter from the room lobby and kept the main actions focused on voting and results
