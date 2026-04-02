@@ -138,12 +138,13 @@ export function BottomSheet({
               onClick={(event) => event.stopPropagation()}
             >
               <div className="shrink-0 px-4 pb-2 pt-3 md:px-6 md:pb-3 md:pt-4">
-                <div className="relative flex items-center justify-center">
-                  <div className="h-1.5 w-16 rounded-full bg-white/10" />
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+                  <div />
+                  <div className="justify-self-center h-1.5 w-16 rounded-full bg-white/10" />
                   <button
                     type="button"
                     onClick={onClose}
-                    className="absolute right-0 z-20 inline-flex min-h-[3.75rem] min-w-[3.75rem] items-center justify-center rounded-full border border-white/10 bg-white/[0.045] p-0 text-white shadow-[0_8px_24px_rgba(0,0,0,0.24)] transition hover:bg-white/[0.075] hover:text-white focus:outline-none focus:ring-2 focus:ring-arenaBeam/40 active:scale-[0.98]"
+                    className="justify-self-end inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.045] text-white shadow-[0_8px_24px_rgba(0,0,0,0.24)] transition hover:bg-white/[0.075] hover:text-white focus:outline-none focus:ring-2 focus:ring-arenaBeam/40 active:scale-[0.98] md:h-14 md:w-14"
                     aria-label="Close details"
                   >
                     <X size={18} className="pointer-events-none" />
