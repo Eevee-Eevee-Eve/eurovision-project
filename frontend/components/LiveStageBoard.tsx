@@ -113,7 +113,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         kicker: "Экран результатов",
         title: isSemi ? "Кто проходит в финал" : "Экран результатов комнаты",
         description: isSemi
-          ? "В полуфинале главный вопрос — кто проходит дальше. Квалификацию объявляют в случайном порядке, а полные детали публикуют уже после финала. На телефоне сначала видно участников комнаты, а на широком экране слева — квалификации и движение таблицы."
+          ? "В полуфинале главный вопрос — кто проходит дальше. Квалификацию в эфире объявляют в случайном порядке. На телефоне сначала видно участников комнаты, а на широком экране слева — квалификации и движение таблицы."
           : "На широком экране слева и справа видны таблица этапа и участники комнаты. На телефоне сначала показываем людей в комнате, а уже потом общий список этапа.",
         progressLabel: isSemi ? "Прошли дальше" : "Показано",
         currentAct: isSemi ? "Квалификация в эфире" : "Сейчас на экране",
@@ -126,7 +126,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         phoneFocus: "Телефон: сначала участники комнаты",
         wideFocus: "Широкий экран: stage слева, room справа",
         qualifiersTitle: "Список квалифицированных",
-        semiAnnouncement: "Квалификация идёт в случайном порядке, а полные итоги публикуются после финала.",
+        semiAnnouncement: "Квалификацию в эфире объявляют в случайном порядке.",
         points: "баллов",
         pts: "очков",
         qualified: "В финале",
@@ -135,7 +135,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         kicker: "Results screen",
         title: isSemi ? "Who qualifies for the final" : "Room results board",
         description: isSemi
-          ? "Semi-finals are about qualifiers first. The qualifiers are announced in random order, and the full stage details are published after the Grand Final. On phones the room participants stay on top, while wide screens show the advancing acts and the table movement side by side."
+          ? "Semi-finals are about qualifiers first. The qualifiers are announced in random order on air. On phones the room participants stay on top, while wide screens show the advancing acts and the table movement side by side."
           : "On wide screens the stage standings and the room leaderboard sit side by side. On phones we keep the room participants first and the stage list smaller.",
         progressLabel: isSemi ? "Qualified" : "Shown",
         currentAct: isSemi ? "Qualifiers on screen" : "Now on screen",
@@ -148,7 +148,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         phoneFocus: "Phone: room participants first",
         wideFocus: "Wide: stage on the left, room on the right",
         qualifiersTitle: "Qualified acts",
-        semiAnnouncement: "Qualifiers are revealed in random order, and the full details publish after the final.",
+        semiAnnouncement: "Qualifiers are revealed in random order on air.",
         points: "points",
         pts: "pts",
         qualified: "Qualified",
@@ -177,7 +177,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     return source.slice(0, limit);
   }, [isSemi, isWide, qualifierRows, sortedResults]);
 
-  const roomRows = useMemo(() => leaders.slice(0, isWide ? 6 : 4), [isWide, leaders]);
+  const roomRows = useMemo(() => leaders.slice(0, isWide ? 6 : 8), [isWide, leaders]);
   const progressValue = isSemi
     ? `${qualifierRows.length}/10`
     : `${results.filter((act) => act.revealed).length}/${results.length}`;
@@ -406,28 +406,29 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
             </div>
           </div>
 
-          <div className="show-card p-5 md:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.stageBoard}</p>
-                <p className="mt-2 text-sm text-arenaMuted">{text.stageHint}</p>
+          {featuredAct ? (
+            <div className="show-card p-5 md:p-6">
+              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.currentAct}</p>
+              <div className="mt-4 flex items-center gap-3">
+                <div className="shrink-0">
+                  <ActPoster act={featuredAct} compact />
+                </div>
+                <div className="min-w-0">
+                  <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaBeam">
+                    {getCountryName(featuredAct.code, featuredAct.country)}
+                  </span>
+                  <p className="mt-2 line-clamp-1 text-lg font-semibold text-white">{featuredAct.artist}</p>
+                  <p className="line-clamp-1 text-sm text-arenaMuted">{featuredAct.song}</p>
+                </div>
               </div>
+              <p className="mt-4 text-sm leading-7 text-arenaMuted">
+                {showState?.statusText || text.waitingStatus}
+              </p>
               {isSemi ? (
-                <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
-                  <Sparkles size={13} />
-                  {text.qualifiersTitle}
-                </span>
+                <p className="mt-3 text-sm leading-7 text-arenaMuted">{text.semiAnnouncement}</p>
               ) : null}
             </div>
-
-            {stageHero}
-
-            <div className="mt-5 grid gap-3">
-              {stageRows.length ? stageRows.map((act) => renderStageRow(act)) : (
-                <div className="show-panel p-4 text-sm text-arenaMuted">{text.noResults}</div>
-              )}
-            </div>
-          </div>
+          ) : null}
         </section>
       )}
     </div>
