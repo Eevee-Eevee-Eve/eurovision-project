@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { MonitorPlay, Radio, Sparkles } from "lucide-react";
+import { Radio, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createRoomSocket, fetchLeaderboard, fetchRoom, fetchStageResults } from "../lib/api";
 import { useDeviceTier } from "../lib/device";
@@ -130,6 +130,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         points: "баллов",
         pts: "очков",
         qualified: "В финале",
+        outside: "Ниже линии финала",
       }
     : {
         kicker: "Results screen",
@@ -152,6 +153,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         points: "points",
         pts: "pts",
         qualified: "Qualified",
+        outside: "Outside the final line",
       };
 
   const showState = room?.showState?.stageKey === stageKey ? room.showState : null;
@@ -178,11 +180,11 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
 
   const stageRows = useMemo(() => {
     const source = isSemi ? qualifierRows : sortedResults;
-    const limit = isWide ? 10 : 6;
+    const limit = isDesktop ? 10 : isTablet ? 8 : 6;
     return source.slice(0, limit);
-  }, [isSemi, isWide, qualifierRows, sortedResults]);
+  }, [isDesktop, isSemi, isTablet, qualifierRows, sortedResults]);
 
-  const roomRows = useMemo(() => leaders.slice(0, isWide ? 6 : 8), [isWide, leaders]);
+  const roomRows = useMemo(() => leaders.slice(0, isDesktop ? 6 : isTablet ? 6 : 8), [isDesktop, isTablet, leaders]);
   const progressValue = isSemi
     ? `${qualifierRows.length}/${qualificationCutoff || 10}`
     : `${results.filter((act) => act.revealed).length}/${results.length}`;
@@ -195,6 +197,13 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     if (currentFromState) return currentFromState;
     return sortedResults.find((act) => act.revealed) || sortedResults[0] || null;
   }, [showState, sortedResults]);
+  const featuredActIsQualifier = Boolean(
+    isSemi
+    && featuredAct
+    && typeof featuredAct.rank === "number"
+    && featuredAct.rank > 0
+    && (!qualificationCutoff || featuredAct.rank <= qualificationCutoff)
+  );
 
   const highlightLabel = showState?.highlightMode
     ? {
@@ -254,9 +263,13 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
       <motion.div
         key={act.code}
         layout
-        className={`show-panel flex items-center gap-3 p-3 md:gap-4 md:p-4 ${act.revealed ? "" : "opacity-80"}`}
+        className={`show-panel flex items-center gap-3 p-3 md:gap-4 md:p-4 ${
+          isQualifier
+            ? "border-emerald-300/12 bg-[radial-gradient(circle_at_top_left,rgba(70,220,165,0.12),transparent_46%),rgba(255,255,255,0.03)]"
+            : ""
+        } ${act.revealed ? "" : "opacity-80"}`}
       >
-        <div className="show-rank h-12 w-12 shrink-0 text-lg font-black text-arenaText md:h-14 md:w-14 md:text-2xl">
+        <div className={`show-rank h-12 w-12 shrink-0 text-lg font-black md:h-14 md:w-14 md:text-2xl ${isQualifier ? "border-emerald-300/20 shadow-[0_0_0_1px_rgba(70,220,165,0.08),0_18px_32px_rgba(22,118,89,0.18)] text-emerald-100" : "text-arenaText"}`}>
           {act.rank || "—"}
         </div>
         <div className="min-w-0 flex-1">
@@ -287,6 +300,24 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     );
   };
 
+  const renderCompactQualifierRow = (act: ActEntry) => (
+    <div key={`compact-${act.code}`} className="show-panel-muted flex items-center gap-3 px-3 py-2.5">
+      <div className={`show-rank h-9 w-9 shrink-0 ${typeof act.rank === "number" && act.rank > 0 && (!qualificationCutoff || act.rank <= qualificationCutoff) ? "border-emerald-300/20 text-emerald-100" : "text-arenaText"}`}>
+        {act.rank || "—"}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-1 text-sm font-medium text-white">{getCountryName(act.code, act.country)}</p>
+        <p className="line-clamp-1 text-xs text-arenaMuted">{act.artist}</p>
+      </div>
+      {typeof act.rank === "number" && qualificationCutoff && act.rank <= qualificationCutoff ? (
+        <span className="show-chip px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-emerald-100">
+          <Sparkles size={11} />
+          {text.qualified}
+        </span>
+      ) : null}
+    </div>
+  );
+
   const stageHero = featuredAct ? (
     <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.78fr]">
       <ActPoster act={featuredAct} mode={isWide ? "hero" : "card"} />
@@ -301,9 +332,9 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
             {featuredAct.rank ? <span className="show-chip text-sm text-white">#{featuredAct.rank}</span> : null}
             <MovementPill delta={movement[featuredAct.code] ?? null} />
             {isSemi ? (
-              <span className="show-chip text-sm text-emerald-100">
+              <span className={`show-chip text-sm ${featuredActIsQualifier ? "text-emerald-100" : "text-arenaMuted"}`}>
                 <Sparkles size={12} />
-                {text.qualified}
+                {featuredActIsQualifier ? text.qualified : text.outside}
               </span>
             ) : featuredAct.totalPoints != null ? (
               <span className="show-chip text-sm text-arenaMuted">
@@ -360,10 +391,6 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
           <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
             {text.progressLabel}: {progressValue}
           </span>
-          <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-            <MonitorPlay size={13} />
-            {text.roomReady}
-          </span>
           {highlightLabel ? (
             <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
               {highlightLabel}
@@ -372,7 +399,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         </div>
       </section>
 
-      {isWide ? (
+      {isDesktop ? (
         <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
           <div className="show-card p-5 md:p-6">
             <div className="flex items-center justify-between gap-3">
@@ -416,6 +443,32 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
               )}
             </div>
           </div>
+
+          {isSemi ? (
+            <div className="show-card p-5 md:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.stageBoard}</p>
+                  <p className="mt-2 text-sm text-arenaMuted">
+                    {language === "ru"
+                      ? `Сейчас видно ${qualifierRows.length} из ${qualificationCutoff || 10} проходящих стран.`
+                      : `Showing ${qualifierRows.length} of ${qualificationCutoff || 10} qualifying acts right now.`}
+                  </p>
+                </div>
+                {qualificationCutoff ? (
+                  <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
+                    <Sparkles size={13} />
+                    {language === "ru" ? `Места 1–${qualificationCutoff}` : `Places 1-${qualificationCutoff}`}
+                  </span>
+                ) : null}
+              </div>
+              <div className="mt-5 grid gap-3">
+                {stageRows.length ? stageRows.map(renderCompactQualifierRow) : (
+                  <div className="show-panel p-4 text-sm text-arenaMuted">{text.noResults}</div>
+                )}
+              </div>
+            </div>
+          ) : null}
 
           {featuredAct ? (
             <div className="show-card p-5 md:p-6">

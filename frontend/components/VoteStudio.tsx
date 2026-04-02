@@ -138,6 +138,7 @@ function SortableOrderRow({
   rank,
   countryName,
   noteBadge,
+  isQualifier,
   locked,
   dragLabel,
   onOpen,
@@ -146,6 +147,7 @@ function SortableOrderRow({
   rank: number;
   countryName: string;
   noteBadge: string | null;
+  isQualifier: boolean;
   locked: boolean;
   dragLabel: string;
   onOpen: () => void;
@@ -163,12 +165,16 @@ function SortableOrderRow({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`show-card p-2.5 transition md:p-3 ${isDragging ? "scale-[0.995] shadow-[0_28px_80px_rgba(0,0,0,0.34)]" : ""}`}
+      className={`show-card p-2.5 transition md:p-3 ${
+        isQualifier
+          ? "border-emerald-300/12 bg-[radial-gradient(circle_at_top_left,rgba(70,220,165,0.12),transparent_48%),rgba(255,255,255,0.03)]"
+          : ""
+      } ${isDragging ? "scale-[0.995] shadow-[0_28px_80px_rgba(0,0,0,0.34)]" : ""}`}
     >
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <button type="button" onClick={onOpen} className="flex min-w-0 items-center gap-3 text-left">
-          <div className="show-rank h-10 w-10 shrink-0">
-            <span className="display-copy text-base font-black text-arenaText">{rank}</span>
+          <div className={`show-rank h-10 w-10 shrink-0 ${isQualifier ? "border-emerald-300/20 shadow-[0_0_0_1px_rgba(70,220,165,0.08),0_18px_32px_rgba(22,118,89,0.18)]" : ""}`}>
+            <span className={`display-copy text-base font-black ${isQualifier ? "text-emerald-100" : "text-arenaText"}`}>{rank}</span>
           </div>
           <div className="shrink-0">
             <ActPoster act={act} mode="row" />
@@ -763,15 +769,15 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     return (
       <div className="grid gap-4">
         {qualificationCutoff ? (
-          <section className="show-card p-4">
-            <div className="flex flex-wrap items-center gap-2">
+          <section className="show-panel-muted border border-emerald-300/10 p-3 md:p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
                 <CheckCircle2 size={13} />
                 {qualificationCopy.zoneTitle}
               </span>
               <span className="text-xs leading-6 text-arenaMuted">
                 {language === "ru"
-                  ? "Ты всё равно расставляешь все страны по местам, но линия прохода в финал всегда видна."
+                  ? "Ты всё равно расставляешь все страны по местам, а граница прохода в финал остаётся видна прямо в списке."
                   : "You still rank every act, but the qualification line stays visible across the list."}
               </span>
             </div>
@@ -788,6 +794,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               onChange={(event) => setQuery(event.target.value)}
             />
           </div>
+          {qualificationCutoff && deferredQuery.trim().length > 0 ? (
+            <div className="mt-3">
+              <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
+                <CheckCircle2 size={13} />
+                {qualificationCopy.zoneTitle}
+              </span>
+            </div>
+          ) : null}
           <p className="mt-3 text-xs leading-6 text-arenaMuted">{canDrag ? text.openActHint : text.searchDragHint}</p>
         </section>
 
@@ -802,8 +816,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 const isAfterCutoff = Boolean(showQualifierDivider && qualificationCutoff && rank === qualificationCutoff + 1);
                 return [
                   isAfterCutoff ? (
-                    <div key={`cutoff-${stageKey}-${act.code}`} className="show-panel-muted border border-white/8 p-4">
-                      <div className="flex flex-wrap items-center gap-3">
+                    <div key={`cutoff-${stageKey}-${act.code}`} className="show-panel-muted relative overflow-hidden border border-amber-200/10 p-3.5 md:p-4">
+                      <div className="absolute inset-x-4 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-amber-200/20 to-transparent" />
+                      <div className="relative flex flex-wrap items-center gap-3">
                         <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-amber-100">
                           {qualificationCopy.dividerTitle}
                         </span>
@@ -817,6 +832,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                     rank={rank}
                     countryName={getCountryName(act.code, act.country)}
                     noteBadge={hasNote(note) ? text.savedBadge : null}
+                    isQualifier={Boolean(qualificationCutoff && rank > 0 && rank <= qualificationCutoff)}
                     locked={!canDrag}
                     dragLabel={language === "ru" ? "Перетащить" : "Drag to reorder"}
                     onOpen={() => openActCard(act.code)}

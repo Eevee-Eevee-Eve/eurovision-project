@@ -9,6 +9,8 @@
 
 - Semi-finals now show a visible qualification cutoff in both `vote` and `live`.
   - need a real-device check that the divider is obvious but not noisy in the ranked list
+- The semi vote list now uses subtle row emphasis for the qualifying zone.
+  - verify that the highlighted top-10 rows feel premium, not “green warning UI”
 - Admin results desk now accepts explicit semi-final places.
   - needs a manual smoke test for:
     - full official place entry
@@ -16,6 +18,8 @@
     - preventing accidental publish when only some places are filled
 - Season stats now show the qualification line on semi stage cards.
   - verify the extra line reads well on both desktop and narrower tablet widths
+- Phone live now shows room players first and a compact qualifiers block below.
+  - need one real-phone pass to make sure this ordering feels right during an actual reveal
 
 ## 2026-04-02 cross-page device split risks
 
