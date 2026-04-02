@@ -347,6 +347,25 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         }
   ), [language]);
 
+  const qualificationCutoff = room?.stageMeta?.[stageKey]?.qualificationCutoff ?? null;
+  const qualificationCopy = useMemo(() => (
+    language === "ru"
+      ? {
+          zoneTitle: qualificationCutoff ? `В финал проходят места 1–${qualificationCutoff}` : "",
+          dividerTitle: qualificationCutoff ? `Начиная с места #${qualificationCutoff + 1}` : "",
+          dividerText: "Ниже начинается зона вне финала.",
+          inZone: "Сейчас в проходной зоне",
+          outZone: "Сейчас вне проходной зоны",
+        }
+      : {
+          zoneTitle: qualificationCutoff ? `Places 1-${qualificationCutoff} qualify for the final` : "",
+          dividerTitle: qualificationCutoff ? `From place #${qualificationCutoff + 1}` : "",
+          dividerText: "Below this line the acts are outside the final zone.",
+          inZone: "Currently in the qualifying zone",
+          outZone: "Currently outside the final zone",
+        }
+  ), [language, qualificationCutoff]);
+
   const currentStageOpen = room?.predictionWindows[stageKey] ?? false;
   const selectedAct = acts.find((act) => act.code === selectedActCode) || null;
   const selectedActLinks = useMemo(() => getActLinks(selectedAct), [selectedAct]);
@@ -488,6 +507,12 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   function getCurrentPlaceDescription(code: string) {
     const rank = rankingMap[code];
     if (!rank) return text.choosePlacePlaceholder;
+    if (qualificationCutoff && rank <= qualificationCutoff) {
+      return `${text.currentPlace} #${rank}. ${qualificationCopy.inZone}`;
+    }
+    if (qualificationCutoff) {
+      return `${text.currentPlace} #${rank}. ${qualificationCopy.outZone}`;
+    }
     return `${text.currentPlace} #${rank}`;
   }
 
@@ -733,8 +758,26 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   }
 
   function renderVotingList() {
+    const showQualifierDivider = Boolean(qualificationCutoff && deferredQuery.trim().length === 0);
+
     return (
       <div className="grid gap-4">
+        {qualificationCutoff ? (
+          <section className="show-card p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
+                <CheckCircle2 size={13} />
+                {qualificationCopy.zoneTitle}
+              </span>
+              <span className="text-xs leading-6 text-arenaMuted">
+                {language === "ru"
+                  ? "Ты всё равно расставляешь все страны по местам, но линия прохода в финал всегда видна."
+                  : "You still rank every act, but the qualification line stays visible across the list."}
+              </span>
+            </div>
+          </section>
+        ) : null}
+
         <section className="show-card p-4">
           <div className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-arenaMuted" size={16} />
@@ -753,20 +796,32 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={handleOrderDragEnd}>
           <SortableContext items={filteredActs.map((act) => act.code)} strategy={verticalListSortingStrategy}>
             <section className="grid gap-3">
-              {filteredActs.map((act) => {
+              {filteredActs.flatMap((act) => {
                 const note = notes[act.code];
-                return (
+                const rank = rankingMap[act.code] ?? 0;
+                const isAfterCutoff = Boolean(showQualifierDivider && qualificationCutoff && rank === qualificationCutoff + 1);
+                return [
+                  isAfterCutoff ? (
+                    <div key={`cutoff-${stageKey}-${act.code}`} className="show-panel-muted border border-white/8 p-4">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-amber-100">
+                          {qualificationCopy.dividerTitle}
+                        </span>
+                        <p className="text-xs leading-6 text-arenaMuted">{qualificationCopy.dividerText}</p>
+                      </div>
+                    </div>
+                  ) : null,
                   <SortableOrderRow
                     key={act.code}
                     act={act}
-                    rank={rankingMap[act.code] ?? 0}
+                    rank={rank}
                     countryName={getCountryName(act.code, act.country)}
                     noteBadge={hasNote(note) ? text.savedBadge : null}
                     locked={!canDrag}
                     dragLabel={language === "ru" ? "Перетащить" : "Drag to reorder"}
                     onOpen={() => openActCard(act.code)}
-                  />
-                );
+                  />,
+                ].filter(Boolean);
               })}
             </section>
           </SortableContext>

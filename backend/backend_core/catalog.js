@@ -10,6 +10,7 @@ const STAGES = Object.freeze({
     shortLabel: 'SF1',
     description: 'The first qualification night.',
     expectedEntries: 15,
+    qualificationCutoff: 10,
   },
   semi2: {
     key: 'semi2',
@@ -17,6 +18,7 @@ const STAGES = Object.freeze({
     shortLabel: 'SF2',
     description: 'The second qualification night.',
     expectedEntries: 15,
+    qualificationCutoff: 10,
   },
   final: {
     key: 'final',
@@ -24,6 +26,7 @@ const STAGES = Object.freeze({
     shortLabel: 'Final',
     description: 'The full arena show with every finalist.',
     expectedEntries: 26,
+    qualificationCutoff: null,
   },
 });
 
@@ -203,6 +206,7 @@ function getStageLineupMeta(stageKey) {
     expectedEntries,
     currentEntries,
     lineupReady: currentEntries === expectedEntries,
+    qualificationCutoff: STAGES[stageKey].qualificationCutoff ?? null,
   };
 }
 

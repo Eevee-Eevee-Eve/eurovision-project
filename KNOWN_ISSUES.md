@@ -5,6 +5,18 @@
 
 ## 2026-04-02 homepage and sheet risks
 
+## 2026-04-02 semi-final qualification risks
+
+- Semi-finals now show a visible qualification cutoff in both `vote` and `live`.
+  - need a real-device check that the divider is obvious but not noisy in the ranked list
+- Admin results desk now accepts explicit semi-final places.
+  - needs a manual smoke test for:
+    - full official place entry
+    - publishing with all places set
+    - preventing accidental publish when only some places are filled
+- Season stats now show the qualification line on semi stage cards.
+  - verify the extra line reads well on both desktop and narrower tablet widths
+
 ## 2026-04-02 cross-page device split risks
 
 - `LiveStageBoard` now behaves differently on phone vs tablet/desktop.

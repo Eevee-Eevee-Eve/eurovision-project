@@ -35,6 +35,7 @@ export function SeasonStatsBoard({ roomSlug }: { roomSlug: string }) {
           locked: "Lock этапов",
           bestStage: "Лучший этап",
           noBestStage: "Ещё нет",
+          qualificationLine: "Проход в финал",
           routes: "Быстрые маршруты",
           roomHub: "Хаб комнаты",
           players: "Таблица игроков",
@@ -59,6 +60,7 @@ export function SeasonStatsBoard({ roomSlug }: { roomSlug: string }) {
           locked: "Locked stages",
           bestStage: "Best stage",
           noBestStage: "None yet",
+          qualificationLine: "Qualification line",
           routes: "Quick routes",
           roomHub: "Room hub",
           players: "Players board",
@@ -173,6 +175,9 @@ export function SeasonStatsBoard({ roomSlug }: { roomSlug: string }) {
                 <p>{copy.exact}: <span className="text-white">{player.stages[stage].exactMatchCount}</span></p>
                 <p>{copy.close}: <span className="text-white">{player.stages[stage].closeMatchCount}</span></p>
                 <p>{copy.average}: <span className="text-white">{player.stages[stage].comparedEntries ? (player.stages[stage].totalDistance / player.stages[stage].comparedEntries).toFixed(2) : "—"}</span></p>
+                {player.stages[stage].qualificationCutoff ? (
+                  <p>{copy.qualificationLine}: <span className="text-white">1–{player.stages[stage].qualificationCutoff}</span></p>
+                ) : null}
               </div>
             </div>
           ))}

@@ -5,6 +5,30 @@
 
 ## 2026-04-02
 
+### Semi-Final Qualification Pass
+
+- threaded `qualificationCutoff` through shared stage metadata for:
+  - `RoomDetails`
+  - `ActsPayload`
+  - `AdminRoomSnapshot`
+  - season-stage stats
+- updated `vote` for semi-finals:
+  - users still rank every country by place
+  - a visible qualification line now marks where the final zone ends
+  - current place text in the artist card now says whether the act is inside or outside the qualifying zone
+- updated `live` for semi-finals:
+  - projector copy and progress now follow the real qualification cutoff instead of a hardcoded top-10 assumption
+  - the UI explicitly shows which places qualify
+- updated admin results desk:
+  - semi-finals now support entering official places directly
+  - publish flow validates semi places before sending them live
+  - score breakdown remains optional, so places can be entered first and jury/tele later
+- updated season stats:
+  - stage cards now also show the qualification line for semi-finals
+- local verification passed:
+  - `next build`
+  - `node --check backend/backend_core/server.js`
+
 ### Cross-Page Device Split Pass
 
 - added a shared `frontend/lib/device.ts` tier helper:
