@@ -5,6 +5,24 @@
 
 ## 2026-04-02
 
+### Cross-Page Device Split Pass
+
+- added a shared `frontend/lib/device.ts` tier helper:
+  - `phone`
+  - `tablet`
+  - `desktop`
+- moved `/admin` behind a phone guard:
+  - phones now see a clear desktop/tablet-only message
+  - admin controls remain available on tablet and desktop
+- rebuilt `LiveStageBoard` around device-specific behavior:
+  - phone keeps room participants as the main results view
+  - tablet/desktop keep stage standings next to the room leaderboard
+  - semi-finals now read as qualification-first, not mini-finals
+- rebuilt `PlayersBoard` to stay denser on phone and more spacious on wider screens
+- rebuilt `RoomLanding` with separate mobile and wider layouts while keeping the same routes and logic
+- intentionally did **not** change the ranking mechanics in `vote` during this pass
+- local `next build` passed after the device split
+
 ### Homepage Room Flow + Sheet Polish
 
 - rebuilt the landing page around a stricter first-step flow:

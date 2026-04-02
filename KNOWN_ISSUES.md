@@ -5,6 +5,18 @@
 
 ## 2026-04-02 homepage and sheet risks
 
+## 2026-04-02 cross-page device split risks
+
+- `LiveStageBoard` now behaves differently on phone vs tablet/desktop.
+  - need a real-device check that phone-first room standings feel right
+  - need a wide-screen check that stage + room side-by-side layout reads well on TV / laptop / tablet
+- Semi-final results now emphasize qualification instead of full-ranking drama.
+  - verify this still feels useful once real results are entered by the host
+- `/admin` is now intentionally blocked on phones.
+  - need one quick tablet smoke test to make sure the gate disappears correctly there
+- `RoomLanding` now has separate phone and wide layouts.
+  - check hierarchy, CTA priority, and stage-preview balance on real devices
+
 - The new landing page now gates room actions behind account auth.
   - need a real-user check that this feels helpful rather than blocking
 - The separate `join room` card was removed in favor of active-room search.
