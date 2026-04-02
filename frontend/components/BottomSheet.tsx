@@ -51,49 +51,8 @@ export function BottomSheet({
       }
     };
 
-    const handleTouchMove = (event: TouchEvent) => {
-      const scrollElement = scrollRef.current;
-      if (!scrollElement) {
-        event.preventDefault();
-        return;
-      }
-
-      const target = event.target as Node | null;
-      if (!target || !scrollElement.contains(target)) {
-        event.preventDefault();
-        return;
-      }
-
-      if (scrollElement.scrollHeight <= scrollElement.clientHeight) {
-        event.preventDefault();
-      }
-    };
-
-    const handleWheel = (event: WheelEvent) => {
-      const scrollElement = scrollRef.current;
-      if (!scrollElement) {
-        event.preventDefault();
-        return;
-      }
-
-      const target = event.target as Node | null;
-      if (!target || !scrollElement.contains(target)) {
-        event.preventDefault();
-        return;
-      }
-
-      const atTop = scrollElement.scrollTop <= 0;
-      const atBottom =
-        Math.ceil(scrollElement.scrollTop + scrollElement.clientHeight) >= scrollElement.scrollHeight;
-
-      if ((atTop && event.deltaY < 0) || (atBottom && event.deltaY > 0)) {
-        event.preventDefault();
-      }
-    };
-
     window.addEventListener("keydown", handleEscape);
-    document.addEventListener("touchmove", handleTouchMove, { passive: false });
-    document.addEventListener("wheel", handleWheel, { passive: false });
+    scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
 
     return () => {
       document.body.style.overflow = previousBodyOverflow;
@@ -106,8 +65,6 @@ export function BottomSheet({
       document.documentElement.style.overscrollBehavior = previousHtmlOverscroll;
       window.scrollTo(0, scrollY);
       window.removeEventListener("keydown", handleEscape);
-      document.removeEventListener("touchmove", handleTouchMove);
-      document.removeEventListener("wheel", handleWheel);
     };
   }, [onClose, open]);
 
@@ -128,7 +85,7 @@ export function BottomSheet({
           />
           <div className="fixed inset-0 z-[90] flex items-end justify-center p-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] pointer-events-none md:items-center md:p-5">
             <motion.div
-              className="pointer-events-auto flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-[1.8rem] border border-white/5 bg-[linear-gradient(180deg,rgba(21,23,43,0.98),rgba(16,17,31,0.98))] shadow-[0_24px_60px_rgba(0,0,0,0.42)] md:max-h-[min(92vh,58rem)] md:max-w-[min(92vw,62rem)] md:rounded-[2rem] md:shadow-[0_24px_80px_rgba(0,0,0,0.45)] xl:max-w-[min(88vw,74rem)]"
+              className="pointer-events-auto relative flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-[1.8rem] border border-white/6 bg-[linear-gradient(180deg,rgba(21,23,43,0.985),rgba(16,17,31,0.985))] shadow-[0_24px_60px_rgba(0,0,0,0.42)] md:max-h-[min(92vh,58rem)] md:max-w-[min(92vw,62rem)] md:rounded-[2rem] md:shadow-[0_24px_80px_rgba(0,0,0,0.45)] xl:max-w-[min(88vw,74rem)]"
               initial={{ y: "100%", opacity: 0.92 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0.92 }}
@@ -137,27 +94,25 @@ export function BottomSheet({
               aria-modal="true"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="shrink-0 px-4 pb-2 pt-3 md:px-6 md:pb-3 md:pt-4">
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center">
-                  <div />
-                  <div className="justify-self-center h-1.5 w-16 rounded-full bg-white/10" />
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="justify-self-end inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.045] text-white shadow-[0_8px_24px_rgba(0,0,0,0.24)] transition hover:bg-white/[0.075] hover:text-white focus:outline-none focus:ring-2 focus:ring-arenaBeam/40 active:scale-[0.98] md:h-14 md:w-14"
-                    aria-label="Close details"
-                  >
-                    <X size={18} className="pointer-events-none" />
-                  </button>
-                </div>
+              <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center md:top-4">
+                <div className="h-1.5 w-16 rounded-full bg-white/10" />
               </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="absolute right-3 top-3 z-20 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-white shadow-[0_8px_24px_rgba(0,0,0,0.24)] transition hover:bg-white/[0.075] hover:text-white focus:outline-none focus:ring-2 focus:ring-arenaBeam/40 active:scale-[0.98] md:right-4 md:top-4 md:h-14 md:w-14"
+                aria-label="Close details"
+              >
+                <X size={18} className="pointer-events-none" />
+              </button>
               <div className="relative min-h-0 flex-1 overflow-hidden">
                 <div
                   ref={scrollRef}
                   data-sheet-scroll
-                  className="min-h-0 h-full overflow-y-auto overscroll-contain px-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+4rem))] pt-4 touch-pan-y [-webkit-overflow-scrolling:touch] md:px-6 md:pb-10 md:pt-5"
+                  className="min-h-0 h-full overflow-y-auto overscroll-y-contain px-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+4.5rem))] pt-16 touch-pan-y [-webkit-overflow-scrolling:touch] md:px-6 md:pb-10 md:pt-[5.5rem]"
                   style={{
                     WebkitOverflowScrolling: "touch",
+                    overscrollBehaviorY: "contain",
                   }}
                 >
                   <div className="relative z-10">{children}</div>

@@ -379,6 +379,17 @@
 - folded the semi-final qualification hint into the search block on phones instead of keeping it as a separate big card
 - goal of this pass: show the real voting list almost immediately on the first phone screen
 
+### 2026-04-03 vote sheet scroll + phone footer fix
+
+- rebuilt `BottomSheet` into a simpler single-surface modal:
+  - removed aggressive document-level `touchmove/wheel` blocking
+  - kept body scroll locked
+  - moved the close button into one absolute top-right control
+  - increased internal top padding so content starts below the handle + close button
+  - kept one clear internal scroll area for artist details and notes
+- adjusted the phone vote search field so the search icon no longer collides with the placeholder text
+- gave the phone `Save order` block more breathing room so it stops visually colliding with the last acts in the list
+
 ### 2026-04-02 room shell mobile cleanup
 
 - moved account presence into a compact avatar control in the top bar
