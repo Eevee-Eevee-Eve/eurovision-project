@@ -99,3 +99,12 @@
 - Доделать отдельные admin accounts вместо общей схемы.
 - Доделать полноценный backup flow.
 - Подумать, не заменить ли native `select` на кастомный sheet/list для выбора места.
+
+## 2026-04-02 device-tier pass follow-up
+
+- `LiveStageBoard` and `PlayersBoard` now need real-device smoke checks on:
+  - phone view with narrow viewport
+  - tablet / desktop wide layout
+  - semi-final vs final copy and list behavior
+- `AdminDeviceGate` is phone-blocked, but the tablet/desktop guard copy still needs one visual pass on an actual tablet.
+- `VoteStudio` top and sticky sections are denser on phone, but the drag-and-drop + sheet flow still needs an in-hand test after the device-tier refactor.
