@@ -17,12 +17,14 @@ export function AuthCard({
   roomSlug,
   nextHref,
   forcedMode,
+  initialMode,
   resetToken,
   onAuthenticated,
 }: {
   roomSlug?: string;
   nextHref?: string | null;
   forcedMode?: AuthMode;
+  initialMode?: Extract<AuthMode, "register" | "login">;
   resetToken?: string | null;
   onAuthenticated?: () => void;
 }) {
@@ -31,7 +33,9 @@ export function AuthCard({
   const legalCopy = getLegalCopy(language);
   const legalConfig = getLegalConfig(language);
   const { passwordResetMode, setAccount } = useAccount();
-  const [mode, setMode] = useState<AuthMode>(forcedMode || (resetToken ? "applyReset" : "register"));
+  const [mode, setMode] = useState<AuthMode>(
+    forcedMode || (resetToken ? "applyReset" : initialMode || "register"),
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nextPassword, setNextPassword] = useState("");
@@ -55,6 +59,12 @@ export function AuthCard({
       setMode(forcedMode);
     }
   }, [forcedMode]);
+
+  useEffect(() => {
+    if (!forcedMode && !resetToken && initialMode) {
+      setMode(initialMode);
+    }
+  }, [forcedMode, initialMode, resetToken]);
 
   useEffect(() => {
     if (resetToken) {
@@ -144,6 +154,29 @@ export function AuthCard({
   return (
     <section className="show-card p-5 md:p-6">
       <div className="grid gap-5">
+        {!forcedMode && mode !== "requestReset" && mode !== "applyReset" ? (
+          <div className="inline-flex w-full max-w-md rounded-full border border-white/10 bg-white/[0.04] p-1">
+            <button
+              type="button"
+              onClick={() => setMode("login")}
+              className={`flex-1 rounded-full px-4 py-2 text-sm transition ${
+                mode === "login" ? "bg-white text-arenaBg shadow-pulse" : "text-arenaMuted hover:text-white"
+              }`}
+            >
+              {accountCopy.auth.signIn}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("register")}
+              className={`flex-1 rounded-full px-4 py-2 text-sm transition ${
+                mode === "register" ? "bg-white text-arenaBg shadow-pulse" : "text-arenaMuted hover:text-white"
+              }`}
+            >
+              {accountCopy.auth.createAccount}
+            </button>
+          </div>
+        ) : null}
+
         <div className="max-w-2xl">
           <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{accountCopy.navAccount}</p>
           <h3 className="display-copy mt-2 text-2xl font-black md:text-4xl">{modeCopy.title}</h3>
@@ -292,15 +325,15 @@ export function AuthCard({
                     : accountCopy.auth.applyReset}
           </button>
 
-          {!forcedMode && mode !== "register" ? (
-            <button type="button" className="arena-button-secondary px-5 py-3 text-sm" onClick={() => setMode("register")}>
-              {accountCopy.auth.switchToCreate}
-            </button>
-          ) : null}
-          {!forcedMode && mode !== "login" ? (
-            <button type="button" className="arena-button-secondary px-5 py-3 text-sm" onClick={() => setMode("login")}>
-              {accountCopy.auth.switchToLogin}
-            </button>
+          {!forcedMode && mode === "requestReset" ? (
+            <>
+              <button type="button" className="arena-button-secondary px-5 py-3 text-sm" onClick={() => setMode("login")}>
+                {accountCopy.auth.switchToLogin}
+              </button>
+              <button type="button" className="arena-button-secondary px-5 py-3 text-sm" onClick={() => setMode("register")}>
+                {accountCopy.auth.switchToCreate}
+              </button>
+            </>
           ) : null}
           {!forcedMode && passwordResetMode !== "disabled" && mode !== "requestReset" ? (
             <button type="button" className="arena-button-secondary px-5 py-3 text-sm" onClick={() => setMode("requestReset")}>

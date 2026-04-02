@@ -261,7 +261,7 @@ export default function Home() {
                   </div>
                 </section>
               ) : (
-                <AuthCard forcedMode="register" />
+                <AuthCard initialMode="login" />
               )}
             </div>
           </div>

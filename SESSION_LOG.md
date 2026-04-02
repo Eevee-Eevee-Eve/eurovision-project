@@ -340,3 +340,9 @@
   - wide screens keep stage standings side by side with room participants
 - tightened `PlayersBoard` for phone while keeping the wider leaderboard view on tablets/desktops
 - made `VoteStudio` header/sticky controls a little denser on phone without changing ranking, drag-and-drop, or notes
+
+### 2026-04-02 homepage auth entry fix
+
+- homepage auth card no longer forces registration-only mode
+- added a visible `sign in / create account` switch directly inside `AuthCard`
+- set the homepage default auth view to `sign in`, while keeping registration one tap away
