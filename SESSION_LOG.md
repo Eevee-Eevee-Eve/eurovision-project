@@ -357,6 +357,17 @@
 - made the semi-final qualification banner lighter on phone
 - disabled sticky submit behavior on phone so the save block stops covering the last acts in the list
 
+### 2026-04-02 semi-final running order update
+
+- updated the official running order for both 2026 semi-finals in backend stage data
+- added explicit `runningOrder` values for every competing act in:
+  - `countries_semi1.json`
+  - `countries_semi2.json`
+- the order now matches the latest host-provided semi-final lineups:
+  - semi-final 1: MD, SE, HR, GR, PT, GE, FI, ME, EE, IL, BE, LT, SM, PL, RS
+  - semi-final 2: BG, AZ, RO, LU, CZ, AM, CH, CY, LV, DK, AU, UA, AL, MT, NO
+- this automatically updates default ordering and running-order badges anywhere the stage API is used
+
 ### 2026-04-02 room shell mobile cleanup
 
 - moved account presence into a compact avatar control in the top bar
