@@ -155,6 +155,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
       };
 
   const showState = room?.showState?.stageKey === stageKey ? room.showState : null;
+  const qualificationCutoff = room?.stageMeta?.[stageKey]?.qualificationCutoff ?? null;
 
   const sortedResults = useMemo(
     () =>
@@ -167,8 +168,12 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   );
 
   const qualifierRows = useMemo(
-    () => sortedResults.filter((act) => typeof act.rank === "number" && act.rank > 0 && act.rank <= 10),
-    [sortedResults]
+    () => sortedResults.filter((act) =>
+      typeof act.rank === "number"
+      && act.rank > 0
+      && (!qualificationCutoff || act.rank <= qualificationCutoff)
+    ),
+    [qualificationCutoff, sortedResults]
   );
 
   const stageRows = useMemo(() => {
@@ -179,7 +184,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
 
   const roomRows = useMemo(() => leaders.slice(0, isWide ? 6 : 8), [isWide, leaders]);
   const progressValue = isSemi
-    ? `${qualifierRows.length}/10`
+    ? `${qualifierRows.length}/${qualificationCutoff || 10}`
     : `${results.filter((act) => act.revealed).length}/${results.length}`;
 
   const featuredAct = useMemo(() => {
@@ -243,7 +248,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   );
 
   const renderStageRow = (act: ActEntry) => {
-    const isQualifier = isSemi && typeof act.rank === "number" && act.rank > 0 && act.rank <= 10;
+    const isQualifier = isSemi && typeof act.rank === "number" && act.rank > 0 && (!qualificationCutoff || act.rank <= qualificationCutoff);
 
     return (
       <motion.div
@@ -346,6 +351,12 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
           <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">
             {getStageLabel(stageKey)}
           </span>
+          {isSemi && qualificationCutoff ? (
+            <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
+              <Sparkles size={13} />
+              {language === "ru" ? `Проходят места 1–${qualificationCutoff}` : `Places 1-${qualificationCutoff} qualify`}
+            </span>
+          ) : null}
           <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
             {text.progressLabel}: {progressValue}
           </span>

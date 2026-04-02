@@ -38,6 +38,7 @@ export interface RoomDetails extends RoomSummary {
     expectedEntries: number;
     currentEntries: number;
     lineupReady: boolean;
+    qualificationCutoff?: number | null;
   }>;
   scoringProfile?: string;
   scoringProfiles?: Array<{
@@ -113,6 +114,7 @@ export interface ActsPayload {
   expectedEntries: number;
   currentEntries: number;
   lineupReady: boolean;
+  qualificationCutoff?: number | null;
   acts: ActEntry[];
 }
 
@@ -162,6 +164,7 @@ export interface SeasonStageStats {
   submitted: boolean;
   locked: boolean;
   revealedResults: number;
+  qualificationCutoff?: number | null;
 }
 
 export interface PlayerSeasonStats {
@@ -232,6 +235,7 @@ export interface AdminRoomSnapshot {
     expectedEntries: number;
     currentEntries: number;
     lineupReady: boolean;
+    qualificationCutoff?: number | null;
   }>;
 }
 

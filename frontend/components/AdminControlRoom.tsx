@@ -30,12 +30,13 @@ import { useLanguage } from "./LanguageProvider";
 import { UserAvatar } from "./UserAvatar";
 
 type EditableResultRow = ActEntry & {
+  place: string;
   jury: string;
   tele: string;
   total: string;
 };
 
-type DraftMemory = Record<string, { jury: string; tele: string; total: string }>;
+type DraftMemory = Record<string, { place: string; jury: string; tele: string; total: string }>;
 
 function isStageKey(value: string | null): value is StageKey {
   return value === "semi1" || value === "semi2" || value === "final";
@@ -51,16 +52,44 @@ function rowToNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function hasRowData(row: { jury: string; tele: string; total: string }) {
+function isSemiStageValue(stageKey: StageKey) {
+  return stageKey === "semi1" || stageKey === "semi2";
+}
+
+function hasPlacement(row: { place: string }) {
+  return row.place !== "";
+}
+
+function hasScoreData(row: { jury: string; tele: string; total: string }) {
   return row.jury !== "" || row.tele !== "" || row.total !== "";
 }
 
-function sortResultRows(rows: EditableResultRow[]) {
+function hasRowData(row: { place: string; jury: string; tele: string; total: string }) {
+  return hasPlacement(row) || hasScoreData(row);
+}
+
+function sortResultRows(rows: EditableResultRow[], stageKey: StageKey) {
+  const semiStage = isSemiStageValue(stageKey);
   return [...rows].sort((left, right) => {
     const leftHas = hasRowData(left);
     const rightHas = hasRowData(right);
     if (leftHas !== rightHas) {
       return leftHas ? -1 : 1;
+    }
+
+    if (semiStage) {
+      const leftHasPlace = hasPlacement(left);
+      const rightHasPlace = hasPlacement(right);
+      if (leftHasPlace !== rightHasPlace) {
+        return leftHasPlace ? -1 : 1;
+      }
+      if (leftHasPlace && rightHasPlace) {
+        const leftPlace = rowToNumber(left.place);
+        const rightPlace = rowToNumber(right.place);
+        if (leftPlace !== rightPlace) {
+          return leftPlace - rightPlace;
+        }
+      }
     }
 
     const totalDiff = rowToNumber(right.total) - rowToNumber(left.total);
@@ -113,6 +142,7 @@ function writeDraft(roomSlug: string, stageKey: StageKey, rows: EditableResultRo
 
   const payload = rows.reduce<DraftMemory>((acc, row) => {
     acc[row.code] = {
+      place: row.place,
       jury: row.jury,
       tele: row.tele,
       total: row.total,
@@ -124,8 +154,9 @@ function writeDraft(roomSlug: string, stageKey: StageKey, rows: EditableResultRo
 }
 
 function buildEditableRows(acts: ActEntry[], publishedRows: ActEntry[], roomSlug: string, stageKey: StageKey, preferPublished = false) {
-  const publishedMap = publishedRows.reduce<Record<string, { jury: string; tele: string; total: string }>>((acc, row) => {
+  const publishedMap = publishedRows.reduce<Record<string, { place: string; jury: string; tele: string; total: string }>>((acc, row) => {
     acc[row.code] = {
+      place: row.rank == null ? "" : String(row.rank),
       jury: row.juryPoints == null ? "" : String(row.juryPoints),
       tele: row.telePoints == null ? "" : String(row.telePoints),
       total: row.totalPoints == null ? "" : String(row.totalPoints),
@@ -135,16 +166,17 @@ function buildEditableRows(acts: ActEntry[], publishedRows: ActEntry[], roomSlug
   const draft = preferPublished ? null : readDraft(roomSlug, stageKey);
 
   const rows = acts.map((act) => {
-    const memory = draft?.[act.code] || publishedMap[act.code] || { jury: "", tele: "", total: "" };
+    const memory = draft?.[act.code] || publishedMap[act.code] || { place: "", jury: "", tele: "", total: "" };
     return {
       ...act,
+      place: memory.place || "",
       jury: memory.jury,
       tele: memory.tele,
       total: memory.total,
     };
   });
 
-  return sortResultRows(rows);
+  return sortResultRows(rows, stageKey);
 }
 
 export function AdminControlRoom() {
@@ -201,9 +233,16 @@ export function AdminControlRoom() {
           lineup: "Лайнап",
           resultsDesk: "Пульт итогов",
           resultsDeskText: "Рейтинг сортируется по total, затем jury, затем tele. Для пустых строк сохраняется порядок выступления.",
+          semiResultsDeskText: "Для полуфинала лучше ввести официальные места целиком. Очки жюри и телезрителей можно добавить позже, когда появится полная разбивка.",
           juryLabel: "Jury",
           teleLabel: "Tele",
           totalLabel: "Total",
+          placeLabel: "Место",
+          placeMissing: "Место пока не задано",
+          semiPlaceRequired: "Для публикации полуфинала задай официальные места всем странам этого этапа.",
+          semiPlaceUnique: "Места полуфинала должны быть уникальными и заполненными без пропусков.",
+          qualifiedLabel: "Проходит в финал",
+          outLabel: "Вне проходной зоны",
           noData: "Пока без данных",
           participantDesk: "Участники комнаты",
           participantDeskText: "Для каждого игрока можно отдельно сбросить текущий этап, очистить все этапы или временно убрать доступ к комнате.",
@@ -262,9 +301,16 @@ export function AdminControlRoom() {
           lineup: "Lineup",
           resultsDesk: "Results desk",
           resultsDeskText: "Ranking is sorted by total, then jury, then tele. Empty rows fall back to running order.",
+          semiResultsDeskText: "For semi-finals, enter the official places first. Jury and televote splits can be added later when the full breakdown is available.",
           juryLabel: "Jury",
           teleLabel: "Tele",
           totalLabel: "Total",
+          placeLabel: "Place",
+          placeMissing: "Place is not set yet",
+          semiPlaceRequired: "To publish a semi-final, set official places for every act in this stage.",
+          semiPlaceUnique: "Semi-final places must be unique and filled without gaps.",
+          qualifiedLabel: "Qualifies for the final",
+          outLabel: "Outside the qualification zone",
           noData: "No points yet",
           participantDesk: "Room participants",
           participantDeskText: "For each player you can reset the current stage, clear all stages, or temporarily remove room access.",
@@ -299,13 +345,19 @@ export function AdminControlRoom() {
 
   const selectedRoomMeta = rooms.find((room) => room.slug === selectedRoom) || null;
   const selectedStageOverview = snapshot?.stageOverview[selectedStage];
-  const rankedRows = useMemo(() => sortResultRows(rows), [rows]);
+  const isSemiStage = isSemiStageValue(selectedStage);
+  const qualificationCutoff = selectedStageOverview?.qualificationCutoff ?? null;
+  const rankedRows = useMemo(() => sortResultRows(rows, selectedStage), [rows, selectedStage]);
   const activeRanking = useMemo(() => {
     return rankedRows.filter((row) => hasRowData(row)).reduce<Record<string, number>>((acc, row, index) => {
-      acc[row.code] = index + 1;
+      const explicitPlace = isSemiStage && hasPlacement(row) ? rowToNumber(row.place) : index + 1;
+      if (explicitPlace > 0) {
+        acc[row.code] = explicitPlace;
+      }
       return acc;
     }, {});
-  }, [rankedRows]);
+  }, [isSemiStage, rankedRows]);
+  const resultsDeskText = isSemiStage ? copy.semiResultsDeskText : copy.resultsDeskText;
   const showCopy = useMemo(() => (
     language === "ru"
       ? {
@@ -477,11 +529,18 @@ export function AdminControlRoom() {
     };
   }, [authenticated, loadPanelData, selectedRoom]);
 
-  function setRowValue(code: string, field: "jury" | "tele" | "total", value: string) {
+  function setRowValue(code: string, field: "place" | "jury" | "tele" | "total", value: string) {
     const sanitized = toNumericString(value);
     setRows((current) => {
       const next = current.map((row) => {
         if (row.code !== code) return row;
+
+        if (field === "place") {
+          return {
+            ...row,
+            place: sanitized,
+          };
+        }
 
         if (field === "total") {
           return {
@@ -504,7 +563,7 @@ export function AdminControlRoom() {
         };
       });
 
-      const sorted = sortResultRows(next);
+      const sorted = sortResultRows(next, selectedStage);
       if (selectedRoom) {
         writeDraft(selectedRoom, selectedStage, sorted);
       }
@@ -641,6 +700,28 @@ export function AdminControlRoom() {
       return;
     }
 
+    if (isSemiStage) {
+      const placedRows = activeRows.filter((row) => hasPlacement(row));
+      if (placedRows.length > 0 && placedRows.length !== rows.length) {
+        setError(copy.semiPlaceRequired);
+        return;
+      }
+
+      if (placedRows.length === rows.length) {
+        const placeNumbers = placedRows.map((row) => rowToNumber(row.place));
+        const hasInvalidPlace = placeNumbers.some((value) => value <= 0);
+        const uniquePlaces = new Set(placeNumbers);
+        if (hasInvalidPlace || uniquePlaces.size !== rows.length) {
+          setError(copy.semiPlaceUnique);
+          return;
+        }
+      }
+    }
+
+    const rowsToPublish = isSemiStage && activeRows.every((row) => hasPlacement(row))
+      ? [...activeRows].sort((left, right) => rowToNumber(left.place) - rowToNumber(right.place))
+      : activeRows;
+
     setPendingAction("publish-results");
     setError("");
     setStatusText("");
@@ -648,13 +729,15 @@ export function AdminControlRoom() {
       await publishStageResults({
         roomSlug: selectedRoom,
         stage: selectedStage,
-        ranking: activeRows.map((row) => row.code),
-        breakdown: activeRows.map((row) => ({
-          code: row.code,
-          jury: rowToNumber(row.jury),
-          tele: rowToNumber(row.tele),
-          total: row.total ? rowToNumber(row.total) : rowToNumber(row.jury) + rowToNumber(row.tele),
-        })),
+        ranking: rowsToPublish.map((row) => row.code),
+        breakdown: rowsToPublish
+          .filter((row) => hasScoreData(row))
+          .map((row) => ({
+            code: row.code,
+            jury: rowToNumber(row.jury),
+            tele: rowToNumber(row.tele),
+            total: row.total ? rowToNumber(row.total) : rowToNumber(row.jury) + rowToNumber(row.tele),
+          })),
       });
       clearDraft(selectedRoom, selectedStage);
       setStatusText(copy.publishedOk);
@@ -996,7 +1079,14 @@ export function AdminControlRoom() {
                 <div>
                   <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.resultsDesk}</p>
                   <h2 className="display-copy mt-3 text-3xl font-black">{getStageLabel(selectedStage)}</h2>
-                  <p className="mt-3 text-sm text-arenaMuted">{copy.resultsDeskText}</p>
+                  <p className="mt-3 text-sm text-arenaMuted">{resultsDeskText}</p>
+                  {isSemiStage && qualificationCutoff ? (
+                    <div className="mt-3">
+                      <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
+                        {language === "ru" ? `Проходят места 1–${qualificationCutoff}` : `Places 1-${qualificationCutoff} qualify`}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <button type="button" className="arena-button-secondary px-5 py-3 text-sm" onClick={() => void handleLoadPublished()}>
@@ -1029,12 +1119,31 @@ export function AdminControlRoom() {
                         <div className="flex flex-wrap gap-2">
                           <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">{row.country}</span>
                           <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">{row.song}</span>
+                          {isSemiStage && hasPlacement(row) && qualificationCutoff ? (
+                            <span className={`show-chip text-[11px] uppercase tracking-[0.22em] ${rowToNumber(row.place) <= qualificationCutoff ? "text-emerald-100" : "text-arenaMuted"}`}>
+                              {rowToNumber(row.place) <= qualificationCutoff ? copy.qualifiedLabel : copy.outLabel}
+                            </span>
+                          ) : null}
                         </div>
                         <p className="mt-3 text-xl font-semibold text-white">{row.artist}</p>
-                        <p className="mt-2 text-sm text-arenaMuted">{hasRowData(row) ? `${copy.totalLabel}: ${row.total || "0"}` : copy.noData}</p>
+                        <p className="mt-2 text-sm text-arenaMuted">
+                          {isSemiStage
+                            ? hasPlacement(row)
+                              ? `${copy.placeLabel}: #${row.place}`
+                              : copy.placeMissing
+                            : hasRowData(row)
+                              ? `${copy.totalLabel}: ${row.total || "0"}`
+                              : copy.noData}
+                        </p>
                       </div>
 
-                      <div className="grid gap-3 md:grid-cols-3 lg:w-[21rem]">
+                      <div className={`grid gap-3 ${isSemiStage ? "md:grid-cols-4 lg:w-[28rem]" : "md:grid-cols-3 lg:w-[21rem]"}`}>
+                        {isSemiStage ? (
+                          <label className="grid gap-2 text-xs text-arenaMuted">
+                            <span className="label-copy uppercase tracking-[0.2em]">{copy.placeLabel}</span>
+                            <input className="arena-input" inputMode="numeric" value={row.place} onChange={(event) => setRowValue(row.code, "place", event.target.value)} />
+                          </label>
+                        ) : null}
                         <label className="grid gap-2 text-xs text-arenaMuted">
                           <span className="label-copy uppercase tracking-[0.2em]">{copy.juryLabel}</span>
                           <input className="arena-input" inputMode="numeric" value={row.jury} onChange={(event) => setRowValue(row.code, "jury", event.target.value)} />

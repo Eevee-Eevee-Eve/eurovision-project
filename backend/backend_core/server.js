@@ -1165,6 +1165,7 @@ function buildSeasonStats(roomSlug) {
         submitted: row.stages[stage].submitted,
         locked: row.stages[stage].locked,
         revealedResults: room.results[stage].length,
+        qualificationCutoff: STAGES[stage].qualificationCutoff ?? null,
       };
       return acc;
     }, {});
