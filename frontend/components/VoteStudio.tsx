@@ -29,7 +29,6 @@ import {
 } from "../lib/vote-utils";
 import { useAccount } from "./AccountProvider";
 import { ActPoster } from "./ActPoster";
-import { AuthCard } from "./AuthCard";
 import { BottomSheet } from "./BottomSheet";
 import { useLanguage } from "./LanguageProvider";
 
@@ -245,6 +244,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           loginAction: "На главную",
           lockedState: "Ответ уже сохранён",
           searchPlaceholder: "Поиск по артисту, стране или песне",
+          mobileSearchPlaceholder: "Поиск по артисту или стране",
           searchDragHint: "Поиск включён. Чтобы спокойно переставлять артистов, очисти запрос.",
           aboutArtist: "Об исполнителе",
           noteLabel: "Моя заметка",
@@ -287,6 +287,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           notePlaceholder: "Короткая заметка про номер, вокал, песню или вайб…",
           savedBadge: "Есть заметка",
           openActHint: "Тапни по артисту, чтобы открыть описание, заметки и видео.",
+          resultsLink: "Результаты",
           placeOptionCurrent: (place: number) => `#${place} — сейчас здесь`,
           placeOptionOccupied: (place: number, artist: string) => `#${place} — сейчас ${artist}`,
           placeOptionFree: (place: number) => `#${place} — свободно`,
@@ -305,6 +306,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           loginAction: "Open homepage",
           lockedState: "Answer already saved",
           searchPlaceholder: "Search by act, country, or song",
+          mobileSearchPlaceholder: "Search by artist or country",
           searchDragHint: "Search is active. Clear it when you want smooth drag-and-drop.",
           aboutArtist: "About the artist",
           noteLabel: "My note",
@@ -347,6 +349,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           notePlaceholder: "A quick note about vocals, staging, song, or overall vibe…",
           savedBadge: "Note saved",
           openActHint: "Tap any act to open details, notes, and video.",
+          resultsLink: "Results",
           placeOptionCurrent: (place: number) => `#${place} — currently here`,
           placeOptionOccupied: (place: number, artist: string) => `#${place} — now ${artist}`,
           placeOptionFree: (place: number) => `#${place} — free`,
@@ -768,7 +771,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
     return (
       <div className="grid gap-4">
-        {qualificationCutoff ? (
+        {qualificationCutoff && !isPhone ? (
           <section className="show-panel-muted border border-emerald-300/10 px-3 py-2.5 md:p-4">
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
@@ -789,16 +792,20 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
             <Search className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-arenaMuted" size={16} />
             <input
               className="arena-input h-11 pl-14 pr-4 text-sm md:h-12 md:pl-14"
-              placeholder={text.searchPlaceholder}
+              placeholder={isPhone ? text.mobileSearchPlaceholder : text.searchPlaceholder}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
           </div>
-          {qualificationCutoff && deferredQuery.trim().length > 0 ? (
+          {qualificationCutoff ? (
             <div className="mt-3">
               <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
                 <CheckCircle2 size={13} />
-                {qualificationCopy.zoneTitle}
+                {isPhone
+                  ? (language === "ru"
+                    ? `В финал: места 1–${qualificationCutoff}`
+                    : `Final line: places 1-${qualificationCutoff}`)
+                  : qualificationCopy.zoneTitle}
               </span>
             </div>
           ) : null}
@@ -908,20 +915,36 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
   return (
     <div className="grid gap-5">
-      <section className="show-card px-4 py-3.5 md:p-5">
-        <div className="max-w-4xl">
-          {!isPhone ? (
-            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.kicker}</p>
-          ) : null}
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-arenaMuted md:mt-3">
-            <h2 className="display-copy text-[1.65rem] font-black leading-none md:text-4xl">{text.title}</h2>
-            <span className="show-chip text-xs text-arenaBeam">{getStageLabel(stageKey)}</span>
+      {isPhone ? (
+        <section className="px-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="display-copy text-[1.45rem] font-black leading-none">{text.title}</h2>
+                <span className="show-chip text-[11px] text-arenaBeam">{getStageLabel(stageKey)}</span>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-arenaMuted">{text.openActHint}</p>
+            </div>
+            <Link
+              href={`/${roomSlug}/live/${stageKey}`}
+              className="show-chip shrink-0 px-3 py-2 text-[11px] text-white/90"
+            >
+              {text.resultsLink}
+            </Link>
           </div>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-arenaMuted">
-            {isPhone ? text.openActHint : text.description}
-          </p>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <section className="show-card px-4 py-3.5 md:p-5">
+          <div className="max-w-4xl">
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.kicker}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-arenaMuted">
+              <h2 className="display-copy text-[1.65rem] font-black leading-none md:text-4xl">{text.title}</h2>
+              <span className="show-chip text-xs text-arenaBeam">{getStageLabel(stageKey)}</span>
+            </div>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-arenaMuted">{text.description}</p>
+          </div>
+        </section>
+      )}
 
       {error ? <div className="rounded-[1.4rem] bg-rose-400/10 px-4 py-3 text-sm text-rose-100">{error}</div> : null}
       {statusText ? <div className="rounded-[1.4rem] bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">{statusText}</div> : null}
