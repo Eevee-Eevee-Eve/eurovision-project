@@ -3,6 +3,17 @@
 > Current focus:
 > `vote/acts` UX on real screens. Infrastructure and deploy are stable enough; the main remaining risk is the companion flow itself.
 
+## 2026-04-02 homepage and sheet risks
+
+- The new landing page now gates room actions behind account auth.
+  - need a real-user check that this feels helpful rather than blocking
+- The separate `join room` card was removed in favor of active-room search.
+  - verify this is enough when several temporary rooms are alive at once
+- `BottomSheet` close button alignment was corrected again.
+  - confirm the round button looks centered and unclipped on small iPhones
+- The stronger `Open room` CTA now carries more glow/animation.
+  - verify it reads as primary without looking noisy against the hero
+
 ## 2026-04-02 single-list vote risks
 
 - The voting page now aims to be one list only.

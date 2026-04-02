@@ -5,6 +5,23 @@
 
 ## 2026-04-02
 
+### Homepage Room Flow + Sheet Polish
+
+- rebuilt the landing page around a stricter first-step flow:
+  - auth first
+  - then active rooms
+  - then create room
+- removed the separate join-room form from the landing page
+- active rooms now act as the main entry surface:
+  - search by room name
+  - stronger `Open room` CTA
+  - locked CTA state for signed-out users
+- room creation now stays visible on the landing page, but only unlocks after account sign-in
+- kept direct room links working by not changing route behavior
+- adjusted `BottomSheet` header layout again so the close button no longer hugs the rounded corner on small screens
+- local `next build` passed and the frontend was redeployed to production
+- current production commit for this pass: `acfb60d`
+
 ### Vote Simplification Pass
 
 - kept `vote` as a single working list instead of multiple page-level modes
