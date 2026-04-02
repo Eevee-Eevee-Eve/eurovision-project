@@ -789,9 +789,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
         <section className="show-card px-4 py-3 md:p-4">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-arenaMuted" size={16} />
+            <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-arenaMuted" size={15} />
             <input
-              className="arena-input h-11 pl-14 pr-4 text-sm md:h-12 md:pl-14"
+              className="arena-input h-11 pl-[3.15rem] pr-4 text-sm md:h-12 md:pl-14"
               placeholder={isPhone ? text.mobileSearchPlaceholder : text.searchPlaceholder}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -852,7 +852,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           </SortableContext>
         </DndContext>
 
-        <section className={`show-card p-4 md:p-5 ${isPhone ? "" : "sticky bottom-4 z-10"}`}>
+        <section className={`show-card mt-2 p-4 ${isPhone ? "mb-[max(1rem,env(safe-area-inset-bottom))]" : "sticky bottom-4 z-10 p-5"}`}>
           <div className={`flex flex-col gap-4 ${isPhone ? "" : "lg:flex-row lg:items-center lg:justify-between"}`}>
             {!isPhone ? (
               <div className="max-w-2xl">
