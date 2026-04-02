@@ -275,3 +275,13 @@
 - moved active rooms above create/join actions
 - localized room stage labels in the active rooms list
 
+### 2026-04-02 device-tier foundation pass
+
+- added a shared `frontend/lib/device.ts` helper with `phone / tablet / desktop` tiers
+- split `RoomChrome` and `RoomLanding` into tighter phone shells and roomier tablet/desktop shells
+- added an admin phone guard so `/admin` stays tablet/desktop-only
+- split `LiveStageBoard` into phone vs wide-screen result layouts
+  - phone keeps room participants primary
+  - wide screens keep stage standings side by side with room participants
+- tightened `PlayersBoard` for phone while keeping the wider leaderboard view on tablets/desktops
+- made `VoteStudio` header/sticky controls a little denser on phone without changing ranking, drag-and-drop, or notes
