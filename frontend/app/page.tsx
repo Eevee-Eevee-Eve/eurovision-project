@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Lock, PlusCircle, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { AuthCard } from "../components/AuthCard";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { ApiError, createTemporaryRoom, fetchRooms, resolveRoomByName } from "../lib/api";
 import { FALLBACK_ROOM } from "../lib/rooms";
@@ -56,7 +57,8 @@ export default function Home() {
       language === "ru"
         ? {
             kicker: "Евровидение у Морозовых 2026",
-            title: "Создай комнату или войди в уже существующую.",
+            title: "Войди, создай комнату и начни вечер.",
+            intro: "Сначала аккаунт, потом комната, потом голосование и результаты. Всё на одном экране.",
             createTitle: "Создать комнату",
             createBody:
               "Придумай имя комнаты, по которому друзья смогут её найти. Пароль можно добавить сразу или оставить комнату открытой.",
@@ -81,16 +83,11 @@ export default function Home() {
             temporary: "Временная",
             privateRoom: "С паролем",
             noRooms: "Пока видна только основная комната.",
-            whyTitle: "Как проходит вечер",
-            whyItems: [
-              "Один человек создаёт комнату, остальные входят по её имени.",
-              "Внутри комнаты открываются голосование и общий экран результатов.",
-              "Гости расставляют своих фаворитов, а хост ведёт эфир отдельно.",
-            ],
           }
         : {
             kicker: "Morozov Eurovision 2026",
-            title: "Create a room or join one that already exists.",
+            title: "Sign in, create a room, and start the night.",
+            intro: "One account first, then the room, then voting and results. Everything starts on one screen.",
             createTitle: "Create a room",
             createBody:
               "Choose a room name your friends can find. Add a password if you want privacy, or leave it open.",
@@ -115,12 +112,6 @@ export default function Home() {
             temporary: "Temporary",
             privateRoom: "Password",
             noRooms: "Only the main room is visible right now.",
-            whyTitle: "How the night flows",
-            whyItems: [
-              "One person creates the room, everyone else joins by its name.",
-              "Inside the room, voting and the shared results screen open up.",
-              "Guests rank their favourites while the host runs the live flow.",
-            ],
           },
     [language],
   );
@@ -211,28 +202,17 @@ export default function Home() {
             <LanguageSwitcher />
           </div>
 
-          <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr] xl:items-start">
+          <div className="mt-6 grid gap-6 xl:grid-cols-[1.05fr_0.95fr] xl:items-start">
             <div className="max-w-4xl">
-              <h1 className="display-copy text-3xl font-black tracking-tight md:text-6xl">
+              <h1 className="display-copy text-3xl font-black tracking-tight md:text-5xl">
                 {text.title}
               </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-arenaMuted md:text-base">
+                {text.intro}
+              </p>
             </div>
 
-            <div className="show-card p-5 md:p-6">
-              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">
-                {text.whyTitle}
-              </p>
-              <div className="mt-4 grid gap-3">
-                {text.whyItems.map((item, index) => (
-                  <div key={item} className="show-panel flex items-start gap-3 p-4">
-                    <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/5 text-xs font-semibold text-white">
-                      {index + 1}
-                    </div>
-                    <p className="text-sm leading-7 text-arenaMuted">{item}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <AuthCard />
           </div>
         </section>
 
