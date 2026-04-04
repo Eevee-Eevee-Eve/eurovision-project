@@ -333,10 +333,10 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
 
       <BottomSheet open={Boolean(selectedAct)} onClose={() => setSelectedActCode(null)}>
         {selectedAct ? (
-          <div className="grid gap-5">
-            <div className="grid grid-cols-[5.5rem_1fr] items-start gap-4 sm:grid-cols-[6.75rem_1fr]">
-              <div className="mx-auto w-full max-w-[6.75rem]">
-                <ActPoster act={selectedAct} mode="card" />
+          <div className="grid gap-4 md:gap-5">
+            <div className="grid grid-cols-[4.75rem_minmax(0,1fr)] items-start gap-3 md:grid-cols-[6rem_minmax(0,1fr)] md:gap-5">
+              <div className="mx-auto w-full max-w-[5.25rem] md:max-w-[6rem]">
+                <ActPoster act={selectedAct} mode="row" />
               </div>
 
               <div className="min-w-0">
@@ -356,15 +356,15 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
                   ) : null}
                 </div>
 
-                <h3 className="display-copy mt-4 text-3xl font-black leading-[0.92] text-white md:text-4xl">
+                <h3 className="display-copy mt-3 text-[1.7rem] font-black leading-[0.94] text-white md:text-[2.6rem]">
                   {selectedAct.artist}
                 </h3>
-                <p className="mt-2 text-base text-arenaMuted md:text-lg">{selectedAct.song}</p>
-                <p className="mt-4 text-sm leading-7 text-arenaMuted">{getActBlurb(selectedAct)}</p>
+                <p className="mt-1 text-[0.98rem] text-arenaMuted md:text-lg">{selectedAct.song}</p>
+                <p className="mt-3 text-sm leading-6 text-arenaMuted md:text-[0.95rem] md:leading-7">{getActBlurb(selectedAct)}</p>
               </div>
             </div>
 
-            <div className="show-panel p-4">
+            <div className="show-panel p-4 md:p-5">
               <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.aboutArtist}</p>
               {getAboutFacts(selectedAct).length ? (
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -379,7 +379,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
               )}
             </div>
 
-            <div className="show-panel p-4">
+            <div className="show-panel p-4 md:p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.noteLabel}</p>
@@ -410,7 +410,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
               </div>
 
               <textarea
-                className="arena-input mt-4 min-h-[9rem] resize-y"
+                className="arena-input mt-4 min-h-[7.5rem] resize-y md:min-h-[8rem]"
                 placeholder={text.noNotesYet}
                 value={notes[selectedAct.code]?.text || ""}
                 onChange={(event) => updateNote(selectedAct.code, { text: event.target.value })}
@@ -430,7 +430,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
               </div>
             </div>
 
-            <div className="show-panel p-4">
+            <div className="show-panel p-4 md:p-5">
               <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.watchVideo}</p>
               <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm leading-6 text-arenaMuted">{text.watchVideoHint}</p>
@@ -446,20 +446,20 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               {selectedAct.profileUrl ? (
                 <a
                   href={selectedAct.profileUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="arena-button-secondary inline-flex h-14 items-center justify-center px-6 text-sm"
+                  className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm"
                 >
                   {text.officialProfile}
                 </a>
               ) : null}
               <Link
                 href={`/${roomSlug}/vote/${stageKey}`}
-                className="arena-button-primary inline-flex h-14 items-center justify-center px-8 text-sm"
+                className="arena-button-primary inline-flex h-12 items-center justify-center px-6 text-sm"
               >
                 {text.openVoteStudio}
               </Link>
