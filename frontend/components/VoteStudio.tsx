@@ -968,8 +968,8 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       >
         {selectedAct ? (
           <div className="grid gap-4 md:gap-5">
-            <div className="grid grid-cols-[4.75rem_1fr] items-start gap-3 sm:grid-cols-[5.5rem_1fr] sm:gap-4">
-              <div className="mx-auto w-full max-w-[5.5rem]">
+            <div className="grid grid-cols-[4.75rem_minmax(0,1fr)] items-start gap-3 md:grid-cols-[6rem_minmax(0,1fr)] md:gap-5">
+              <div className="mx-auto w-full max-w-[5.25rem] md:max-w-[6rem]">
                 <ActPoster act={selectedAct} mode="row" />
               </div>
 
@@ -989,15 +989,15 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   ) : null}
                 </div>
 
-                <h3 className="display-copy mt-3 text-[1.85rem] font-black leading-[0.94] text-white md:text-4xl">
+                <h3 className="display-copy mt-3 text-[1.7rem] font-black leading-[0.94] text-white md:text-[2.6rem]">
                   {selectedAct.artist}
                 </h3>
-                <p className="mt-1 text-base text-arenaMuted md:text-lg">{selectedAct.song}</p>
-                <p className="mt-3 text-sm leading-6 text-arenaMuted">{getActBlurb(selectedAct)}</p>
+                <p className="mt-1 text-[0.98rem] text-arenaMuted md:text-lg">{selectedAct.song}</p>
+                <p className="mt-3 text-sm leading-6 text-arenaMuted md:text-[0.95rem] md:leading-7">{getActBlurb(selectedAct)}</p>
               </div>
             </div>
 
-            <div className="show-panel p-4">
+            <div className="show-panel p-4 md:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.rankingFieldLabel}</p>
@@ -1052,7 +1052,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
               {placePickerOpen ? (
                 <div className="show-panel-muted mt-3 border border-white/8 p-2">
-                  <div className="max-h-[min(40svh,16rem)] overflow-y-auto overscroll-y-contain pr-1 [-webkit-overflow-scrolling:touch]">
+                  <div className="max-h-[min(38svh,16rem)] overflow-y-auto overscroll-y-contain pr-1 [-webkit-overflow-scrolling:touch]">
                     <div className="grid gap-2">
                       {getPlaceOptions(selectedAct.code).map((option) => (
                         <PlaceOptionRow
@@ -1071,7 +1071,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               ) : null}
             </div>
 
-            <div className="show-panel p-4">
+            <div className="show-panel p-4 md:p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.noteLabel}</p>
@@ -1091,7 +1091,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                     key={`${selectedAct.code}-${tone.key}`}
                     type="button"
                     onClick={() => toggleTone(selectedAct.code, tone.key)}
-                    className={`rounded-full px-2.5 py-1 text-[9px] transition sm:text-[10px] ${
+                    className={`rounded-full px-2.5 py-1 text-[10px] transition ${
                       getNoteTags(notes[selectedAct.code]).includes(tone.key)
                         ? "bg-arenaSurfaceMax text-white shadow-glow"
                         : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
@@ -1103,7 +1103,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               </div>
 
               <textarea
-                className="arena-input mt-3 min-h-[6.75rem] resize-y text-sm md:min-h-[8rem]"
+                className="arena-input mt-3 min-h-[7.5rem] resize-y text-sm md:min-h-[8rem]"
                 placeholder={text.notePlaceholder}
                 value={notes[selectedAct.code]?.text || ""}
                 onChange={(event) => updateNote(selectedAct.code, { text: event.target.value })}
@@ -1126,7 +1126,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
             </div>
 
             {selectedActLinks.videoUrl ? (
-              <div className="show-panel p-4">
+              <div className="show-panel p-4 md:p-5">
                 <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.watchVideo}</p>
                 <p className="mt-2 text-sm leading-6 text-arenaMuted">{text.watchVideoHint}</p>
                 <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -1154,7 +1154,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               </div>
             ) : null}
 
-            <div className="show-panel p-4">
+            <div className="show-panel p-4 md:p-5">
               <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.aboutArtist}</p>
               {getActFacts(selectedAct).length ? (
                 <div className="mt-4 grid gap-3 md:grid-cols-2">

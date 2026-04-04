@@ -390,6 +390,18 @@
 - adjusted the phone vote search field so the search icon no longer collides with the placeholder text
 - gave the phone `Save order` block more breathing room so it stops visually colliding with the last acts in the list
 
+### 2026-04-04 artist modal layout normalization
+
+- normalized the artist modal layout across `vote` and `acts`
+- both routes now use the same calmer content rhythm:
+  - compact poster in the header
+  - tighter two-column header on desktop
+  - smaller, more stable title/song spacing
+  - consistent panel paddings
+- reduced the note textarea height on mobile to keep the sheet scannable while preserving a comfortable edit area
+- tightened the custom place-picker height so it behaves better inside the sheet
+- goal of this pass: stop the act sheet from feeling like two different drifting layouts on phone vs desktop
+
 ### 2026-04-02 room shell mobile cleanup
 
 - moved account presence into a compact avatar control in the top bar
