@@ -382,6 +382,12 @@ select {
   min-height: 16rem;
 }
 
+.room-lobby-stage-grid-desktop {
+  grid-template-columns: minmax(0, 1.28fr) minmax(0, 0.92fr);
+  gap: 1rem;
+  min-height: 22rem;
+}
+
 .room-lobby-stage-card {
   position: relative;
   overflow: hidden;
@@ -399,6 +405,21 @@ select {
 .room-lobby-stage-card-main {
   grid-row: 1 / span 2;
   min-height: 16rem;
+}
+
+.room-lobby-stage-grid-desktop .room-lobby-stage-card {
+  min-height: 10.5rem;
+  border-radius: 1.55rem;
+}
+
+.room-lobby-stage-grid-desktop .room-lobby-stage-card-main {
+  min-height: 22rem;
+}
+
+.room-lobby-stage-grid-desktop .room-lobby-stage-overlay {
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
 }
 
 .room-lobby-stage-card::after {
