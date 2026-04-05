@@ -250,20 +250,19 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
           {invitePanel}
         </section>
       ) : (
-        <section className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-          <div className="show-card room-lobby-hero p-5 md:p-7">
+        <section className="grid gap-4">
+          <div className="show-card room-lobby-hero p-5 md:p-7 xl:p-8">
             <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
               {text.kicker}
             </p>
-            <h2 className="display-copy mt-3 text-3xl font-black md:text-6xl">{roomName}</h2>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-arenaMuted md:text-base">
-              {text.description}
-            </p>
-
-            <div className="mt-6 grid gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
-              <div>
+            <div className="mt-4 grid gap-8 xl:grid-cols-[minmax(0,0.84fr)_minmax(0,1.16fr)] xl:items-end">
+              <div className="max-w-3xl">
+                <h2 className="display-copy text-3xl font-black md:text-6xl">{roomName}</h2>
+                <p className="mt-4 text-sm leading-7 text-arenaMuted md:text-base">
+                  {text.description}
+                </p>
                 {room?.passwordRequired ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="mt-5 flex flex-wrap gap-2">
                     <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
                       {text.privateRoom}
                     </span>
@@ -271,7 +270,7 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
                 ) : null}
               </div>
 
-              <div className="room-lobby-stage-grid">
+              <div className="room-lobby-stage-grid room-lobby-stage-grid-desktop">
                 {previewActs.length ? (
                   previewActs.map((act, index) => {
                     const photoUrl = resolveMediaUrl(act.photoUrl);
@@ -308,7 +307,10 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
             <div className="mt-6">{actionCards}</div>
           </div>
 
-          <div className="grid gap-4">{invitePanel}</div>
+          <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
+            <div />
+            {invitePanel}
+          </div>
         </section>
       )}
     </div>
