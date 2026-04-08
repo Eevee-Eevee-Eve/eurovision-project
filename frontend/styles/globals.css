@@ -212,6 +212,14 @@ select {
   pointer-events: none;
 }
 
+.ghost-grid-room::before {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.62), transparent 82%);
+}
+
 .show-card {
   position: relative;
   overflow: hidden;

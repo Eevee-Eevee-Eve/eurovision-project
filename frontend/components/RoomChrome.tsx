@@ -143,7 +143,7 @@ export function RoomChrome({
   return (
     <main className="min-h-screen bg-arena-grid px-4 pb-20 pt-4 text-arenaText md:px-8 md:pt-6">
       <div className="mx-auto max-w-7xl">
-        <div className="glass-panel ghost-grid rounded-shell border border-white/10 p-4 md:p-5">
+        <div className="glass-panel ghost-grid ghost-grid-room rounded-shell border border-white/10 p-4 md:p-5">
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-3">
               <Link
@@ -158,7 +158,9 @@ export function RoomChrome({
                 <LanguageSwitcher />
                 <Link
                   href="/account"
-                  className="inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/[0.04] transition hover:bg-white/[0.08]"
+                  className={`inline-flex items-center justify-center overflow-hidden border border-white/10 bg-white/[0.04] transition hover:bg-white/[0.08] ${
+                    account ? "h-11 w-11 rounded-full" : "h-11 rounded-full px-4"
+                  }`}
                   aria-label={account ? accountCopy.navAccount : accountCopy.auth.signIn}
                   title={account ? accountCopy.navAccount : accountCopy.auth.signIn}
                 >
@@ -172,7 +174,7 @@ export function RoomChrome({
                       textClass="text-[0.9rem]"
                     />
                   ) : (
-                    <span className="label-copy text-[10px] uppercase tracking-[0.24em] text-white/80">
+                    <span className="label-copy text-[10px] uppercase tracking-[0.2em] text-white/80">
                       {language === "ru" ? "Войти" : "Sign in"}
                     </span>
                   )}
