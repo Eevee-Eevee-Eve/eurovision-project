@@ -134,23 +134,27 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
       <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
         {text.roomLink}
       </p>
-      <p className="mt-3 text-sm leading-7 text-arenaMuted">{text.roomLinkText}</p>
-      <div className="mt-4 rounded-[1.4rem] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/90">
-        {roomUrl || `/${roomSlug}`}
-      </div>
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={handleCopyRoomLink}
-          className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
-        >
-          <Copy size={16} />
-          {copyState === "copied"
-            ? text.copied
-            : copyState === "error"
-              ? text.copyError
-              : text.copy}
-        </button>
+      <div className="mt-3 grid gap-4 xl:grid-cols-[minmax(0,0.58fr)_minmax(0,1fr)_auto] xl:items-center">
+        <p className="text-sm leading-7 text-arenaMuted xl:mt-0 xl:max-w-[30rem]">
+          {text.roomLinkText}
+        </p>
+        <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/90">
+          {roomUrl || `/${roomSlug}`}
+        </div>
+        <div className="flex flex-wrap items-center gap-3 xl:justify-end">
+          <button
+            type="button"
+            onClick={handleCopyRoomLink}
+            className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
+          >
+            <Copy size={16} />
+            {copyState === "copied"
+              ? text.copied
+              : copyState === "error"
+                ? text.copyError
+                : text.copy}
+          </button>
+        </div>
       </div>
       {room?.passwordRequired ? (
         <div className="mt-4 show-panel-muted p-4">
@@ -307,10 +311,7 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
             <div className="mt-6">{actionCards}</div>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-            <div />
-            {invitePanel}
-          </div>
+          {invitePanel}
         </section>
       )}
     </div>
