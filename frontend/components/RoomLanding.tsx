@@ -244,6 +244,7 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
               <div className="mt-5 grid grid-cols-2 gap-2">
                 {previewActs.map((act) => {
                   const photoUrl = resolveMediaUrl(act.photoUrl);
+                  const flagUrl = resolveMediaUrl(act.flagUrl);
                   if (!photoUrl) return null;
 
                   return (
@@ -255,7 +256,17 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
                         loading="lazy"
                       />
                       <div className="room-lobby-stage-overlay">
-                        <p className="text-xs font-semibold text-white">{act.country}</p>
+                        <div className="flex items-center gap-2">
+                          <div className="h-5 w-5 shrink-0 overflow-hidden rounded-full border border-white/15 bg-white/10">
+                            <img
+                              src={flagUrl || undefined}
+                              alt={act.country}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                          <p className="text-xs font-semibold text-white">{act.country}</p>
+                        </div>
                         <p className="mt-1 line-clamp-1 text-[11px] text-white/70">{act.artist}</p>
                       </div>
                     </div>
@@ -294,6 +305,7 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
                 {previewActs.length ? (
                   previewActs.map((act, index) => {
                     const photoUrl = resolveMediaUrl(act.photoUrl);
+                    const flagUrl = resolveMediaUrl(act.flagUrl);
                     if (!photoUrl) return null;
 
                     return (
@@ -308,7 +320,17 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
                           loading="lazy"
                         />
                         <div className="room-lobby-stage-overlay">
-                          <p className="text-sm font-semibold text-white">{act.country}</p>
+                          <div className="flex items-center gap-2">
+                            <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-white/15 bg-white/10">
+                              <img
+                                src={flagUrl || undefined}
+                                alt={act.country}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            </div>
+                            <p className="text-sm font-semibold text-white">{act.country}</p>
+                          </div>
                           <p className="mt-1 text-xs text-white/70">{act.artist}</p>
                         </div>
                       </div>
