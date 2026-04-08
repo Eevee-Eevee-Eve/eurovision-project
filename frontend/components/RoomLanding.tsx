@@ -117,6 +117,18 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         roomPrivateText: "Guests will be asked for the password on the next step.",
       };
 
+  const voteCardText = isPhone
+    ? (language === "ru"
+        ? "Перетаскивай артистов, открывай карточки и сохраняй свой порядок."
+        : "Drag acts, open their cards, and save your final order.")
+    : text.voteText;
+
+  const resultsCardText = isPhone
+    ? (language === "ru"
+        ? "Открой общий экран с очками и движением мест."
+        : "Open the shared screen for points and leaderboard movement.")
+    : text.resultsText;
+
   async function handleCopyRoomLink() {
     try {
       await navigator.clipboard.writeText(roomUrl || `/${roomSlug}`);
@@ -168,7 +180,7 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
   );
 
   const actionCards = (
-    <div className="grid grid-cols-2 gap-2 md:gap-3">
+    <div className="grid gap-3 md:grid-cols-2">
       <Link
         href={`/${roomSlug}/vote/${defaultStage}`}
         className="show-panel room-lobby-action room-lobby-vote p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.08] md:p-5"
@@ -176,9 +188,11 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         <div className="inline-flex rounded-full bg-white/5 p-2.5 text-arenaPulse md:p-3">
           <NotebookPen size={isPhone ? 16 : 20} />
         </div>
-        <p className="display-copy mt-4 text-xl font-black text-white md:mt-5 md:text-2xl">{text.vote}</p>
-        <p className="mt-2 line-clamp-3 text-xs leading-6 text-arenaMuted md:mt-3 md:text-sm md:leading-7">
-          {text.voteText}
+        <p className={`display-copy mt-4 font-black text-white ${isPhone ? "text-[1.7rem] leading-none" : "text-xl md:mt-5 md:text-2xl"}`}>
+          {text.vote}
+        </p>
+        <p className={`mt-2 text-arenaMuted ${isPhone ? "text-sm leading-6" : "line-clamp-3 text-xs leading-6 md:mt-3 md:text-sm md:leading-7"}`}>
+          {voteCardText}
         </p>
         <div className="mt-3 inline-flex items-center gap-2 text-xs text-white md:mt-4 md:text-sm">
           <span>{text.open}</span>
@@ -193,9 +207,11 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         <div className="inline-flex rounded-full bg-white/5 p-2.5 text-arenaBeam md:p-3">
           <MonitorPlay size={isPhone ? 16 : 20} />
         </div>
-        <p className="display-copy mt-4 text-xl font-black text-white md:mt-5 md:text-2xl">{text.results}</p>
-        <p className="mt-2 line-clamp-3 text-xs leading-6 text-arenaMuted md:mt-3 md:text-sm md:leading-7">
-          {text.resultsText}
+        <p className={`display-copy mt-4 font-black text-white ${isPhone ? "text-[1.7rem] leading-none" : "text-xl md:mt-5 md:text-2xl"}`}>
+          {text.results}
+        </p>
+        <p className={`mt-2 text-arenaMuted ${isPhone ? "text-sm leading-6" : "line-clamp-3 text-xs leading-6 md:mt-3 md:text-sm md:leading-7"}`}>
+          {resultsCardText}
         </p>
         <div className="mt-3 inline-flex items-center gap-2 text-xs text-white md:mt-4 md:text-sm">
           <span>{text.open}</span>
