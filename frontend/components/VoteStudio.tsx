@@ -254,7 +254,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           clearNote: "Очистить",
           rankingLabel: "Место в порядке",
           rankingFieldLabel: "Место артиста в моём порядке",
-          quickGuide: "Открыть полный гид",
           linksTitle: "Прямые ссылки",
           officialProfile: "Официальный профиль",
           officialProfileHint: "Открой страницу артиста напрямую, без поиска по YouTube.",
@@ -316,7 +315,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           clearNote: "Clear",
           rankingLabel: "Place in my order",
           rankingFieldLabel: "This artist in my order",
-          quickGuide: "Open full guide",
           linksTitle: "Direct links",
           officialProfile: "Official profile",
           officialProfileHint: "Open the artist page directly without a YouTube search.",
@@ -1189,14 +1187,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               ) : (
                 <p className="mt-3 text-sm leading-7 text-arenaMuted">{getActBlurb(selectedAct)}</p>
               )}
-              <div className="mt-4 flex flex-wrap gap-3">
-                <Link
-                  href={`/${roomSlug}/acts/${stageKey}`}
-                  className="arena-button-primary inline-flex items-center justify-center px-6 py-3 text-sm"
-                >
-                  {text.quickGuide}
-                </Link>
-              </div>
             </div>
           </div>
         ) : null}
