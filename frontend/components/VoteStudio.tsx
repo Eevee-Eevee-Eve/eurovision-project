@@ -513,18 +513,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     return `#${rank}`;
   }
 
-  function getCurrentPlaceDescription(code: string) {
-    const rank = rankingMap[code];
-    if (!rank) return text.choosePlacePlaceholder;
-    if (qualificationCutoff && rank <= qualificationCutoff) {
-      return `${text.currentPlace} #${rank}. ${qualificationCopy.inZone}`;
-    }
-    if (qualificationCutoff) {
-      return `${text.currentPlace} #${rank}. ${qualificationCopy.outZone}`;
-    }
-    return `${text.currentPlace} #${rank}`;
-  }
-
   function getPlaceOptions(code: string) {
     const currentAct = actsByCode[code];
     const currentRank = rankingMap[code];
@@ -968,20 +956,18 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       >
         {selectedAct ? (
           <div className="grid gap-4 md:gap-5">
-            <div className="grid grid-cols-[4.75rem_minmax(0,1fr)] items-start gap-3 md:grid-cols-[6rem_minmax(0,1fr)] md:gap-5">
-              <div className="mx-auto w-full max-w-[5.25rem] md:max-w-[6rem]">
+            <div className="grid grid-cols-[4.25rem_minmax(0,1fr)] items-start gap-3 md:grid-cols-[6rem_minmax(0,1fr)] md:gap-5">
+              <div className="mx-auto w-full max-w-[4.5rem] md:max-w-[6rem]">
                 <ActPoster act={selectedAct} mode="row" />
               </div>
 
               <div className="min-w-0">
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <CountryBadge
                     countryName={getCountryName(selectedAct.code, selectedAct.country)}
                     flagUrl={resolveMediaUrl(selectedAct.flagUrl)}
                   />
-                  <span className="show-chip text-xs text-white">
-                    {text.rankingLabel} {getCurrentPlaceLabel(selectedAct.code)}
-                  </span>
+                  <span className="show-chip text-xs text-white">{getCurrentPlaceLabel(selectedAct.code)}</span>
                   {selectedAct.stageKey === "final" ? (
                     <span className="show-chip text-xs text-arenaMuted">
                       {text.finalContextLabel}: {getActContext(selectedAct).value}
@@ -989,19 +975,18 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                   ) : null}
                 </div>
 
-                <h3 className="display-copy mt-3 text-[1.7rem] font-black leading-[0.94] text-white md:text-[2.6rem]">
+                <h3 className="display-copy mt-2 text-[1.45rem] font-black leading-[0.94] text-white md:mt-3 md:text-[2.6rem]">
                   {selectedAct.artist}
                 </h3>
                 <p className="mt-1 text-[0.98rem] text-arenaMuted md:text-lg">{selectedAct.song}</p>
-                <p className="mt-3 text-sm leading-6 text-arenaMuted md:text-[0.95rem] md:leading-7">{getActBlurb(selectedAct)}</p>
+                <p className="mt-2 text-sm leading-6 text-arenaMuted md:mt-3 md:text-[0.95rem] md:leading-7">{getActBlurb(selectedAct)}</p>
               </div>
             </div>
 
-            <div className="show-panel p-4 md:p-5">
+            <div className="show-panel p-3.5 md:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.rankingFieldLabel}</p>
-                  <p className="mt-2 text-sm text-arenaMuted">{getCurrentPlaceDescription(selectedAct.code)}</p>
                 </div>
                 {locked ? (
                   <span className="show-chip text-xs text-amber-100">
@@ -1011,48 +996,85 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 ) : null}
               </div>
 
-              <div className="mt-4 grid gap-2.5">
-                <button
-                  type="button"
-                  className="arena-input flex h-11 items-center justify-between px-4 text-left text-sm sm:h-12"
-                  onClick={() => setPlacePickerOpen((current) => !current)}
-                  disabled={locked}
-                  aria-expanded={placePickerOpen}
-                  aria-label={text.choosePlace}
-                >
-                  <span className="truncate text-white/92">{getPlacePickerLabel(selectedAct.code)}</span>
-                  <ChevronDown size={16} className={`shrink-0 text-arenaMuted transition ${placePickerOpen ? "rotate-180" : ""}`} />
-                </button>
-
-                <div className="grid grid-cols-2 gap-2">
+              {isPhone ? (
+                <div className="mt-3 grid grid-cols-[minmax(0,1fr)_2.75rem_2.75rem] gap-2">
                   <button
                     type="button"
-                    className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 rounded-[1rem] px-4 text-sm"
+                    className="arena-input flex h-10 min-w-0 items-center justify-between px-3 text-left text-[13px]"
+                    onClick={() => setPlacePickerOpen((current) => !current)}
+                    disabled={locked}
+                    aria-expanded={placePickerOpen}
+                    aria-label={text.choosePlace}
+                  >
+                    <span className="truncate text-white/92">{getPlacePickerLabel(selectedAct.code)}</span>
+                    <ChevronDown size={15} className={`shrink-0 text-arenaMuted transition ${placePickerOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  <button
+                    type="button"
+                    className="arena-button-secondary inline-flex h-10 w-11 items-center justify-center rounded-[1rem] px-0 text-sm"
                     disabled={locked || rankingMap[selectedAct.code] === 1}
                     onClick={() => moveArtistBy(selectedAct.code, -1)}
                     aria-label={text.moveHigher}
                     title={text.moveHigher}
                   >
                     <ArrowUp size={16} />
-                    {text.moveHigher}
                   </button>
                   <button
                     type="button"
-                    className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 rounded-[1rem] px-4 text-sm"
+                    className="arena-button-secondary inline-flex h-10 w-11 items-center justify-center rounded-[1rem] px-0 text-sm"
                     disabled={locked || rankingMap[selectedAct.code] === ranking.length}
                     onClick={() => moveArtistBy(selectedAct.code, 1)}
                     aria-label={text.moveLower}
                     title={text.moveLower}
                   >
                     <ArrowDown size={16} />
-                    {text.moveLower}
                   </button>
                 </div>
-              </div>
+              ) : (
+                <div className="mt-4 grid gap-2.5">
+                  <button
+                    type="button"
+                    className="arena-input flex h-11 items-center justify-between px-4 text-left text-sm sm:h-12"
+                    onClick={() => setPlacePickerOpen((current) => !current)}
+                    disabled={locked}
+                    aria-expanded={placePickerOpen}
+                    aria-label={text.choosePlace}
+                  >
+                    <span className="truncate text-white/92">{getPlacePickerLabel(selectedAct.code)}</span>
+                    <ChevronDown size={16} className={`shrink-0 text-arenaMuted transition ${placePickerOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 rounded-[1rem] px-4 text-sm"
+                      disabled={locked || rankingMap[selectedAct.code] === 1}
+                      onClick={() => moveArtistBy(selectedAct.code, -1)}
+                      aria-label={text.moveHigher}
+                      title={text.moveHigher}
+                    >
+                      <ArrowUp size={16} />
+                      {text.moveHigher}
+                    </button>
+                    <button
+                      type="button"
+                      className="arena-button-secondary inline-flex h-11 items-center justify-center gap-2 rounded-[1rem] px-4 text-sm"
+                      disabled={locked || rankingMap[selectedAct.code] === ranking.length}
+                      onClick={() => moveArtistBy(selectedAct.code, 1)}
+                      aria-label={text.moveLower}
+                      title={text.moveLower}
+                    >
+                      <ArrowDown size={16} />
+                      {text.moveLower}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {placePickerOpen ? (
                 <div className="show-panel-muted mt-3 border border-white/8 p-2">
-                  <div className="max-h-[min(38svh,16rem)] overflow-y-auto overscroll-y-contain pr-1 [-webkit-overflow-scrolling:touch]">
+                  <div className="max-h-[min(34svh,14rem)] overflow-y-auto overscroll-y-contain pr-1 [-webkit-overflow-scrolling:touch] md:max-h-[min(38svh,16rem)]">
                     <div className="grid gap-2">
                       {getPlaceOptions(selectedAct.code).map((option) => (
                         <PlaceOptionRow
@@ -1071,11 +1093,11 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               ) : null}
             </div>
 
-            <div className="show-panel p-4 md:p-5">
+            <div className="show-panel p-3.5 md:p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{text.noteLabel}</p>
-                  <p className="mt-2 text-sm text-arenaMuted">{text.noteHint}</p>
+                  <p className="mt-1.5 text-sm text-arenaMuted">{text.noteHint}</p>
                 </div>
                 {hasNote(notes[selectedAct.code]) ? (
                   <span className="show-chip text-xs text-arenaBeam">
@@ -1103,7 +1125,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               </div>
 
               <textarea
-                className="arena-input mt-3 min-h-[7.5rem] resize-y text-sm md:min-h-[8rem]"
+                className="arena-input mt-3 min-h-[6.5rem] resize-y text-sm md:min-h-[8rem]"
                 placeholder={text.notePlaceholder}
                 value={notes[selectedAct.code]?.text || ""}
                 onChange={(event) => updateNote(selectedAct.code, { text: event.target.value })}
