@@ -1126,6 +1126,12 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                 className="arena-input mt-3 min-h-[6.5rem] resize-y text-sm md:min-h-[8rem]"
                 placeholder={text.notePlaceholder}
                 value={notes[selectedAct.code]?.text || ""}
+                autoComplete="off"
+                autoCorrect="on"
+                autoCapitalize="sentences"
+                spellCheck
+                data-lpignore="true"
+                data-1p-ignore="true"
                 onChange={(event) => updateNote(selectedAct.code, { text: event.target.value })}
               />
 
