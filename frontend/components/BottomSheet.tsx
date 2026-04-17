@@ -27,22 +27,13 @@ export function BottomSheet({
     if (!open) return undefined;
 
     const previousBodyOverflow = document.body.style.overflow;
-    const previousBodyPosition = document.body.style.position;
-    const previousBodyTop = document.body.style.top;
-    const previousBodyLeft = document.body.style.left;
-    const previousBodyRight = document.body.style.right;
-    const previousBodyWidth = document.body.style.width;
     const previousBodyOverscroll = document.body.style.overscrollBehavior;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
     const previousHtmlOverscroll = document.documentElement.style.overscrollBehavior;
-    const scrollY = window.scrollY;
 
     document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    document.body.style.width = "100%";
     document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overflow = "hidden";
     document.documentElement.style.overscrollBehavior = "none";
 
     const handleEscape = (event: KeyboardEvent) => {
@@ -51,20 +42,30 @@ export function BottomSheet({
       }
     };
 
+    const handleFocusIn = (event: FocusEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target || !scrollRef.current || !scrollRef.current.contains(target)) return;
+
+      window.requestAnimationFrame(() => {
+        target.scrollIntoView({
+          block: "nearest",
+          inline: "nearest",
+          behavior: "smooth",
+        });
+      });
+    };
+
     window.addEventListener("keydown", handleEscape);
+    document.addEventListener("focusin", handleFocusIn);
     scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
 
     return () => {
       document.body.style.overflow = previousBodyOverflow;
-      document.body.style.position = previousBodyPosition;
-      document.body.style.top = previousBodyTop;
-      document.body.style.left = previousBodyLeft;
-      document.body.style.right = previousBodyRight;
-      document.body.style.width = previousBodyWidth;
       document.body.style.overscrollBehavior = previousBodyOverscroll;
+      document.documentElement.style.overflow = previousHtmlOverflow;
       document.documentElement.style.overscrollBehavior = previousHtmlOverscroll;
-      window.scrollTo(0, scrollY);
       window.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("focusin", handleFocusIn);
     };
   }, [onClose, open]);
 

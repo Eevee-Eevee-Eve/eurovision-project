@@ -413,6 +413,12 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
                 className="arena-input mt-4 min-h-[7.5rem] resize-y md:min-h-[8rem]"
                 placeholder={text.noNotesYet}
                 value={notes[selectedAct.code]?.text || ""}
+                autoComplete="off"
+                autoCorrect="on"
+                autoCapitalize="sentences"
+                spellCheck
+                data-lpignore="true"
+                data-1p-ignore="true"
                 onChange={(event) => updateNote(selectedAct.code, { text: event.target.value })}
               />
 
