@@ -777,7 +777,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           <div className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-arenaMuted" size={15} />
             <input
-              className="arena-input h-11 pl-[3.15rem] pr-4 text-sm md:h-12 md:pl-14"
+              className="arena-input h-11 pl-[3.15rem] pr-4 text-base md:h-12 md:pl-14 md:text-sm"
               placeholder={isPhone ? text.mobileSearchPlaceholder : text.searchPlaceholder}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -1123,7 +1123,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               </div>
 
               <textarea
-                className="arena-input mt-3 min-h-[6.5rem] resize-y text-sm md:min-h-[8rem]"
+                className="arena-input mt-3 min-h-[6.5rem] resize-y text-base md:min-h-[8rem] md:text-sm"
                 placeholder={text.notePlaceholder}
                 value={notes[selectedAct.code]?.text || ""}
                 autoComplete="off"

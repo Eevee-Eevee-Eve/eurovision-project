@@ -42,21 +42,7 @@ export function BottomSheet({
       }
     };
 
-    const handleFocusIn = (event: FocusEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target || !scrollRef.current || !scrollRef.current.contains(target)) return;
-
-      window.requestAnimationFrame(() => {
-        target.scrollIntoView({
-          block: "nearest",
-          inline: "nearest",
-          behavior: "smooth",
-        });
-      });
-    };
-
     window.addEventListener("keydown", handleEscape);
-    document.addEventListener("focusin", handleFocusIn);
     scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
 
     return () => {
@@ -65,7 +51,6 @@ export function BottomSheet({
       document.documentElement.style.overflow = previousHtmlOverflow;
       document.documentElement.style.overscrollBehavior = previousHtmlOverscroll;
       window.removeEventListener("keydown", handleEscape);
-      document.removeEventListener("focusin", handleFocusIn);
     };
   }, [onClose, open]);
 

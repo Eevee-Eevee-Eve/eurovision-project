@@ -410,7 +410,7 @@ export function ActsDirectory({ roomSlug, stageKey }: { roomSlug: string; stageK
               </div>
 
               <textarea
-                className="arena-input mt-4 min-h-[7.5rem] resize-y md:min-h-[8rem]"
+                className="arena-input mt-4 min-h-[7.5rem] resize-y text-base md:min-h-[8rem] md:text-sm"
                 placeholder={text.noNotesYet}
                 value={notes[selectedAct.code]?.text || ""}
                 autoComplete="off"
