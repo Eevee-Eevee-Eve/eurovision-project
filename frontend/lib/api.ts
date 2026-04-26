@@ -197,6 +197,32 @@ export async function toggleStageWindow(roomSlug: string, stage: StageKey, open:
   });
 }
 
+export async function startStageCountdown(stage: StageKey, durationMinutes = 5) {
+  return sendJson<{
+    ok: true;
+    stage: StageKey;
+    predictionWindows: Record<StageKey, boolean>;
+    submissionCountdowns: Record<StageKey, { startedAt: string; endsAt: string; durationMinutes: number } | null>;
+  }>("/api/admin/stage-countdown", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ stage, durationMinutes, action: "start" }),
+  });
+}
+
+export async function stopStageCountdown(stage: StageKey) {
+  return sendJson<{
+    ok: true;
+    stage: StageKey;
+    predictionWindows: Record<StageKey, boolean>;
+    submissionCountdowns: Record<StageKey, { startedAt: string; endsAt: string; durationMinutes: number } | null>;
+  }>("/api/admin/stage-countdown", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ stage, action: "stop" }),
+  });
+}
+
 export async function publishStageResults(payload: {
   roomSlug: string;
   stage: StageKey;
@@ -227,6 +253,20 @@ export async function removeParticipant(roomSlug: string, accountId: string) {
 export async function restoreParticipant(roomSlug: string, accountId: string) {
   return sendJson<{ restored: string; roomSlug: string }>(`/api/users/${accountId}/restore?room=${roomSlug}`, {
     method: "POST",
+  });
+}
+
+export async function grantParticipantSubmissionOverride(roomSlug: string, accountId: string, stage: StageKey, minutes = 5) {
+  return sendJson<{ ok: true; roomSlug: string; accountId: string; stage: StageKey; expiresAt: string }>(`/api/users/${accountId}/submit-override?room=${roomSlug}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ stage, minutes }),
+  });
+}
+
+export async function revokeParticipantSubmissionOverride(roomSlug: string, accountId: string, stage: StageKey) {
+  return sendJson<{ ok: true; roomSlug: string; accountId: string; stage: StageKey }>(`/api/users/${accountId}/submit-override?room=${roomSlug}&stage=${stage}`, {
+    method: "DELETE",
   });
 }
 
@@ -345,20 +385,19 @@ export async function joinRoom(roomSlug: string) {
 }
 
 export async function fetchMyPrediction(roomSlug: string, stageKey: StageKey) {
-  return readJson<{ roomSlug: string; stage: StageKey; ranking: string[]; locked: boolean }>(
+  return readJson<{ roomSlug: string; stage: StageKey; ranking: string[]; locked: boolean; canSubmit: boolean; overrideEndsAt: string | null }>(
     `/api/predictions/me?room=${roomSlug}&stage=${stageKey}`,
   );
 }
 
 export async function submitMyPrediction(roomSlug: string, stageKey: StageKey, ranking: string[]) {
-  return sendJson<{ ok: true; roomSlug: string; stage: StageKey; locked: boolean }>("/api/predictions/me", {
+  return sendJson<{ ok: true; roomSlug: string; stage: StageKey; locked: boolean; canSubmit: boolean; overrideEndsAt: string | null }>("/api/predictions/me", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       roomSlug,
       stage: stageKey,
       ranking,
-      lock: true,
     }),
   });
 }

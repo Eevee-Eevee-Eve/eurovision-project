@@ -1,6 +1,8 @@
 "use client";
 
 import { useLanguage } from "../../../components/LanguageProvider";
+import { BrandLogo } from "../../../components/BrandLogo";
+import LanguageSwitcher from "../../../components/LanguageSwitcher";
 import { getLegalConfig, getLegalCopy, hasConfiguredLegalContact } from "../../../lib/legal";
 
 export default function PrivacyPage() {
@@ -12,6 +14,10 @@ export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-arena-grid px-4 pb-28 pt-6 text-arenaText md:px-8">
       <div className="mx-auto grid max-w-5xl gap-5">
+        <div className="flex items-center justify-between gap-3">
+          <BrandLogo variant="header" />
+          <LanguageSwitcher />
+        </div>
         <section className="show-card p-6 md:p-8">
           <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{legalCopy.privacyTitle}</p>
           <h1 className="display-copy mt-3 text-3xl font-black md:text-5xl">{legalCopy.privacyHeadline}</h1>

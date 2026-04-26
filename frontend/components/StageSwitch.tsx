@@ -12,7 +12,7 @@ export function StageSwitch({
 }: {
   roomSlug: string;
   currentStage: StageKey;
-  section: "vote" | "acts" | "live";
+  section: "vote" | "live";
 }) {
   const { getStageLabel } = useLanguage();
 

@@ -71,6 +71,10 @@ const TEMP_ROOM_IDLE_TTL_MS = 1000 * 60 * 60 * 4;
 const TEMP_ROOM_STAGE = DEFAULT_STAGE;
 const ROOM_ACCESS_COOKIE_PREFIX = 'esc_room_access_';
 const TEMP_ROOM_PREFIX = 'room';
+const STAGE_COUNTDOWN_DEFAULT_MINUTES = 5;
+const SUBMISSION_OVERRIDE_DEFAULT_MINUTES = 5;
+const MAX_STAGE_COUNTDOWN_MINUTES = 30;
+const MAX_SUBMISSION_OVERRIDE_MINUTES = 30;
 
 const SCORING_PROFILES = {
   balanced: {
@@ -127,6 +131,43 @@ function createStageBuckets(factory) {
   }, {});
 }
 
+function normalizePredictionWindowsShape(windows, fallback = null) {
+  return STAGE_KEYS.reduce((acc, stage) => {
+    const fallbackValue = fallback && typeof fallback[stage] === 'boolean' ? fallback[stage] : true;
+    acc[stage] = typeof windows?.[stage] === 'boolean' ? windows[stage] : fallbackValue;
+    return acc;
+  }, {});
+}
+
+function normalizeStageCountdownEntry(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return null;
+  }
+
+  const startedAtMs = new Date(entry.startedAt).getTime();
+  const endsAtMs = new Date(entry.endsAt).getTime();
+  const durationMinutes = Number(entry.durationMinutes);
+
+  if (!Number.isFinite(startedAtMs) || !Number.isFinite(endsAtMs) || endsAtMs <= startedAtMs) {
+    return null;
+  }
+
+  return {
+    startedAt: new Date(startedAtMs).toISOString(),
+    endsAt: new Date(endsAtMs).toISOString(),
+    durationMinutes: Number.isFinite(durationMinutes) && durationMinutes > 0
+      ? Math.min(MAX_STAGE_COUNTDOWN_MINUTES, Math.round(durationMinutes))
+      : STAGE_COUNTDOWN_DEFAULT_MINUTES,
+  };
+}
+
+function normalizeStageCountdownsShape(countdowns) {
+  return STAGE_KEYS.reduce((acc, stage) => {
+    acc[stage] = normalizeStageCountdownEntry(countdowns?.[stage]);
+    return acc;
+  }, {});
+}
+
 function createDefaultShowState(stageKey = DEFAULT_STAGE) {
   return {
     stageKey,
@@ -156,9 +197,9 @@ function normalizeShowStateShape(showState, fallbackStage = DEFAULT_STAGE) {
   };
 }
 
-function createRoomState() {
+function createRoomState(predictionWindows = null) {
   return {
-    predictionWindows: createStageBuckets(() => true),
+    predictionWindows: normalizePredictionWindowsShape(predictionWindows),
     showState: createDefaultShowState(),
     users: {},
     predictions: createStageBuckets(() => ({})),
@@ -166,6 +207,7 @@ function createRoomState() {
     resultBreakdown: createStageBuckets(() => ({})),
     locks: createStageBuckets(() => ({})),
     scores: createStageBuckets(() => ({})),
+    submissionOverrides: createStageBuckets(() => ({})),
     removedAccounts: {},
     scoringProfile: DEFAULT_SCORING_PROFILE,
   };
@@ -173,6 +215,11 @@ function createRoomState() {
 
 const state = loadState(createRoomState, ROOMS);
 const roomStates = state.roomStates;
+state.globalPredictionWindows = normalizePredictionWindowsShape(
+  state.globalPredictionWindows,
+  roomStates[DEFAULT_ROOM_SLUG]?.predictionWindows || createStageBuckets(() => true),
+);
+state.globalStageCountdowns = normalizeStageCountdownsShape(state.globalStageCountdowns);
 if (!state.dynamicRooms || typeof state.dynamicRooms !== 'object') {
   state.dynamicRooms = {};
 }
@@ -180,6 +227,7 @@ if (!state.roomAccessSessions || typeof state.roomAccessSessions !== 'object') {
   state.roomAccessSessions = {};
 }
 const roomPresence = new Map();
+const stageCountdownTimers = new Map();
 
 function getScoringProfile(profileKey) {
   return SCORING_PROFILES[profileKey] || SCORING_PROFILES[DEFAULT_SCORING_PROFILE];
@@ -187,7 +235,7 @@ function getScoringProfile(profileKey) {
 
 function normalizeRoomStateShape(room) {
   if (!room || typeof room !== 'object') {
-    return createRoomState();
+    return createRoomState(state.globalPredictionWindows);
   }
 
   if (!room.predictionWindows || typeof room.predictionWindows !== 'object') {
@@ -213,12 +261,17 @@ function normalizeRoomStateShape(room) {
   if (!room.scores || typeof room.scores !== 'object') {
     room.scores = createStageBuckets(() => ({}));
   }
+  if (!room.submissionOverrides || typeof room.submissionOverrides !== 'object') {
+    room.submissionOverrides = createStageBuckets(() => ({}));
+  }
   if (!room.removedAccounts || typeof room.removedAccounts !== 'object') {
     room.removedAccounts = {};
   }
 
   STAGE_KEYS.forEach((stage) => {
-    room.predictionWindows[stage] = typeof room.predictionWindows[stage] === 'boolean' ? room.predictionWindows[stage] : true;
+    room.predictionWindows[stage] = typeof room.predictionWindows[stage] === 'boolean'
+      ? room.predictionWindows[stage]
+      : Boolean(state.globalPredictionWindows[stage]);
     room.predictions[stage] = room.predictions[stage] && typeof room.predictions[stage] === 'object' ? room.predictions[stage] : {};
     room.results[stage] = Array.isArray(room.results[stage]) ? room.results[stage] : [];
     room.resultBreakdown[stage] = room.resultBreakdown[stage] && typeof room.resultBreakdown[stage] === 'object'
@@ -226,11 +279,87 @@ function normalizeRoomStateShape(room) {
       : {};
     room.locks[stage] = room.locks[stage] && typeof room.locks[stage] === 'object' ? room.locks[stage] : {};
     room.scores[stage] = room.scores[stage] && typeof room.scores[stage] === 'object' ? room.scores[stage] : {};
+    room.submissionOverrides[stage] = room.submissionOverrides[stage] && typeof room.submissionOverrides[stage] === 'object'
+      ? room.submissionOverrides[stage]
+      : {};
   });
 
   room.scoringProfile = getScoringProfile(room.scoringProfile).key;
   delete room.predictionsOpen;
   return room;
+}
+
+function getGlobalPredictionWindows() {
+  return normalizePredictionWindowsShape(state.globalPredictionWindows);
+}
+
+function getGlobalStageCountdowns() {
+  return normalizeStageCountdownsShape(state.globalStageCountdowns);
+}
+
+function syncAllRoomPredictionWindows() {
+  const windows = getGlobalPredictionWindows();
+  getAllRooms().forEach((room) => {
+    if (!roomStates[room.slug]) return;
+    roomStates[room.slug].predictionWindows = { ...windows };
+    state.roomStates[room.slug] = roomStates[room.slug];
+  });
+}
+
+function sanitizeDurationMinutes(value, fallbackMinutes = STAGE_COUNTDOWN_DEFAULT_MINUTES) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallbackMinutes;
+  }
+  return Math.min(MAX_STAGE_COUNTDOWN_MINUTES, Math.round(parsed));
+}
+
+function sanitizeOverrideMinutes(value, fallbackMinutes = SUBMISSION_OVERRIDE_DEFAULT_MINUTES) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallbackMinutes;
+  }
+  return Math.min(MAX_SUBMISSION_OVERRIDE_MINUTES, Math.round(parsed));
+}
+
+function pruneExpiredSubmissionOverrides() {
+  const now = Date.now();
+  getAllRooms().forEach((roomMeta) => {
+    const room = getRoomState(roomMeta.slug);
+    STAGE_KEYS.forEach((stage) => {
+      Object.entries(room.submissionOverrides[stage] || {}).forEach(([accountId, expiresAt]) => {
+        if (new Date(expiresAt).getTime() <= now) {
+          delete room.submissionOverrides[stage][accountId];
+        }
+      });
+    });
+  });
+}
+
+function clearStageSubmissionOverrides(stageKey, roomSlug = null) {
+  const targetRooms = roomSlug ? [getRoomBySlug(roomSlug)].filter(Boolean) : getAllRooms();
+  targetRooms.forEach((roomMeta) => {
+    const room = getRoomState(roomMeta.slug);
+    if (room?.submissionOverrides?.[stageKey]) {
+      room.submissionOverrides[stageKey] = {};
+    }
+  });
+}
+
+function getSubmissionOverrideEndsAt(roomSlug, stageKey, accountId) {
+  if (!accountId) return null;
+  const room = getRoomState(roomSlug);
+  const expiresAt = room?.submissionOverrides?.[stageKey]?.[accountId];
+  if (!expiresAt) {
+    return null;
+  }
+
+  if (new Date(expiresAt).getTime() <= Date.now()) {
+    delete room.submissionOverrides[stageKey][accountId];
+    return null;
+  }
+
+  return expiresAt;
 }
 
 function sanitizeRoomName(value) {
@@ -501,6 +630,21 @@ Object.entries(state.dynamicRooms).forEach(([roomSlug, rawRoom]) => {
   state.roomStates[room.slug] = roomStates[room.slug];
 });
 
+STAGE_KEYS.forEach((stage) => {
+  const countdown = state.globalStageCountdowns[stage];
+  if (!state.globalPredictionWindows[stage]) {
+    state.globalStageCountdowns[stage] = null;
+    return;
+  }
+
+  if (countdown && new Date(countdown.endsAt).getTime() <= Date.now()) {
+    state.globalPredictionWindows[stage] = false;
+    state.globalStageCountdowns[stage] = null;
+  }
+});
+
+syncAllRoomPredictionWindows();
+
 if (!state.adminSessions || typeof state.adminSessions !== 'object') {
   state.adminSessions = {};
 }
@@ -516,11 +660,13 @@ function pruneExpiredAdminSessions() {
 
 pruneExpiredState(state);
 pruneExpiredAdminSessions();
+pruneExpiredSubmissionOverrides();
 pruneInactiveDynamicRooms();
 saveState(state);
 setInterval(() => {
   pruneExpiredState(state);
   pruneExpiredAdminSessions();
+  pruneExpiredSubmissionOverrides();
   pruneInactiveDynamicRooms();
   saveState(state);
 }, 60_000 * 5).unref();
@@ -544,6 +690,7 @@ app.use(rateLimit({
 function persistState() {
   pruneExpiredState(state);
   pruneExpiredAdminSessions();
+  pruneExpiredSubmissionOverrides();
   saveState(state);
 }
 
@@ -864,6 +1011,7 @@ function dropAccountFromRoom(roomSlug, accountId) {
     delete room.predictions[stage][accountId];
     delete room.locks[stage][accountId];
     delete room.scores[stage][accountId];
+    delete room.submissionOverrides[stage][accountId];
   });
 }
 
@@ -888,6 +1036,7 @@ function resetAccountInRoom(roomSlug, accountId, stageKey = null) {
     delete room.predictions[stage][accountId];
     delete room.locks[stage][accountId];
     delete room.scores[stage][accountId];
+    delete room.submissionOverrides[stage][accountId];
   });
 
   delete room.removedAccounts[accountId];
@@ -978,15 +1127,25 @@ function compareLeaderboardRows(a, b) {
 }
 
 function getRoomPredictionWindows(room) {
-  return STAGE_KEYS.reduce((acc, stage) => {
-    acc[stage] = Boolean(room.predictionWindows[stage]);
-    return acc;
-  }, {});
+  return getGlobalPredictionWindows();
+}
+
+function getRoomSubmissionCountdowns() {
+  return getGlobalStageCountdowns();
 }
 
 function isStageWindowOpen(roomSlug, stageKey) {
+  return Boolean(getGlobalPredictionWindows()[stageKey]);
+}
+
+function canSubmitPrediction(roomSlug, stageKey, accountId) {
+  return isStageWindowOpen(roomSlug, stageKey) || Boolean(getSubmissionOverrideEndsAt(roomSlug, stageKey, accountId));
+}
+
+function isPredictionLocked(roomSlug, stageKey, accountId) {
+  if (!accountId) return false;
   const room = getRoomState(roomSlug);
-  return Boolean(room.predictionWindows[stageKey]);
+  return !canSubmitPrediction(roomSlug, stageKey, accountId) && Boolean(room.predictions[stageKey][accountId]);
 }
 
 function getScoringProfilePayload() {
@@ -1003,10 +1162,10 @@ function buildRoomParticipantSnapshot(roomSlug, accountId) {
   const account = getAccountById(accountId);
   const firstName = roomUser?.firstName || account?.firstName || '';
   const lastName = roomUser?.lastName || account?.lastName || '';
-  const name = [firstName, lastName].filter(Boolean).join(' ').trim()
+  const name = (account ? buildPublicName(account) : '')
     || roomUser?.name
+    || [firstName, lastName].filter(Boolean).join(' ').trim()
     || account?.displayName
-    || (account ? buildPublicName(account) : '')
     || `Viewer #${String(accountId || '').slice(0, 4).toUpperCase()}`;
 
   return {
@@ -1019,7 +1178,7 @@ function buildRoomParticipantSnapshot(roomSlug, accountId) {
     avatarTheme: roomUser?.avatarTheme || (account ? getAvatarTheme(account.id, name) : null),
     removed: Boolean(room.removedAccounts[accountId]),
     submittedStages: STAGE_KEYS.filter((stage) => Boolean(room.predictions[stage][accountId])),
-    lockedStages: STAGE_KEYS.filter((stage) => Boolean(room.locks[stage][accountId])),
+    lockedStages: STAGE_KEYS.filter((stage) => isPredictionLocked(roomSlug, stage, accountId)),
   };
 }
 
@@ -1035,7 +1194,7 @@ function buildInternalLeaderboardRows(roomSlug, stageKey = null) {
       const stages = STAGE_KEYS.reduce((acc, stage) => {
         acc[stage] = {
           points: stageBreakdowns[stage].points,
-          locked: Boolean(room.locks[stage][user.id]),
+          locked: isPredictionLocked(roomSlug, stage, user.id),
           submitted: Boolean(room.predictions[stage][user.id]),
           exactMatches: stageBreakdowns[stage].exactMatches,
         };
@@ -1094,6 +1253,13 @@ function buildAdminUserList(roomSlug) {
         removed: snapshot.removed,
         submittedStages: snapshot.submittedStages,
         lockedStages: snapshot.lockedStages,
+        submissionOverrides: STAGE_KEYS.reduce((acc, stage) => {
+          const expiresAt = getSubmissionOverrideEndsAt(roomSlug, stage, accountId);
+          if (expiresAt) {
+            acc[stage] = expiresAt;
+          }
+          return acc;
+        }, {}),
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
@@ -1104,6 +1270,7 @@ function buildAdminRoomSnapshot(roomSlug) {
   return {
     roomSlug,
     predictionWindows: getRoomPredictionWindows(room),
+    submissionCountdowns: getRoomSubmissionCountdowns(),
     showState: buildShowState(roomSlug),
     scoringProfile: getScoringProfile(room.scoringProfile).key,
     scoringProfiles: getScoringProfilePayload(),
@@ -1112,9 +1279,10 @@ function buildAdminRoomSnapshot(roomSlug) {
       removedCount: Object.keys(room.removedAccounts).length,
     },
     stageOverview: STAGE_KEYS.reduce((acc, stage) => {
+      const submittedCount = Object.keys(room.predictions[stage]).length;
       acc[stage] = {
-        submittedCount: Object.keys(room.predictions[stage]).length,
-        lockedCount: Object.keys(room.locks[stage]).length,
+        submittedCount,
+        lockedCount: isStageWindowOpen(roomSlug, stage) ? 0 : submittedCount,
         revealedCount: room.results[stage].length,
         ...getStageLineupMeta(stage),
       };
@@ -1253,6 +1421,7 @@ function emitRoomMeta(roomSlug) {
   io.to(roomSlug).emit('toggle', {
     roomSlug,
     predictionWindows: getRoomPredictionWindows(room),
+    submissionCountdowns: getRoomSubmissionCountdowns(),
     showState: buildShowState(roomSlug),
   });
 }
@@ -1262,6 +1431,50 @@ function emitRoomState(roomSlug) {
   emitLeaderboard(roomSlug);
   STAGE_KEYS.forEach((stage) => emitResults(roomSlug, stage));
 }
+
+function clearStageCountdownTimer(stageKey) {
+  const existing = stageCountdownTimers.get(stageKey);
+  if (existing) {
+    clearTimeout(existing);
+    stageCountdownTimers.delete(stageKey);
+  }
+}
+
+function finalizeStageCountdown(stageKey) {
+  clearStageCountdownTimer(stageKey);
+  if (!state.globalPredictionWindows[stageKey] && !state.globalStageCountdowns[stageKey]) {
+    return;
+  }
+
+  state.globalPredictionWindows[stageKey] = false;
+  state.globalStageCountdowns[stageKey] = null;
+  clearStageSubmissionOverrides(stageKey);
+  syncAllRoomPredictionWindows();
+  persistState();
+  getAllRooms().forEach((room) => emitRoomMeta(room.slug));
+}
+
+function scheduleStageCountdown(stageKey) {
+  clearStageCountdownTimer(stageKey);
+  const countdown = state.globalStageCountdowns[stageKey];
+  if (!countdown || !state.globalPredictionWindows[stageKey]) {
+    return;
+  }
+
+  const remainingMs = new Date(countdown.endsAt).getTime() - Date.now();
+  if (remainingMs <= 0) {
+    finalizeStageCountdown(stageKey);
+    return;
+  }
+
+  const timeout = setTimeout(() => {
+    finalizeStageCountdown(stageKey);
+  }, remainingMs);
+  timeout.unref?.();
+  stageCountdownTimers.set(stageKey, timeout);
+}
+
+STAGE_KEYS.forEach((stage) => scheduleStageCountdown(stage));
 
 function getAuthenticatedRequest(req) {
   const session = getSessionFromRequest(state, req);
@@ -1328,6 +1541,7 @@ io.on('connection', (socket) => {
   socket.emit('toggle', {
     roomSlug,
     predictionWindows: getRoomPredictionWindows(room),
+    submissionCountdowns: getRoomSubmissionCountdowns(),
     showState: buildShowState(roomSlug),
   });
   socket.emit('leaderboardUpdate', buildLeaderboard(roomSlug));
@@ -1767,7 +1981,7 @@ app.post('/api/rooms', (req, res) => {
   });
 
   state.dynamicRooms[room.slug] = room;
-  roomStates[room.slug] = normalizeRoomStateShape(createRoomState());
+  roomStates[room.slug] = normalizeRoomStateShape(createRoomState(state.globalPredictionWindows));
   state.roomStates[room.slug] = roomStates[room.slug];
 
   if (room.passwordRequired) {
@@ -1839,6 +2053,7 @@ app.get('/api/room/:roomSlug', (req, res) => {
   return res.json({
     ...toPublicRoomSummary(room),
     predictionWindows: getRoomPredictionWindows(stateForRoom),
+    submissionCountdowns: getRoomSubmissionCountdowns(),
     showState: buildShowState(roomSlug),
     stages: STAGE_KEYS,
     stageMeta: STAGE_KEYS.reduce((acc, stage) => {
@@ -1864,6 +2079,7 @@ app.get('/api/status', (req, res) => {
   return res.json({
     roomSlug,
     predictionWindows: getRoomPredictionWindows(room),
+    submissionCountdowns: getRoomSubmissionCountdowns(),
     showState: buildShowState(roomSlug),
     stages: STAGE_KEYS,
     stageMeta: STAGE_KEYS.reduce((acc, stage) => {
@@ -1970,7 +2186,9 @@ app.get('/api/predictions/me', requireAuth, (req, res) => {
     roomSlug,
     stage: stageKey,
     ranking: room.predictions[stageKey][req.account.id] || [],
-    locked: Boolean(room.locks[stageKey][req.account.id]),
+    locked: isPredictionLocked(roomSlug, stageKey, req.account.id),
+    canSubmit: canSubmitPrediction(roomSlug, stageKey, req.account.id),
+    overrideEndsAt: getSubmissionOverrideEndsAt(roomSlug, stageKey, req.account.id),
   });
 });
 
@@ -2000,7 +2218,7 @@ app.post('/api/predictions/me', requireAuth, (req, res) => {
     emitLeaderboard(roomSlug);
   }
 
-  if (!isStageWindowOpen(roomSlug, stageKey)) {
+  if (!canSubmitPrediction(roomSlug, stageKey, req.account.id)) {
     return res.status(403).json({ error: 'Predictions are closed for this stage' });
   }
 
@@ -2009,9 +2227,6 @@ app.post('/api/predictions/me', requireAuth, (req, res) => {
   }
 
   const userId = req.account.id;
-  if (room.locks[stageKey][userId]) {
-    return res.status(409).json({ error: 'Prediction for this stage is already locked' });
-  }
 
   const validation = validateRanking(stageKey, req.body.ranking, { allowPartial: false });
   if (!validation.ok) {
@@ -2019,9 +2234,7 @@ app.post('/api/predictions/me', requireAuth, (req, res) => {
   }
 
   room.predictions[stageKey][userId] = validation.ranking;
-  if (req.body.lock === true) {
-    room.locks[stageKey][userId] = true;
-  }
+  delete room.locks[stageKey][userId];
 
   recomputeScores(roomSlug);
   persistState();
@@ -2031,7 +2244,9 @@ app.post('/api/predictions/me', requireAuth, (req, res) => {
     ok: true,
     roomSlug,
     stage: stageKey,
-    locked: Boolean(room.locks[stageKey][userId]),
+    locked: isPredictionLocked(roomSlug, stageKey, userId),
+    canSubmit: canSubmitPrediction(roomSlug, stageKey, userId),
+    overrideEndsAt: getSubmissionOverrideEndsAt(roomSlug, stageKey, userId),
   });
 });
 
@@ -2087,6 +2302,114 @@ app.post('/api/results', requireAdmin, (req, res) => {
 app.post('/api/toggle', requireAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.body.roomSlug || req.query.room);
   const stageKey = normalizeStage(req.body.stage || req.query.stage);
+  if (!stageKey) {
+    return res.status(400).json({ error: 'Unknown stage' });
+  }
+
+  const nextOpen = typeof req.body.open === 'boolean'
+    ? req.body.open
+    : !getGlobalPredictionWindows()[stageKey];
+  state.globalPredictionWindows[stageKey] = nextOpen;
+  state.globalStageCountdowns[stageKey] = null;
+  clearStageCountdownTimer(stageKey);
+  clearStageSubmissionOverrides(stageKey);
+  syncAllRoomPredictionWindows();
+  persistState();
+  getAllRooms().forEach((room) => emitRoomMeta(room.slug));
+
+  return res.json({
+    roomSlug: roomSlug || null,
+    stage: stageKey,
+    open: nextOpen,
+    predictionWindows: getGlobalPredictionWindows(),
+  });
+});
+
+app.post('/api/admin/stage-countdown', requireAdmin, (req, res) => {
+  const stageKey = normalizeStage(req.body.stage || req.query.stage);
+  const action = sanitizeText(req.body.action, 16).toLowerCase();
+  if (!stageKey) {
+    return res.status(400).json({ error: 'Unknown stage' });
+  }
+  if (!['start', 'stop'].includes(action)) {
+    return res.status(400).json({ error: 'Unknown countdown action' });
+  }
+
+  if (action === 'stop') {
+    state.globalStageCountdowns[stageKey] = null;
+    clearStageCountdownTimer(stageKey);
+    persistState();
+    getAllRooms().forEach((room) => emitRoomMeta(room.slug));
+    return res.json({
+      ok: true,
+      stage: stageKey,
+      predictionWindows: getGlobalPredictionWindows(),
+      submissionCountdowns: getGlobalStageCountdowns(),
+    });
+  }
+
+  if (!isStageWindowOpen(null, stageKey)) {
+    return res.status(409).json({ error: 'Open the stage first before starting a countdown' });
+  }
+
+  const durationMinutes = sanitizeDurationMinutes(req.body.durationMinutes, STAGE_COUNTDOWN_DEFAULT_MINUTES);
+  const startedAt = new Date().toISOString();
+  const endsAt = new Date(Date.now() + durationMinutes * 60_000).toISOString();
+  state.globalStageCountdowns[stageKey] = {
+    startedAt,
+    endsAt,
+    durationMinutes,
+  };
+  scheduleStageCountdown(stageKey);
+  persistState();
+  getAllRooms().forEach((room) => emitRoomMeta(room.slug));
+
+  return res.json({
+    ok: true,
+    stage: stageKey,
+    predictionWindows: getGlobalPredictionWindows(),
+    submissionCountdowns: getGlobalStageCountdowns(),
+  });
+});
+
+app.post('/api/users/:id/submit-override', requireAdmin, (req, res) => {
+  const roomSlug = normalizeRoomSlug(req.query.room);
+  const stageKey = normalizeStage(req.body.stage || req.query.stage);
+  if (!roomSlug) {
+    return res.status(404).json({ error: 'Unknown room' });
+  }
+  if (!stageKey) {
+    return res.status(400).json({ error: 'Unknown stage' });
+  }
+  if (isStageWindowOpen(roomSlug, stageKey)) {
+    return res.status(409).json({ error: 'The stage is already open globally' });
+  }
+
+  const room = getRoomState(roomSlug);
+  const accountId = sanitizeText(req.params.id, 64);
+  if (!room.users[accountId] && !room.removedAccounts[accountId]) {
+    return res.status(404).json({ error: 'Unknown participant' });
+  }
+
+  const minutes = sanitizeOverrideMinutes(req.body.minutes, SUBMISSION_OVERRIDE_DEFAULT_MINUTES);
+  const expiresAt = new Date(Date.now() + minutes * 60_000).toISOString();
+  room.submissionOverrides[stageKey][accountId] = expiresAt;
+  touchRoomActivity(roomSlug);
+  persistState();
+  emitRoomMeta(roomSlug);
+
+  return res.json({
+    ok: true,
+    roomSlug,
+    accountId,
+    stage: stageKey,
+    expiresAt,
+  });
+});
+
+app.delete('/api/users/:id/submit-override', requireAdmin, (req, res) => {
+  const roomSlug = normalizeRoomSlug(req.query.room);
+  const stageKey = normalizeStage(req.query.stage);
   if (!roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });
   }
@@ -2095,19 +2418,17 @@ app.post('/api/toggle', requireAdmin, (req, res) => {
   }
 
   const room = getRoomState(roomSlug);
+  const accountId = sanitizeText(req.params.id, 64);
+  delete room.submissionOverrides[stageKey][accountId];
   touchRoomActivity(roomSlug);
-  const nextOpen = typeof req.body.open === 'boolean'
-    ? req.body.open
-    : !room.predictionWindows[stageKey];
-  room.predictionWindows[stageKey] = nextOpen;
   persistState();
   emitRoomMeta(roomSlug);
 
   return res.json({
+    ok: true,
     roomSlug,
+    accountId,
     stage: stageKey,
-    open: nextOpen,
-    predictionWindows: getRoomPredictionWindows(room),
   });
 });
 
@@ -2117,7 +2438,7 @@ app.post('/api/reset', requireAdmin, (req, res) => {
     return res.status(404).json({ error: 'Unknown room' });
   }
 
-  roomStates[roomSlug] = normalizeRoomStateShape(createRoomState());
+  roomStates[roomSlug] = normalizeRoomStateShape(createRoomState(state.globalPredictionWindows));
   state.roomStates[roomSlug] = roomStates[roomSlug];
   touchRoomActivity(roomSlug);
   persistState();

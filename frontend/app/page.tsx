@@ -1,11 +1,12 @@
 'use client';
 
 import Link from "next/link";
-import { ArrowRight, Lock, PlusCircle, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Lock, PlusCircle, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAccount } from "../components/AccountProvider";
 import { AuthCard } from "../components/AuthCard";
+import { BrandLogo } from "../components/BrandLogo";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { ApiError, createTemporaryRoom, fetchRooms } from "../lib/api";
 import { FALLBACK_ROOM } from "../lib/rooms";
@@ -213,12 +214,7 @@ export default function Home() {
       <div className="mx-auto grid max-w-6xl gap-6">
         <section className="glass-panel ghost-grid rounded-shell border border-white/10 p-6 md:p-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2">
-              <Sparkles size={15} className="text-arenaPulse" />
-              <span className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
-                {text.kicker}
-              </span>
-            </div>
+            <BrandLogo variant="hero" />
             <LanguageSwitcher />
           </div>
 
@@ -289,7 +285,7 @@ export default function Home() {
                   value={roomSearch}
                   onChange={(event) => setRoomSearch(event.target.value)}
                   placeholder={text.roomSearchPlaceholder}
-                  className="arena-input pl-11"
+                  className="arena-input arena-search-input"
                 />
               </div>
             </label>
