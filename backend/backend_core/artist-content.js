@@ -1,3 +1,5 @@
+const OFFICIAL_BIO_DETAILS = require('./official-bio-details-2026');
+
 const DRAW_LABEL = { en: 'Draw result', ru: 'Жеребьёвка' };
 const FINAL_ROUTE_LABEL = { en: 'Path to the final', ru: 'Путь в финал' };
 
@@ -261,7 +263,7 @@ function buildBlurb(entry, code) {
 }
 
 function buildFacts(entry, code) {
-  const detail = PROFILE_DETAILS[code];
+  const detail = OFFICIAL_BIO_DETAILS[code] || PROFILE_DETAILS[code];
   if (entry.stage === 'final') {
     return {
       en: detail
@@ -286,34 +288,27 @@ function buildFacts(entry, code) {
 }
 
 function buildExpandedFacts(entry, code) {
-  const baseFacts = buildFacts(entry, code);
-  const halfFact = entry.half
-    ? {
-        en: `The act performs in the ${HALF_LABELS[entry.half].en.toLowerCase()} of ${STAGE_LABELS[entry.stage].en}.`,
-        ru: `Исполнитель выступает в ${HALF_LOCATIVE_LABELS[entry.half].ru} ${STAGE_GENITIVE_LABELS[entry.stage].ru}.`,
-      }
-    : null;
-
-  if (entry.stage === 'final') {
-    return {
-      en: [
-        ...baseFacts.en,
-        entry.autoQualifier === 'host'
-          ? 'This artist reaches the final automatically as the host-country representative.'
-          : 'This artist reaches the final automatically as a pre-qualified broadcaster.',
-      ],
-      ru: [
-        ...baseFacts.ru,
-        entry.autoQualifier === 'host'
-          ? 'Этот артист автоматически попадает в финал как представитель страны-хозяйки.'
-          : 'Этот артист автоматически попадает в финал как заранее квалифицированный участник.',
-      ],
-    };
-  }
+  const detail = OFFICIAL_BIO_DETAILS[code] || PROFILE_DETAILS[code];
+  const dedupe = (rows) => {
+    const seen = new Set();
+    return rows.reduce((acc, row) => {
+      if (typeof row !== 'string') return acc;
+      const value = row
+        .replace(/\s*[\u2013\u2014]\s*/g, ' - ')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+      if (!value) return acc;
+      const key = value.toLowerCase();
+      if (seen.has(key)) return acc;
+      seen.add(key);
+      acc.push(value);
+      return acc;
+    }, []);
+  };
 
   return {
-    en: [...baseFacts.en, ...(halfFact ? [halfFact.en] : [])],
-    ru: [...baseFacts.ru, ...(halfFact ? [halfFact.ru] : [])],
+    en: dedupe([entry.summary?.en, detail?.en]),
+    ru: dedupe([entry.summary?.ru, detail?.ru]),
   };
 }
 

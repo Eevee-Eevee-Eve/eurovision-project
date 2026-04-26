@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { MonitorOff } from "lucide-react";
 import { useDeviceTier } from "../lib/device";
+import { BrandLogo } from "./BrandLogo";
 import { useLanguage } from "./LanguageProvider";
 import { AdminControlRoom } from "./AdminControlRoom";
 
@@ -22,6 +23,7 @@ export function AdminDeviceGate() {
     return (
       <main className="min-h-screen bg-arena-grid px-4 pb-20 pt-6 text-arenaText md:px-8">
         <div className="mx-auto grid max-w-3xl gap-5">
+          <BrandLogo variant="header" />
           <section className="show-card p-6 md:p-8">
             <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
               {language === "ru" ? "Пульт хоста" : "Host control room"}

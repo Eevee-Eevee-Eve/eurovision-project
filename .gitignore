@@ -3,6 +3,7 @@ frontend/.next
 frontend/.env.local
 backend/backend_core/node_modules
 *.log
+*.tsbuildinfo
 deploy-secrets.local.env
 deploy-secrets.server.env
 .tmp_*

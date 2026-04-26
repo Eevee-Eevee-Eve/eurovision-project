@@ -18,7 +18,6 @@ export function ComplianceNotice() {
     pathname && (
       pathname.startsWith("/admin") ||
       pathname.includes("/vote/") ||
-      pathname.includes("/acts/") ||
       pathname.includes("/live/") ||
       pathname.includes("/players/")
     ),

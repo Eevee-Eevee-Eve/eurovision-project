@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, KeyRound, Lock, LogOut, MonitorPlay, RefreshCw, RotateCcw, Settings2, ShieldCheck, Trophy, Users } from "lucide-react";
+import { Activity, Clock3, KeyRound, Lock, LogOut, MonitorPlay, RefreshCw, RotateCcw, Settings2, ShieldCheck, Trophy, Unlock, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createRoomSocket,
   fetchActs,
   fetchAdminRoomState,
+  grantParticipantSubmissionOverride,
   fetchAdminSession,
   fetchAdminUsers,
   fetchStageResults,
@@ -15,9 +16,12 @@ import {
   logoutAdminSession,
   publishStageResults,
   removeParticipant,
+  revokeParticipantSubmissionOverride,
   resetParticipant,
   resetRoomState,
   restoreParticipant,
+  startStageCountdown,
+  stopStageCountdown,
   toggleStageWindow,
   updateAdminShowState,
   updateAdminScoring,
@@ -25,6 +29,7 @@ import {
 import { STAGE_OPTIONS } from "../lib/rooms";
 import type { ActEntry, AdminRoomSnapshot, AdminSessionPayload, AdminUserEntry, RoomSummary, ShowHighlightMode, StageKey } from "../lib/types";
 import { ActPoster } from "./ActPoster";
+import { BrandLogo } from "./BrandLogo";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useLanguage } from "./LanguageProvider";
 import { UserAvatar } from "./UserAvatar";
@@ -153,6 +158,13 @@ function writeDraft(roomSlug: string, stageKey: StageKey, rows: EditableResultRo
   window.localStorage.setItem(draftStorageKey(roomSlug, stageKey), JSON.stringify(payload));
 }
 
+function formatCountdown(ms: number) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 function buildEditableRows(acts: ActEntry[], publishedRows: ActEntry[], roomSlug: string, stageKey: StageKey, preferPublished = false) {
   const publishedMap = publishedRows.reduce<Record<string, { place: string; jury: string; tele: string; total: string }>>((acc, row) => {
     acc[row.code] = {
@@ -202,6 +214,13 @@ export function AdminControlRoom() {
   const [showHighlightMode, setShowHighlightMode] = useState<ShowHighlightMode | "">("");
   const [statusText, setStatusText] = useState("");
   const [error, setError] = useState("");
+  const [countdownConfirmOpen, setCountdownConfirmOpen] = useState(false);
+  const [countdownChecks, setCountdownChecks] = useState({
+    scope: false,
+    deadline: false,
+    manualRescue: false,
+  });
+  const [timeNow, setTimeNow] = useState(Date.now());
 
   const copy = useMemo(() => (
     language === "ru"
@@ -220,6 +239,17 @@ export function AdminControlRoom() {
           logoutButton: "Выйти",
           openStage: "Открыть этап",
           closeStage: "Закрыть этап",
+          countdownTitle: "Обратный отсчёт",
+          countdownStart: "Запустить 5 минут",
+          countdownStop: "Остановить отсчёт",
+          countdownActive: "До автозакрытия",
+          countdownIdle: "Отсчёт пока не запущен",
+          countdownText: "После нуля этап закроется автоматически для всех комнат.",
+          countdownConfirmTitle: "Запустить обратный отсчёт?",
+          countdownCheckScope: "Понимаю, что отсчёт пойдёт для всех комнат.",
+          countdownCheckDeadline: "Понимаю, что в ноль этап закроется автоматически.",
+          countdownCheckManual: "Понимаю, что опоздавшим потом нужен личный допуск.",
+          countdownConfirmAction: "Запустить отсчёт",
           publishButton: "Опубликовать итоги",
           loadPublished: "Загрузить опубликованное",
           stageWindowOpen: "Окно голосования открыто",
@@ -248,6 +278,10 @@ export function AdminControlRoom() {
           participantDeskText: "Для каждого игрока можно отдельно сбросить текущий этап, очистить все этапы или временно убрать доступ к комнате.",
           resetStage: "Сбросить этап",
           resetAll: "Сбросить всё",
+          grantLatePass: "Дать ещё 5 минут",
+          extendLatePass: "Продлить ещё на 5 минут",
+          revokeLatePass: "Снять допуск",
+          latePassActive: "Личный допуск",
           removeUser: "Убрать из комнаты",
           restoreUser: "Вернуть доступ",
           removedState: "Удалён",
@@ -262,10 +296,14 @@ export function AdminControlRoom() {
           authFailed: "Не удалось открыть admin-сессию.",
           reloadFailed: "Не удалось обновить данные комнаты.",
           publishedOk: "Итоги этапа опубликованы.",
-          stageOpenOk: "Этап открыт для голосования.",
-          stageCloseOk: "Этап закрыт для голосования.",
+          stageOpenOk: "Этап открыт для всех комнат.",
+          stageCloseOk: "Этап закрыт для всех комнат.",
+          countdownStartedOk: "Обратный отсчёт запущен для всех комнат.",
+          countdownStoppedOk: "Обратный отсчёт остановлен.",
           scoringSaved: "Профиль начисления очков обновлён.",
           participantReset: (stage: StageKey | null) => stage ? `Ответы участника сброшены для ${getStageLabel(stage)}.` : "Ответы участника сброшены для всех этапов.",
+          participantLatePassGranted: "Личный допуск открыт ещё на 5 минут.",
+          participantLatePassRevoked: "Личный допуск снят.",
           participantRemoved: "Участник убран из комнаты.",
           participantRestored: "Доступ участника восстановлен.",
           roomResetDone: "Комната полностью сброшена.",
@@ -288,6 +326,17 @@ export function AdminControlRoom() {
           logoutButton: "Log out",
           openStage: "Open stage",
           closeStage: "Close stage",
+          countdownTitle: "Countdown",
+          countdownStart: "Start 5-minute countdown",
+          countdownStop: "Stop countdown",
+          countdownActive: "Auto-close in",
+          countdownIdle: "Countdown is not running yet",
+          countdownText: "At zero the stage closes automatically for every room.",
+          countdownConfirmTitle: "Start the closing countdown?",
+          countdownCheckScope: "I understand the countdown will run for all rooms.",
+          countdownCheckDeadline: "I understand the stage will auto-close at zero.",
+          countdownCheckManual: "I understand late people will need a personal override afterwards.",
+          countdownConfirmAction: "Start countdown",
           publishButton: "Publish results",
           loadPublished: "Load published",
           stageWindowOpen: "Voting window is open",
@@ -316,6 +365,10 @@ export function AdminControlRoom() {
           participantDeskText: "For each player you can reset the current stage, clear all stages, or temporarily remove room access.",
           resetStage: "Reset stage",
           resetAll: "Reset all",
+          grantLatePass: "Give 5 more minutes",
+          extendLatePass: "Extend by 5 minutes",
+          revokeLatePass: "Revoke access",
+          latePassActive: "Personal access",
           removeUser: "Remove from room",
           restoreUser: "Restore access",
           removedState: "Removed",
@@ -330,10 +383,14 @@ export function AdminControlRoom() {
           authFailed: "Unable to open the admin session.",
           reloadFailed: "Unable to refresh room data.",
           publishedOk: "Stage results published.",
-          stageOpenOk: "Stage opened for voting.",
-          stageCloseOk: "Stage closed for voting.",
+          stageOpenOk: "Stage opened for all rooms.",
+          stageCloseOk: "Stage closed for all rooms.",
+          countdownStartedOk: "Countdown started for all rooms.",
+          countdownStoppedOk: "Countdown stopped.",
           scoringSaved: "Scoring profile updated.",
           participantReset: (stage: StageKey | null) => stage ? `Participant answers were reset for ${getStageLabel(stage)}.` : "Participant answers were reset for all stages.",
+          participantLatePassGranted: "Personal submission access granted for 5 more minutes.",
+          participantLatePassRevoked: "Personal submission access revoked.",
           participantRemoved: "Participant removed from the room.",
           participantRestored: "Participant access restored.",
           roomResetDone: "Room has been fully reset.",
@@ -345,6 +402,7 @@ export function AdminControlRoom() {
 
   const selectedRoomMeta = rooms.find((room) => room.slug === selectedRoom) || null;
   const selectedStageOverview = snapshot?.stageOverview[selectedStage];
+  const selectedStageCountdown = snapshot?.submissionCountdowns?.[selectedStage] || null;
   const isSemiStage = isSemiStageValue(selectedStage);
   const qualificationCutoff = selectedStageOverview?.qualificationCutoff ?? null;
   const rankedRows = useMemo(() => sortResultRows(rows, selectedStage), [rows, selectedStage]);
@@ -358,6 +416,11 @@ export function AdminControlRoom() {
     }, {});
   }, [isSemiStage, rankedRows]);
   const resultsDeskText = isSemiStage ? copy.semiResultsDeskText : copy.resultsDeskText;
+  const countdownRemainingMs = selectedStageCountdown
+    ? Math.max(0, new Date(selectedStageCountdown.endsAt).getTime() - timeNow)
+    : 0;
+  const countdownLabel = selectedStageCountdown ? formatCountdown(countdownRemainingMs) : null;
+  const countdownChecksReady = countdownChecks.scope && countdownChecks.deadline && countdownChecks.manualRescue;
   const showCopy = useMemo(() => (
     language === "ru"
       ? {
@@ -396,6 +459,19 @@ export function AdminControlRoom() {
     { value: "results", label: showCopy.results },
     { value: "players", label: showCopy.players },
   ], [showCopy]);
+
+  useEffect(() => {
+    if (!selectedStageCountdown) {
+      return;
+    }
+    setTimeNow(Date.now());
+    const interval = window.setInterval(() => {
+      setTimeNow(Date.now());
+    }, 1000);
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [selectedStageCountdown]);
 
   const loadPanelData = useCallback(async (preferPublished = false) => {
     if (!authenticated || !selectedRoom) {
@@ -485,6 +561,11 @@ export function AdminControlRoom() {
     next.set("stage", selectedStage);
     router.replace(`/admin?${next.toString()}`, { scroll: false });
   }, [router, searchParams, selectedRoom, selectedStage]);
+
+  useEffect(() => {
+    setCountdownConfirmOpen(false);
+    setCountdownChecks({ scope: false, deadline: false, manualRescue: false });
+  }, [selectedRoom, selectedStage]);
 
   useEffect(() => {
     void loadPanelData();
@@ -640,6 +721,50 @@ export function AdminControlRoom() {
     }
   }
 
+  async function handleStartCountdown() {
+    setPendingAction("countdown-start");
+    setError("");
+    setStatusText("");
+    try {
+      const payload = await startStageCountdown(selectedStage, 5);
+      setSnapshot((current) => current ? {
+        ...current,
+        predictionWindows: payload.predictionWindows,
+        submissionCountdowns: payload.submissionCountdowns,
+      } : current);
+      setCountdownConfirmOpen(false);
+      setCountdownChecks({ scope: false, deadline: false, manualRescue: false });
+      setStatusText(copy.countdownStartedOk);
+    } catch (countdownError) {
+      console.error(countdownError);
+      setError(countdownError instanceof Error ? countdownError.message : copy.reloadFailed);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function handleStopCountdown() {
+    setPendingAction("countdown-stop");
+    setError("");
+    setStatusText("");
+    try {
+      const payload = await stopStageCountdown(selectedStage);
+      setSnapshot((current) => current ? {
+        ...current,
+        predictionWindows: payload.predictionWindows,
+        submissionCountdowns: payload.submissionCountdowns,
+      } : current);
+      setCountdownConfirmOpen(false);
+      setCountdownChecks({ scope: false, deadline: false, manualRescue: false });
+      setStatusText(copy.countdownStoppedOk);
+    } catch (countdownError) {
+      console.error(countdownError);
+      setError(countdownError instanceof Error ? countdownError.message : copy.reloadFailed);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
   async function handleScoringProfileChange(nextProfile: string) {
     if (!selectedRoom) return;
 
@@ -774,6 +899,19 @@ export function AdminControlRoom() {
     }
   }
 
+  async function handleParticipantLatePass(userId: string, revoke = false) {
+    if (!selectedRoom) return;
+    const actionKey = revoke ? `late-pass-revoke-${userId}` : `late-pass-grant-${userId}`;
+    const runner = revoke
+      ? () => revokeParticipantSubmissionOverride(selectedRoom, userId, selectedStage)
+      : () => grantParticipantSubmissionOverride(selectedRoom, userId, selectedStage, 5);
+    await handleParticipantAction(
+      actionKey,
+      runner,
+      revoke ? copy.participantLatePassRevoked : copy.participantLatePassGranted,
+    );
+  }
+
   async function handleRoomReset() {
     if (!selectedRoom) return;
     if (!window.confirm(copy.confirmRoomReset)) {
@@ -793,9 +931,10 @@ export function AdminControlRoom() {
       <main className="min-h-screen bg-arena-grid px-4 pb-24 pt-6 text-arenaText md:px-8">
         <div className="mx-auto grid max-w-5xl gap-5">
           <section className="show-card p-6 md:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.kicker}</p>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0">
+                <BrandLogo variant="header" />
+                <p className="label-copy mt-5 text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.kicker}</p>
                 <h1 className="display-copy mt-3 text-4xl font-black md:text-6xl">{copy.title}</h1>
                 <p className="mt-4 max-w-3xl text-sm text-arenaMuted md:text-base">{copy.description}</p>
               </div>
@@ -865,9 +1004,10 @@ export function AdminControlRoom() {
       <div className="mx-auto grid max-w-7xl gap-5">
         <section className="glass-panel ghost-grid rounded-shell border border-white/10 p-5 md:p-6">
           <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.kicker}</p>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
+                <BrandLogo variant="header" />
+                <p className="label-copy mt-5 text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.kicker}</p>
                 <h1 className="display-copy mt-3 text-4xl font-black md:text-6xl">{copy.title}</h1>
                 <p className="mt-4 max-w-3xl text-sm text-arenaMuted md:text-base">{copy.description}</p>
               </div>
@@ -980,6 +1120,88 @@ export function AdminControlRoom() {
                     {copy.closeStage}
                   </button>
                 </div>
+              </div>
+
+              <div className="mt-5 show-panel p-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{copy.countdownTitle}</p>
+                    <p className="mt-3 text-lg font-semibold text-white">
+                      {countdownLabel ? `${copy.countdownActive} ${countdownLabel}` : copy.countdownIdle}
+                    </p>
+                    <p className="mt-2 text-sm text-arenaMuted">{copy.countdownText}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedStageCountdown ? (
+                      <button
+                        type="button"
+                        className="arena-button-secondary px-4 py-3 text-sm"
+                        disabled={Boolean(pendingAction)}
+                        onClick={() => void handleStopCountdown()}
+                      >
+                        <Clock3 size={16} />
+                        {copy.countdownStop}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="arena-button-primary h-12 px-4 text-sm"
+                        disabled={Boolean(pendingAction) || !snapshot?.predictionWindows[selectedStage]}
+                        onClick={() => setCountdownConfirmOpen((current) => !current)}
+                      >
+                        <Clock3 size={16} />
+                        {copy.countdownStart}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {countdownConfirmOpen && !selectedStageCountdown ? (
+                  <div className="mt-4 rounded-[1.25rem] border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-sm font-semibold text-white">{copy.countdownConfirmTitle}</p>
+                    <div className="mt-4 grid gap-2.5">
+                      {[
+                        { key: "scope", label: copy.countdownCheckScope },
+                        { key: "deadline", label: copy.countdownCheckDeadline },
+                        { key: "manualRescue", label: copy.countdownCheckManual },
+                      ].map((item) => (
+                        <label key={item.key} className="flex items-start gap-3 rounded-[1rem] border border-white/8 bg-white/[0.03] px-3 py-2.5 text-sm text-arenaText">
+                          <input
+                            type="checkbox"
+                            checked={countdownChecks[item.key as keyof typeof countdownChecks]}
+                            onChange={() => setCountdownChecks((current) => ({
+                              ...current,
+                              [item.key]: !current[item.key as keyof typeof current],
+                            }))}
+                            className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent accent-[#81ecff]"
+                          />
+                          <span>{item.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="arena-button-primary h-11 px-4 text-sm"
+                        disabled={!countdownChecksReady || pendingAction === "countdown-start"}
+                        onClick={() => void handleStartCountdown()}
+                      >
+                        <Clock3 size={16} />
+                        {copy.countdownConfirmAction}
+                      </button>
+                      <button
+                        type="button"
+                        className="arena-button-secondary px-4 py-3 text-sm"
+                        onClick={() => {
+                          setCountdownConfirmOpen(false);
+                          setCountdownChecks({ scope: false, deadline: false, manualRescue: false });
+                        }}
+                      >
+                        {language === "ru" ? "Отмена" : "Cancel"}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -1193,6 +1415,12 @@ export function AdminControlRoom() {
                             {getStageLabel(stage)}
                           </span>
                         ))}
+                        {user.submissionOverrides[selectedStage] ? (
+                          <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
+                            <Unlock size={13} />
+                            {copy.latePassActive}
+                          </span>
+                        ) : null}
                       </div>
                       <p className="mt-3 text-lg font-semibold text-white">{user.name}</p>
                       <p className="mt-2 text-sm text-arenaMuted">{user.firstName} {user.lastName}</p>
@@ -1216,6 +1444,29 @@ export function AdminControlRoom() {
                     >
                       {copy.resetAll}
                     </button>
+                    {!snapshot?.predictionWindows[selectedStage] ? (
+                      user.submissionOverrides[selectedStage] ? (
+                        <button
+                          type="button"
+                          className="arena-button-secondary px-4 py-3 text-sm md:col-span-2"
+                          disabled={Boolean(pendingAction)}
+                          onClick={() => void handleParticipantLatePass(user.id, true)}
+                        >
+                          <Unlock size={16} />
+                          {copy.revokeLatePass}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="arena-button-primary h-12 px-4 text-sm md:col-span-2"
+                          disabled={Boolean(pendingAction)}
+                          onClick={() => void handleParticipantLatePass(user.id)}
+                        >
+                          <Unlock size={16} />
+                          {copy.grantLatePass}
+                        </button>
+                      )
+                    ) : null}
                     {user.removed ? (
                       <button
                         type="button"

@@ -9,7 +9,7 @@ export function getDeviceTier(width: number): DeviceTier {
     return "phone";
   }
 
-  if (width < 1200) {
+  if (width < 1024) {
     return "tablet";
   }
 

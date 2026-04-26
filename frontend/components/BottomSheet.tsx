@@ -17,6 +17,7 @@ export function BottomSheet({
 }) {
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const lockedScrollY = useRef(0);
 
   useEffect(() => {
     setMounted(true);
@@ -28,13 +29,28 @@ export function BottomSheet({
 
     const previousBodyOverflow = document.body.style.overflow;
     const previousBodyOverscroll = document.body.style.overscrollBehavior;
+    const previousBodyTouchAction = document.body.style.touchAction;
+    const previousBodyPosition = document.body.style.position;
+    const previousBodyTop = document.body.style.top;
+    const previousBodyLeft = document.body.style.left;
+    const previousBodyRight = document.body.style.right;
+    const previousBodyWidth = document.body.style.width;
     const previousHtmlOverflow = document.documentElement.style.overflow;
     const previousHtmlOverscroll = document.documentElement.style.overscrollBehavior;
+    const previousHtmlTouchAction = document.documentElement.style.touchAction;
+    lockedScrollY.current = window.scrollY || window.pageYOffset || 0;
 
     document.body.style.overflow = "hidden";
     document.body.style.overscrollBehavior = "none";
+    document.body.style.touchAction = "none";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${lockedScrollY.current}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
     document.documentElement.style.overflow = "hidden";
     document.documentElement.style.overscrollBehavior = "none";
+    document.documentElement.style.touchAction = "none";
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -43,14 +59,25 @@ export function BottomSheet({
     };
 
     window.addEventListener("keydown", handleEscape);
-    scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
+    const resetScroll = () => scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
+    resetScroll();
+    const frameId = window.requestAnimationFrame(resetScroll);
 
     return () => {
       document.body.style.overflow = previousBodyOverflow;
       document.body.style.overscrollBehavior = previousBodyOverscroll;
+      document.body.style.touchAction = previousBodyTouchAction;
+      document.body.style.position = previousBodyPosition;
+      document.body.style.top = previousBodyTop;
+      document.body.style.left = previousBodyLeft;
+      document.body.style.right = previousBodyRight;
+      document.body.style.width = previousBodyWidth;
       document.documentElement.style.overflow = previousHtmlOverflow;
       document.documentElement.style.overscrollBehavior = previousHtmlOverscroll;
+      document.documentElement.style.touchAction = previousHtmlTouchAction;
       window.removeEventListener("keydown", handleEscape);
+      window.cancelAnimationFrame(frameId);
+      window.scrollTo({ top: lockedScrollY.current, behavior: "auto" });
     };
   }, [onClose, open]);
 
@@ -69,9 +96,9 @@ export function BottomSheet({
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
-          <div className="fixed inset-0 z-[90] flex items-end justify-center p-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] pointer-events-none md:items-center md:p-5">
+          <div className="fixed inset-0 z-[90] flex items-end justify-center overflow-hidden overscroll-none p-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] pointer-events-none md:items-center md:p-5">
             <motion.div
-              className="pointer-events-auto relative flex max-h-[calc(100dvh-0.75rem)] w-full flex-col overflow-hidden rounded-[1.8rem] border border-white/6 bg-[linear-gradient(180deg,rgba(21,23,43,0.985),rgba(16,17,31,0.985))] shadow-[0_24px_60px_rgba(0,0,0,0.42)] md:max-h-[min(92vh,58rem)] md:max-w-[min(92vw,62rem)] md:rounded-[2rem] md:shadow-[0_24px_80px_rgba(0,0,0,0.45)] xl:max-w-[min(88vw,74rem)]"
+              className="pointer-events-auto relative flex h-[calc(100svh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1.5rem)] max-h-[calc(100svh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1.5rem)] w-full flex-col overflow-hidden rounded-[1.8rem] border border-white/6 bg-[linear-gradient(180deg,rgba(21,23,43,0.985),rgba(16,17,31,0.985))] shadow-[0_24px_60px_rgba(0,0,0,0.42)] md:h-auto md:max-h-[min(92vh,58rem)] md:max-w-[min(92vw,62rem)] md:rounded-[2rem] md:shadow-[0_24px_80px_rgba(0,0,0,0.45)] xl:max-w-[min(88vw,74rem)]"
               initial={{ y: "100%", opacity: 0.92 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0.92 }}

@@ -5,6 +5,12 @@ export type PublicDisplayMode = "full_name" | "first_name_last_initial" | "displ
 export type PasswordResetMode = "preview" | "email" | "disabled";
 export type ShowHighlightMode = "stage" | "current_act" | "results" | "players" | null;
 
+export interface SubmissionCountdown {
+  startedAt: string;
+  endsAt: string;
+  durationMinutes: number;
+}
+
 export interface AvatarTheme {
   primary: string;
   secondary: string;
@@ -32,6 +38,7 @@ export interface ShowState {
 
 export interface RoomDetails extends RoomSummary {
   predictionWindows: Record<StageKey, boolean>;
+  submissionCountdowns: Record<StageKey, SubmissionCountdown | null>;
   stages: StageKey[];
   showState: ShowState;
   stageMeta?: Record<StageKey, {
@@ -217,6 +224,7 @@ export interface AdminSessionPayload {
 export interface AdminRoomSnapshot {
   roomSlug: string;
   predictionWindows: Record<StageKey, boolean>;
+  submissionCountdowns: Record<StageKey, SubmissionCountdown | null>;
   showState: ShowState;
   scoringProfile: string;
   scoringProfiles: Array<{
@@ -250,6 +258,7 @@ export interface AdminUserEntry {
   removed: boolean;
   submittedStages: StageKey[];
   lockedStages: StageKey[];
+  submissionOverrides: Partial<Record<StageKey, string>>;
 }
 
 export type NoteTone =

@@ -1,6 +1,4 @@
-import { notFound } from "next/navigation";
-import { ActsDirectory } from "../../../../components/ActsDirectory";
-import { RoomChrome } from "../../../../components/RoomChrome";
+import { notFound, redirect } from "next/navigation";
 import { isStageKey } from "../../../../lib/rooms";
 
 export default function ActsStagePage({
@@ -12,13 +10,5 @@ export default function ActsStagePage({
     notFound();
   }
 
-  return (
-    <RoomChrome
-      roomSlug={params.roomSlug}
-      stageKey={params.stageKey}
-      pageKey="acts"
-    >
-      <ActsDirectory roomSlug={params.roomSlug} stageKey={params.stageKey} />
-    </RoomChrome>
-  );
+  redirect(`/${params.roomSlug}/vote/${params.stageKey}`);
 }

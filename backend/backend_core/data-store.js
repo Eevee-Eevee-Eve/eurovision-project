@@ -33,6 +33,8 @@ function createEmptyState(createRoomState, rooms) {
     passwordResets: {},
     dynamicRooms: {},
     roomAccessSessions: {},
+    globalPredictionWindows: null,
+    globalStageCountdowns: {},
     roomStates: rooms.reduce((acc, room) => {
       acc[room.slug] = createRoomState();
       return acc;
@@ -67,6 +69,8 @@ function loadState(createRoomState, rooms) {
       passwordResets: raw.passwordResets || {},
       dynamicRooms,
       roomAccessSessions: raw.roomAccessSessions || {},
+      globalPredictionWindows: raw.globalPredictionWindows || null,
+      globalStageCountdowns: raw.globalStageCountdowns || {},
       roomStates,
     };
   } catch (error) {
