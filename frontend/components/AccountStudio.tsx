@@ -14,6 +14,7 @@ import {
 } from "../lib/api";
 import { getAccountCopy } from "../lib/account-copy";
 import { getLegalConfig, getLegalCopy } from "../lib/legal";
+import { resolveMediaUrl } from "../lib/media";
 import type { PublicDisplayMode } from "../lib/types";
 import { useAccount } from "./AccountProvider";
 import { AuthCard } from "./AuthCard";
@@ -60,7 +61,6 @@ export function AccountStudio() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [emoji, setEmoji] = useState("");
   const [publicDisplayMode, setPublicDisplayMode] = useState<PublicDisplayMode>("full_name");
   const [publicDisplayOptIn, setPublicDisplayOptIn] = useState(true);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -68,6 +68,7 @@ export function AccountStudio() {
   const [statusText, setStatusText] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
 
   const resetToken = searchParams.get("token");
   const nextHref = searchParams.get("next");
@@ -78,7 +79,6 @@ export function AccountStudio() {
     setFirstName(account.firstName);
     setLastName(account.lastName);
     setDisplayName(account.displayName);
-    setEmoji(account.emoji);
     setPublicDisplayMode(account.publicDisplayMode);
     setPublicDisplayOptIn(account.publicDisplayOptIn);
   }, [account]);
@@ -111,7 +111,7 @@ export function AccountStudio() {
         firstName,
         lastName,
         displayName,
-        emoji,
+        emoji: "",
         publicDisplayMode,
         publicDisplayOptIn,
       });
@@ -209,6 +209,8 @@ export function AccountStudio() {
     }
   }
 
+  const resolvedAvatarUrl = resolveMediaUrl(account.avatarUrl);
+
   return (
     <div className="grid gap-5">
       <section className="show-card p-5 md:p-6">
@@ -221,7 +223,6 @@ export function AccountStudio() {
           <div className="flex items-center gap-4">
             <UserAvatar
               name={getDisplayName(account.publicName)}
-              emoji={account.emoji}
               avatarUrl={account.avatarUrl}
               avatarTheme={account.avatarTheme}
               className="h-16 w-16"
@@ -239,27 +240,26 @@ export function AccountStudio() {
       {statusText ? <div className="rounded-[1.4rem] bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">{statusText}</div> : null}
 
       <section className="show-card p-5 md:p-6">
-        <div className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
-          <div>
+        <div className="grid gap-5">
+          <div className="max-w-3xl">
             <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaPulse">{accountCopy.account.profileTitle}</p>
-            <p className="mt-3 text-sm text-arenaMuted">{accountCopy.account.profileText}</p>
+            <p className="mt-3 text-sm leading-7 text-arenaMuted">{accountCopy.account.profileText}</p>
           </div>
-          <div className="grid gap-3">
+          <div className="grid gap-3 md:grid-cols-2">
             <input className="arena-input" placeholder={accountCopy.auth.firstName} value={firstName} onChange={(event) => setFirstName(event.target.value)} />
             <input className="arena-input" placeholder={accountCopy.auth.lastName} value={lastName} onChange={(event) => setLastName(event.target.value)} />
             <input className="arena-input" placeholder={accountCopy.auth.displayName} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
-            <input className="arena-input" placeholder={accountCopy.auth.emoji} value={emoji} onChange={(event) => setEmoji(event.target.value.slice(0, 4))} />
             <select className="arena-input" value={publicDisplayMode} onChange={(event) => setPublicDisplayMode(event.target.value as PublicDisplayMode)}>
               {Object.entries(accountCopy.publicDisplayModes).map(([value, label]) => (
                 <option key={value} value={value}>{label}</option>
               ))}
             </select>
-            <label className="flex items-start gap-3 text-sm text-arenaMuted">
+            <label className="flex items-start gap-3 rounded-[1.3rem] bg-white/[0.03] px-4 py-3 text-sm text-arenaMuted md:col-span-2">
               <input type="checkbox" checked={publicDisplayOptIn} onChange={(event) => setPublicDisplayOptIn(event.target.checked)} className="mt-1 h-4 w-4 rounded" />
               <span>{accountCopy.auth.publicDisplayOptIn}</span>
             </label>
-            <p className="text-xs text-arenaMuted">{legalCopy.accountConsentPublic}</p>
-            <button type="button" className="arena-button-primary h-12 px-6 text-sm" disabled={pending} onClick={handleProfileSave}>
+            <p className="text-xs leading-6 text-arenaMuted md:col-span-2">{legalCopy.accountConsentPublic}</p>
+            <button type="button" className="arena-button-primary h-12 px-6 text-sm md:col-span-2" disabled={pending} onClick={handleProfileSave}>
               {accountCopy.account.saveProfile}
             </button>
           </div>
@@ -272,14 +272,21 @@ export function AccountStudio() {
           <p className="mt-3 text-sm text-arenaMuted">{accountCopy.account.avatarText}</p>
           <p className="mt-3 text-xs text-arenaMuted">{legalCopy.accountConsentStorage}</p>
           <div className="mt-5 flex items-center gap-4">
-            <UserAvatar
-              name={getDisplayName(account.publicName)}
-              emoji={account.emoji}
-              avatarUrl={account.avatarUrl}
-              avatarTheme={account.avatarTheme}
-              className="h-20 w-20"
-              textClass="text-2xl"
-            />
+            <button
+              type="button"
+              className="rounded-full outline-none transition hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-arenaBeam"
+              onClick={() => resolvedAvatarUrl && setAvatarPreviewOpen(true)}
+              disabled={!resolvedAvatarUrl}
+              aria-label={accountCopy.account.previewAvatar}
+            >
+              <UserAvatar
+                name={getDisplayName(account.publicName)}
+                avatarUrl={account.avatarUrl}
+                avatarTheme={account.avatarTheme}
+                className="h-20 w-20"
+                textClass="text-2xl"
+              />
+            </button>
             <div className="flex flex-wrap gap-3">
               <label className="arena-button-secondary cursor-pointer px-5 py-3 text-sm">
                 {accountCopy.account.uploadAvatar}
@@ -308,16 +315,16 @@ export function AccountStudio() {
       </section>
 
       <section className="show-card p-5 md:p-6">
-        <div className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
-          <div>
+        <div className="grid gap-5">
+          <div className="max-w-4xl">
             <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaPulse">{legalCopy.accountConsentTitle}</p>
-            <p className="mt-3 text-sm text-arenaMuted">{legalCopy.accountConsentText}</p>
+            <p className="mt-3 text-sm leading-7 text-arenaMuted">{legalCopy.accountConsentText}</p>
             <div className="mt-4 flex flex-wrap gap-3 text-sm">
               <Link href="/legal/privacy" className="text-arenaBeam underline-offset-4 hover:underline">{accountCopy.account.privacyLink}</Link>
               <Link href="/legal/cookies" className="text-arenaBeam underline-offset-4 hover:underline">{accountCopy.account.cookiesLink}</Link>
             </div>
           </div>
-          <div className="grid gap-3">
+          <div className="grid gap-3 md:grid-cols-2">
             <div className="show-panel p-4">
               <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{legalCopy.operatorLabel}</p>
               <p className="mt-2 text-sm text-white">{legalConfig.operatorName}</p>
@@ -326,7 +333,7 @@ export function AccountStudio() {
               <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{legalCopy.contactLabel}</p>
               <p className="mt-2 text-sm text-white">{legalConfig.operatorContact}</p>
             </div>
-            <div className="show-panel p-4">
+            <div className="show-panel p-4 md:col-span-2">
               <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{legalCopy.accountConsentTimeline}</p>
               <div className="mt-3 grid gap-2 text-sm text-arenaMuted">
                 <p>
@@ -364,6 +371,29 @@ export function AccountStudio() {
           </div>
         </div>
       </section>
+      {avatarPreviewOpen && resolvedAvatarUrl ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/72 px-4 py-8 backdrop-blur-md"
+          onClick={() => setAvatarPreviewOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="grid max-w-[min(92vw,34rem)] gap-4" onClick={(event) => event.stopPropagation()}>
+            <img
+              src={resolvedAvatarUrl}
+              alt={`${getDisplayName(account.publicName)} avatar`}
+              className="aspect-square w-full rounded-[1.4rem] object-cover shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+            />
+            <button
+              type="button"
+              className="arena-button-secondary h-12 px-5 text-sm"
+              onClick={() => setAvatarPreviewOpen(false)}
+            >
+              {accountCopy.account.closePreview}
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

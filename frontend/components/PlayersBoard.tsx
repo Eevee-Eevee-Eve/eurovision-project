@@ -218,7 +218,6 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
 
                 <UserAvatar
                   name={getDisplayName(row.name)}
-                  emoji={row.emoji}
                   avatarUrl={row.avatarUrl}
                   avatarTheme={row.avatarTheme}
                   className={`${isPhone ? "h-12 w-12" : featured ? "h-16 w-16" : "h-14 w-14"} shrink-0`}
