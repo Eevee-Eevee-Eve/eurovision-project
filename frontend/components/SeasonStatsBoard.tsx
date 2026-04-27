@@ -10,7 +10,7 @@ import { useLanguage } from "./LanguageProvider";
 import { UserAvatar } from "./UserAvatar";
 
 export function SeasonStatsBoard({ roomSlug }: { roomSlug: string }) {
-  const { language, getStageLabel } = useLanguage();
+  const { language, getDisplayName, getRoomName, getStageLabel } = useLanguage();
   const [stats, setStats] = useState<SeasonStatsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -120,7 +120,7 @@ export function SeasonStatsBoard({ roomSlug }: { roomSlug: string }) {
             <span className={`display-copy font-black text-arenaText ${featured ? "text-4xl" : "text-3xl"}`}>{player.rank}</span>
           </div>
           <UserAvatar
-            name={player.name}
+            name={getDisplayName(player.name)}
             emoji={player.emoji}
             avatarUrl={player.avatarUrl}
             avatarTheme={player.avatarTheme}
@@ -138,7 +138,7 @@ export function SeasonStatsBoard({ roomSlug }: { roomSlug: string }) {
                 {player.exactMatchCount} {copy.exact.toLowerCase()}
               </span>
             </div>
-            <h3 className={`display-copy mt-3 font-black ${featured ? "text-3xl md:text-4xl" : "text-2xl"}`}>{player.name}</h3>
+            <h3 className={`display-copy mt-3 font-black ${featured ? "text-3xl md:text-4xl" : "text-2xl"}`}>{getDisplayName(player.name)}</h3>
             <p className="mt-2 text-sm text-arenaMuted">
               {copy.bestStage}: {player.bestStage ? getStageLabel(player.bestStage) : copy.noBestStage}
             </p>
@@ -238,7 +238,7 @@ export function SeasonStatsBoard({ roomSlug }: { roomSlug: string }) {
         </div>
         <div className="show-card p-4">
           <p className="label-copy text-[11px] uppercase tracking-[0.22em] text-arenaMuted">{copy.leader}</p>
-          <p className="mt-3 text-lg font-semibold text-white">{stats.overview.leaderName || copy.noLeader}</p>
+          <p className="mt-3 text-lg font-semibold text-white">{stats.overview.leaderName ? getDisplayName(stats.overview.leaderName) : copy.noLeader}</p>
         </div>
       </section>
 
@@ -252,12 +252,12 @@ export function SeasonStatsBoard({ roomSlug }: { roomSlug: string }) {
         <div className="show-card p-5 md:p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{stats.seasonLabel}</p>
-              <h2 className="display-copy mt-3 text-3xl font-black">{stats.roomName}</h2>
+              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{getRoomName(roomSlug, stats.seasonLabel)}</p>
+              <h2 className="display-copy mt-3 text-3xl font-black">{getRoomName(roomSlug, stats.roomName)}</h2>
             </div>
             <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">
               <Radio size={13} />
-              {stats.seasonYear || stats.seasonLabel}
+              {stats.seasonYear || getRoomName(roomSlug, stats.seasonLabel)}
             </span>
           </div>
         </div>

@@ -18,7 +18,7 @@ const AUTH_CARD_ID = "home-auth-card";
 export default function Home() {
   const router = useRouter();
   const { account, loading } = useAccount();
-  const { language, getRoomCityLabel, getStageLabel } = useLanguage();
+  const { language, getDisplayName, getRoomName, getRoomCityLabel, getStageLabel } = useLanguage();
   const [rooms, setRooms] = useState<RoomSummary[]>([FALLBACK_ROOM]);
   const [loadError, setLoadError] = useState("");
   const [roomSearch, setRoomSearch] = useState("");
@@ -152,6 +152,7 @@ export default function Home() {
     return rooms.filter((room) => {
       const haystack = [
         room.name,
+        getRoomName(room.slug, room.name),
         getRoomCityLabel(room.slug, room.cityLabel),
         getStageLabel(room.defaultStage),
       ]
@@ -159,7 +160,7 @@ export default function Home() {
         .toLowerCase();
       return haystack.includes(query);
     });
-  }, [getRoomCityLabel, getStageLabel, roomSearch, rooms]);
+  }, [getRoomCityLabel, getRoomName, getStageLabel, roomSearch, rooms]);
 
   function scrollToAuthCard() {
     document.getElementById(AUTH_CARD_ID)?.scrollIntoView({
@@ -244,7 +245,7 @@ export default function Home() {
                     {text.accountReady}
                   </p>
                   <h3 className="display-copy mt-2 text-2xl font-black md:text-4xl">
-                    {account.publicName}
+                    {getDisplayName(account.publicName)}
                   </h3>
                   <p className="mt-3 text-sm text-arenaMuted">{text.accountReadyText}</p>
                   <div className="mt-5 flex flex-wrap gap-3">
@@ -297,7 +298,7 @@ export default function Home() {
                 <div key={room.slug} className="show-panel p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-lg font-semibold text-white">{room.name}</p>
+                      <p className="text-lg font-semibold text-white">{getRoomName(room.slug, room.name)}</p>
                       <p className="mt-2 text-sm text-arenaMuted">
                         {getRoomCityLabel(room.slug, room.cityLabel)}
                       </p>

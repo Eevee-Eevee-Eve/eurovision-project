@@ -194,7 +194,7 @@ function buildEditableRows(acts: ActEntry[], publishedRows: ActEntry[], roomSlug
 export function AdminControlRoom() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { language, getStageLabel } = useLanguage();
+  const { language, getDisplayName, getRoomName, getStageLabel } = useLanguage();
   const [booting, setBooting] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
@@ -1029,7 +1029,7 @@ export function AdminControlRoom() {
                 <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{copy.roomsLabel}</p>
                 <select className="arena-input mt-3" value={selectedRoom} onChange={(event) => setSelectedRoom(event.target.value)}>
                   {rooms.map((room) => (
-                    <option key={room.slug} value={room.slug}>{room.name}</option>
+                    <option key={room.slug} value={room.slug}>{getRoomName(room.slug, room.name)}</option>
                   ))}
                 </select>
               </label>
@@ -1398,7 +1398,7 @@ export function AdminControlRoom() {
                 <div key={user.id} className="show-card p-4">
                   <div className="flex items-start gap-4">
                     <UserAvatar
-                      name={user.name}
+                      name={getDisplayName(user.name)}
                       emoji={user.emoji}
                       avatarUrl={user.avatarUrl}
                       avatarTheme={user.avatarTheme}
@@ -1422,7 +1422,7 @@ export function AdminControlRoom() {
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-3 text-lg font-semibold text-white">{user.name}</p>
+                      <p className="mt-3 text-lg font-semibold text-white">{getDisplayName(user.name)}</p>
                       <p className="mt-2 text-sm text-arenaMuted">{user.firstName} {user.lastName}</p>
                     </div>
                   </div>

@@ -52,7 +52,7 @@ function formatTimestamp(timestamp: string | null, language: "ru" | "en") {
 export function AccountStudio() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { language } = useLanguage();
+  const { language, getDisplayName } = useLanguage();
   const accountCopy = getAccountCopy(language);
   const legalCopy = getLegalCopy(language);
   const legalConfig = getLegalConfig(language);
@@ -220,7 +220,7 @@ export function AccountStudio() {
           </div>
           <div className="flex items-center gap-4">
             <UserAvatar
-              name={account.publicName}
+              name={getDisplayName(account.publicName)}
               emoji={account.emoji}
               avatarUrl={account.avatarUrl}
               avatarTheme={account.avatarTheme}
@@ -228,7 +228,7 @@ export function AccountStudio() {
               textClass="text-xl"
             />
             <div>
-              <p className="text-lg font-semibold text-white">{account.publicName}</p>
+              <p className="text-lg font-semibold text-white">{getDisplayName(account.publicName)}</p>
               <p className="text-sm text-arenaMuted">{account.email}</p>
             </div>
           </div>
@@ -273,7 +273,7 @@ export function AccountStudio() {
           <p className="mt-3 text-xs text-arenaMuted">{legalCopy.accountConsentStorage}</p>
           <div className="mt-5 flex items-center gap-4">
             <UserAvatar
-              name={account.publicName}
+              name={getDisplayName(account.publicName)}
               emoji={account.emoji}
               avatarUrl={account.avatarUrl}
               avatarTheme={account.avatarTheme}

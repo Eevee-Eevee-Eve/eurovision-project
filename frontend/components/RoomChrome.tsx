@@ -29,7 +29,7 @@ export function RoomChrome({
   pageKey: "vote" | "live" | "players" | "room";
   children: ReactNode;
 }) {
-  const { getStageLabel, language } = useLanguage();
+  const { getDisplayName, getRoomName, getStageLabel, language } = useLanguage();
   const { account } = useAccount();
   const { isPhone } = useDeviceTier();
   const accountCopy = getAccountCopy(language);
@@ -194,7 +194,7 @@ export function RoomChrome({
                 >
                   {account ? (
                     <UserAvatar
-                      name={account.publicName}
+                      name={getDisplayName(account.publicName)}
                       avatarUrl={account.avatarUrl}
                       avatarTheme={account.avatarTheme}
                       className="h-full w-full"
@@ -216,7 +216,7 @@ export function RoomChrome({
                     {unlockCopy.roomInfo}
                   </p>
                   <h1 className={`display-copy mt-2 font-black text-white ${isPhone ? "text-xl" : "text-2xl md:text-3xl"}`}>
-                    {roomSummary.name}
+                    {getRoomName(roomSlug, roomSummary.name)}
                   </h1>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {showStageMeta ? (
