@@ -29,7 +29,7 @@ const LEGAL_DEFAULTS: Record<UiLanguage, Omit<LegalConfig, "requiredStorage">> =
     retentionNotice:
       "Данные аккаунта, результаты комнаты и бюллетени хранятся до тех пор, пока организатор не сбросит комнату, пользователь не удалит аккаунт или сезон не будет отправлен в архив.",
     publicDisplayNotice:
-      "Публичные таблицы и экран проектора показывают только выбранные поля публичного профиля: отображаемое имя, аватар, emoji-бейдж и очки комнаты.",
+      "Публичные таблицы и экран проектора показывают только выбранные поля профиля: никнейм, аватар и очки комнаты.",
   },
   en: {
     operatorName: "The host operating Morozov Eurovision 2026",
@@ -38,7 +38,7 @@ const LEGAL_DEFAULTS: Record<UiLanguage, Omit<LegalConfig, "requiredStorage">> =
     retentionNotice:
       "Account data, room results, and ballots are kept until the operator resets the room, the user deletes the account, or the host archives the season.",
     publicDisplayNotice:
-      "Public scoreboards and projector screens show only the chosen public profile fields: public name, avatar, emoji badge, and room scores.",
+      "Public scoreboards and projector screens show only the chosen profile fields: nickname, avatar, and room scores.",
   },
 };
 
@@ -171,8 +171,8 @@ export function getLegalConfig(language: UiLanguage): LegalConfig {
       LEGAL_DEFAULTS.ru.publicDisplayNotice,
       [
         {
-          en: "Public scoreboards show only the selected public profile fields: public name, avatar, emoji badge, and room scores.",
-          ru: "Публичные таблицы показывают только выбранные поля публичного профиля: отображаемое имя, аватар, emoji-бейдж и очки комнаты.",
+          en: "Public scoreboards show only the selected profile fields: nickname, avatar, and room scores.",
+          ru: "Публичные таблицы показывают только выбранные поля профиля: никнейм, аватар и очки комнаты.",
         },
       ],
     ),
@@ -214,7 +214,7 @@ const LEGAL_COPY: Record<UiLanguage, {
     privacyTitle: "Конфиденциальность",
     privacyHeadline: "Политика обработки данных",
     privacyIntro:
-      "Эта страница описывает, как текущий деплой «Евровидение у Морозовых 2026» обрабатывает данные аккаунта, публичные экранные имена и бюллетени голосования по полуфиналам и финалу.",
+      "Эта страница описывает, как текущий деплой «Евровидение у Морозовых 2026» обрабатывает данные аккаунта, экранные никнеймы и бюллетени голосования по полуфиналам и финалу.",
     privacySections: [
       {
         title: "Что хранит портал",
@@ -222,7 +222,7 @@ const LEGAL_COPY: Record<UiLanguage, {
       },
       {
         title: "Аккаунт и профиль",
-        body: "Аккаунт может содержать email, имя, фамилию, публичное отображаемое имя, emoji-бейдж, аватар, хеш пароля, отметки о согласиях и технические временные метки входа и обновления профиля. Email никогда не показывается на публичных таблицах.",
+        body: "Аккаунт может содержать email, имя, фамилию, никнейм, аватар, хеш пароля, отметки о согласиях и технические временные метки входа и обновления профиля. Email никогда не показывается на публичных таблицах.",
       },
       {
         title: "Голосование и данные комнаты",
@@ -234,7 +234,7 @@ const LEGAL_COPY: Record<UiLanguage, {
       },
       {
         title: "Управление своими данными",
-        body: "На странице аккаунта пользователь может обновить имя и фамилию, сменить пароль, загрузить или удалить аватар, поменять режим публичного имени, отключить публичное отображение и полностью удалить аккаунт.",
+        body: "На странице аккаунта пользователь может обновить имя и фамилию, сменить пароль, загрузить или удалить аватар, поменять режим отображения никнейма, отключить публичное отображение и полностью удалить аккаунт.",
       },
       {
         title: "РФ и Европа",
@@ -260,7 +260,7 @@ const LEGAL_COPY: Record<UiLanguage, {
     accountConsentPrivacy:
       "Согласие на политику обработки данных обязательно для создания аккаунта и работы сервиса.",
     accountConsentPublic:
-      "Публичное отображение управляет тем, будет ли имя, аватар и emoji виден в live-таблицах и на проекторе.",
+      "Публичное отображение управляет тем, будет ли никнейм и аватар виден в live-таблицах и на проекторе.",
     accountConsentStorage:
       "Черновики бюллетеня и заметки сохраняются локально только на текущем устройстве, пока пользователь не отправит финальный ответ или не очистит данные браузера.",
     accountConsentTimeline:
@@ -284,7 +284,7 @@ const LEGAL_COPY: Record<UiLanguage, {
       },
       {
         title: "Account and profile data",
-        body: "Account records may contain email, first name, last name, public display name, emoji badge, avatar, password hash, consent timestamps, and technical timestamps for login and profile updates. Public scoreboards never show the private email address.",
+        body: "Account records may contain email, first name, last name, nickname, avatar, password hash, consent timestamps, and technical timestamps for login and profile updates. Public scoreboards never show the private email address.",
       },
       {
         title: "Voting and room data",
@@ -318,11 +318,11 @@ const LEGAL_COPY: Record<UiLanguage, {
     dismissNotice: "Got it",
     accountConsentTitle: "Consents and public profile",
     accountConsentText:
-      "Registration records consent to the privacy notice. A separate profile setting controls whether your chosen public name, avatar, and emoji are shown on scoreboards and projector screens.",
+      "Registration records consent to the privacy notice. A separate profile setting controls whether your chosen nickname and avatar are shown on scoreboards and projector screens.",
     accountConsentPrivacy:
       "Accepting the privacy notice is required to create an account and operate the service.",
     accountConsentPublic:
-      "Public display controls whether your name, avatar, and emoji appear on live room boards and display routes.",
+      "Public display controls whether your nickname and avatar appear on live room boards and display routes.",
     accountConsentStorage:
       "Ballot drafts and notes are saved locally on the current device only, until the final ballot is submitted or the browser data is cleared.",
     accountConsentTimeline:

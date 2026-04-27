@@ -11,8 +11,6 @@ import { useLanguage } from "./LanguageProvider";
 
 type AuthMode = "register" | "login" | "requestReset" | "applyReset";
 
-const emojiOptions = ["🇪🇺", "📺", "12", "⭐", "🎵", "⚡"];
-
 export function AuthCard({
   roomSlug,
   nextHref,
@@ -42,7 +40,6 @@ export function AuthCard({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [emoji, setEmoji] = useState(emojiOptions[0]);
   const [publicDisplayMode, setPublicDisplayMode] = useState<PublicDisplayMode>("full_name");
   const [publicDisplayOptIn, setPublicDisplayOptIn] = useState(true);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
@@ -110,7 +107,7 @@ export function AuthCard({
           firstName,
           lastName,
           displayName,
-          emoji,
+          emoji: "",
           publicDisplayMode,
           publicDisplayOptIn,
           privacyAccepted,
@@ -224,23 +221,6 @@ export function AuthCard({
                   onChange={(event) => setDisplayName(event.target.value)}
                 />
                 <p className="mt-2 text-xs text-arenaMuted">{accountCopy.auth.displayNameHint}</p>
-              </div>
-              <div className="show-panel p-4">
-                <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{accountCopy.auth.emoji}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {emojiOptions.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      className={`h-11 min-w-11 rounded-full px-3 text-sm transition ${
-                        emoji === option ? "bg-arenaPulse text-arenaBg shadow-pulse" : "bg-white/5 text-white hover:bg-white/10"
-                      }`}
-                      onClick={() => setEmoji(option)}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
               </div>
               <div className="show-panel p-4">
                 <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{accountCopy.auth.displayName}</p>

@@ -1399,7 +1399,6 @@ export function AdminControlRoom() {
                   <div className="flex items-start gap-4">
                     <UserAvatar
                       name={getDisplayName(user.name)}
-                      emoji={user.emoji}
                       avatarUrl={user.avatarUrl}
                       avatarTheme={user.avatarTheme}
                       className="h-14 w-14 shrink-0"

@@ -121,7 +121,6 @@ export function SeasonStatsBoard({ roomSlug }: { roomSlug: string }) {
           </div>
           <UserAvatar
             name={getDisplayName(player.name)}
-            emoji={player.emoji}
             avatarUrl={player.avatarUrl}
             avatarTheme={player.avatarTheme}
             className={featured ? "h-16 w-16 shrink-0" : "h-14 w-14 shrink-0"}

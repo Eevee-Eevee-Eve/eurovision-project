@@ -113,7 +113,6 @@ export default function Leaderboard({
             <div className="flex items-center gap-3">
               <UserAvatar
                 name={getDisplayName(row.name)}
-                emoji={row.emoji}
                 avatarUrl={row.avatarUrl}
                 avatarTheme={row.avatarTheme}
                 className="h-12 w-12 shrink-0"
