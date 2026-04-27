@@ -3,19 +3,12 @@ services:
     build: ./backend
     ports:
       - "4000:4000"
+    env_file:
+      - ./deploy-secrets.local.env
     environment:
       PORT: "4000"
-      ADMIN_KEY: "dev-admin-key"
-      ADMIN_EMAIL: "host@example.com"
-      ADMIN_PASSWORD: "change-me-now"
       CLIENT_ORIGIN: "https://morozoveuroparty.ru"
       APP_PUBLIC_URL: "https://morozoveuroparty.ru"
-      SMTP_HOST: ""
-      SMTP_PORT: "587"
-      SMTP_SECURE: "false"
-      SMTP_USER: ""
-      SMTP_PASS: ""
-      SMTP_FROM: "Morozov Euro Party <admin@morozoveuroparty.ru>"
     volumes:
       - backend_data:/app/data
       - backend_uploads:/app/public/uploads
@@ -26,7 +19,7 @@ services:
       args:
         NEXT_PUBLIC_API_BASE: "https://api.morozoveuroparty.ru"
         NEXT_PUBLIC_OPERATOR_NAME: "Morozov Euro Party"
-        NEXT_PUBLIC_OPERATOR_CONTACT: "admin@morozoveuroparty.ru"
+        NEXT_PUBLIC_OPERATOR_CONTACT: "support@morozoveuroparty.ru"
         NEXT_PUBLIC_DATA_REGION: "Russian Federation"
         NEXT_PUBLIC_DATA_RETENTION: "Account data, ballots, and room standings are kept until the host resets the room or archives the season."
         NEXT_PUBLIC_PUBLIC_DISPLAY_NOTICE: "Public scoreboards show only the selected profile fields: nickname, avatar, and room scores."
@@ -35,7 +28,7 @@ services:
     environment:
       NEXT_PUBLIC_API_BASE: "https://api.morozoveuroparty.ru"
       NEXT_PUBLIC_OPERATOR_NAME: "Morozov Euro Party"
-      NEXT_PUBLIC_OPERATOR_CONTACT: "admin@morozoveuroparty.ru"
+      NEXT_PUBLIC_OPERATOR_CONTACT: "support@morozoveuroparty.ru"
       NEXT_PUBLIC_DATA_REGION: "Russian Federation"
       NEXT_PUBLIC_DATA_RETENTION: "Account data, ballots, and room standings are kept until the host resets the room or archives the season."
       NEXT_PUBLIC_PUBLIC_DISPLAY_NOTICE: "Public scoreboards show only the selected profile fields: nickname, avatar, and room scores."
