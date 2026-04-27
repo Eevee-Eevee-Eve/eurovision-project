@@ -789,21 +789,23 @@ async function sendPasswordResetEmail(email, resetUrl) {
     throw new Error('Password recovery email is not configured on this deployment yet');
   }
 
-  const subject = 'Reset your Morozov Eurovision 2026 password';
+  const subject = 'Сброс пароля Morozov Euro Party';
   const text = [
-    'A password reset was requested for your Morozov Eurovision 2026 account.',
+    'Для аккаунта Morozov Euro Party запросили сброс пароля.',
     '',
-    `Open this link to set a new password: ${resetUrl}`,
+    `Откройте ссылку, чтобы задать новый пароль: ${resetUrl}`,
     '',
-    'If you did not request this reset, you can ignore this email.',
+    'Если вы не запрашивали сброс, просто проигнорируйте это письмо.',
   ].join('\n');
 
   const html = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #161728;">
-      <h2 style="margin-bottom: 12px;">Reset your Morozov Eurovision 2026 password</h2>
-      <p>A password reset was requested for your Morozov Eurovision 2026 account.</p>
-      <p><a href="${resetUrl}">${resetUrl}</a></p>
-      <p>If you did not request this reset, you can ignore this email.</p>
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #161728; max-width: 560px; padding: 24px;">
+      <h2 style="margin: 0 0 12px; font-size: 22px;">Morozov Euro Party</h2>
+      <p style="margin: 0 0 16px;">Для вашего аккаунта запросили сброс пароля.</p>
+      <p style="margin: 0 0 24px; color: #555b70;">Нажмите кнопку ниже, чтобы задать новый пароль.</p>
+      <a href="${resetUrl}" style="display: inline-block; background: #222536; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 999px; font-weight: 700;">Сбросить пароль</a>
+      <p style="margin: 24px 0 0; color: #555b70;">Если вы не запрашивали сброс, просто проигнорируйте это письмо.</p>
+      <p style="margin: 16px 0 0; color: #8a91a6; font-size: 12px; word-break: break-all;">${resetUrl}</p>
     </div>
   `;
 
@@ -813,6 +815,8 @@ async function sendPasswordResetEmail(email, resetUrl) {
     subject,
     text,
     html,
+    encoding: 'utf-8',
+    textEncoding: 'base64',
   });
 
   console.log(`Password reset email sent to ${email}: ${info.messageId || 'queued'}`);
