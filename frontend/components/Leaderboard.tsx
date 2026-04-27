@@ -30,7 +30,7 @@ export default function Leaderboard({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const previousRanks = useRef<Record<string, number>>({});
-  const { copy, getBoardLabel, language } = useLanguage();
+  const { copy, getBoardLabel, getDisplayName, language } = useLanguage();
   const emptyMessage = language === "ru"
     ? "Пока нет участников или отправленных бюллетеней. Таблица появится, как только в комнате начнется игра."
     : "No participants or submitted ballots yet. The table will appear as soon as players join the room.";
@@ -112,7 +112,7 @@ export default function Leaderboard({
           >
             <div className="flex items-center gap-3">
               <UserAvatar
-                name={row.name}
+                name={getDisplayName(row.name)}
                 emoji={row.emoji}
                 avatarUrl={row.avatarUrl}
                 avatarTheme={row.avatarTheme}
@@ -126,7 +126,7 @@ export default function Leaderboard({
                   </span>
                   <MovementPill delta={movement[row.id] ?? null} />
                 </div>
-                <p className="mt-2 truncate text-lg font-semibold text-white">{row.name}</p>
+                <p className="mt-2 truncate text-lg font-semibold text-white">{getDisplayName(row.name)}</p>
               </div>
               <div className="text-right">
                 <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaMuted">{copy.common.points}</p>

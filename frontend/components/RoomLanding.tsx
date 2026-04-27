@@ -10,7 +10,7 @@ import type { ActEntry, RoomDetails } from "../lib/types";
 import { useLanguage } from "./LanguageProvider";
 
 export function RoomLanding({ roomSlug }: { roomSlug: string }) {
-  const { language } = useLanguage();
+  const { language, getRoomName } = useLanguage();
   const { isPhone } = useDeviceTier();
   const [room, setRoom] = useState<RoomDetails | null>(null);
   const [stagePreviewActs, setStagePreviewActs] = useState<ActEntry[]>([]);
@@ -69,7 +69,7 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
   }
 
   const defaultStage = room?.defaultStage || "semi1";
-  const roomName = room?.name || roomSlug;
+  const roomName = getRoomName(roomSlug, room?.name || roomSlug);
   const previewActs = stagePreviewActs.slice(0, isPhone ? 2 : 3);
 
   const text = language === "ru"

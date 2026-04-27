@@ -546,6 +546,100 @@ const ROOM_META: Record<string, { tagline: Record<Language, string>; cityLabel: 
   },
 };
 
+const MANUAL_EN_TEXT: Record<string, string> = {
+  "\u0435\u0432\u0440\u043e\u0432\u0438\u0434\u0435\u043d\u0438\u0435 \u0443 \u043c\u043e\u0440\u043e\u0437\u043e\u0432\u044b\u0445 2026": "Eurovision at the Morozovs 2026",
+  "\u0435\u0432\u0440\u043e\u0432\u0438\u0434\u0435\u043d\u0438\u0435 \u0443 \u043c\u043e\u0440\u043e\u0437\u043e\u0432\u044b\u0445": "Eurovision at the Morozovs",
+  "\u043c\u043e\u0440\u043e\u0437\u043e\u0432\u044b\u0445": "Morozovs",
+  "\u0441\u0435\u0440\u0433\u0435\u0439": "Sergey",
+  "\u0441\u0435\u0440\u0433\u0435\u0439 \u043c.": "Sergey M.",
+};
+
+const CYRILLIC_TO_LATIN: Record<string, string> = {
+  "\u0430": "a",
+  "\u0431": "b",
+  "\u0432": "v",
+  "\u0433": "g",
+  "\u0434": "d",
+  "\u0435": "e",
+  "\u0451": "yo",
+  "\u0436": "zh",
+  "\u0437": "z",
+  "\u0438": "i",
+  "\u0439": "y",
+  "\u043a": "k",
+  "\u043b": "l",
+  "\u043c": "m",
+  "\u043d": "n",
+  "\u043e": "o",
+  "\u043f": "p",
+  "\u0440": "r",
+  "\u0441": "s",
+  "\u0442": "t",
+  "\u0443": "u",
+  "\u0444": "f",
+  "\u0445": "kh",
+  "\u0446": "ts",
+  "\u0447": "ch",
+  "\u0448": "sh",
+  "\u0449": "shch",
+  "\u044a": "",
+  "\u044b": "y",
+  "\u044c": "",
+  "\u044d": "e",
+  "\u044e": "yu",
+  "\u044f": "ya",
+};
+
+function normalizeManualKey(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLocaleLowerCase("ru");
+}
+
+function matchCase(source: string, replacement: string) {
+  if (!source) return replacement;
+  if (source === source.toLocaleUpperCase("ru")) {
+    return replacement.toUpperCase();
+  }
+  const first = source[0];
+  if (first === first.toLocaleUpperCase("ru")) {
+    return replacement.charAt(0).toUpperCase() + replacement.slice(1);
+  }
+  return replacement;
+}
+
+function transliterateRuToEn(value: string) {
+  return value
+    .split("")
+    .map((char) => {
+      const lower = char.toLocaleLowerCase("ru");
+      const replacement = CYRILLIC_TO_LATIN[lower];
+      return replacement == null ? char : matchCase(char, replacement);
+    })
+    .join("")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function localizeTextForLanguage(language: Language, value: string) {
+  if (language !== "en" || !value) {
+    return value;
+  }
+
+  const manual = MANUAL_EN_TEXT[normalizeManualKey(value)];
+  if (manual) {
+    return manual;
+  }
+
+  return transliterateRuToEn(value);
+}
+
+export function getRoomName(language: Language, roomSlug: string, fallback: string) {
+  if (language === "en" && roomSlug === "neon-arena") {
+    return "Eurovision at the Morozovs 2026";
+  }
+
+  return localizeTextForLanguage(language, fallback);
+}
+
 export function getCopy(language: Language) {
   return COPY[language];
 }

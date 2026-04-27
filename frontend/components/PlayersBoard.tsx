@@ -25,7 +25,7 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const previousRanks = useRef<Record<string, number>>({});
-  const { copy, getBoardLabel, getStageLabel, language } = useLanguage();
+  const { copy, getBoardLabel, getDisplayName, getStageLabel, language } = useLanguage();
   const { isPhone, isDesktop } = useDeviceTier();
 
   const emptyMessage = language === "ru"
@@ -217,7 +217,7 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
                 </div>
 
                 <UserAvatar
-                  name={row.name}
+                  name={getDisplayName(row.name)}
                   emoji={row.emoji}
                   avatarUrl={row.avatarUrl}
                   avatarTheme={row.avatarTheme}
@@ -233,7 +233,7 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
                     <MovementPill delta={movement[row.id] ?? null} />
                   </div>
 
-                  <h3 className={`display-copy mt-3 font-black ${isPhone ? "text-xl" : featured ? "text-3xl" : "text-2xl"}`}>{row.name}</h3>
+                  <h3 className={`display-copy mt-3 font-black ${isPhone ? "text-xl" : featured ? "text-3xl" : "text-2xl"}`}>{getDisplayName(row.name)}</h3>
 
                   <div className="mt-3 flex flex-wrap gap-2 text-xs text-arenaMuted">
                     <span className="show-chip">

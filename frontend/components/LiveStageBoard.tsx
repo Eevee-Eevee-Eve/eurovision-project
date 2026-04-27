@@ -31,7 +31,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   const [error, setError] = useState("");
   const previousRanks = useRef<Record<string, number>>({});
   const previousLeaderRanks = useRef<Record<string, number>>({});
-  const { getCountryName, getStageLabel, language } = useLanguage();
+  const { getCountryName, getDisplayName, getStageLabel, language } = useLanguage();
   const { account } = useAccount();
   const { isPhone, isTablet, isDesktop } = useDeviceTier();
   const isSemi = stageKey === "semi1" || stageKey === "semi2";
@@ -371,14 +371,14 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
           {row.rank}
         </div>
         <UserAvatar
-          name={row.name}
+          name={getDisplayName(row.name)}
           avatarUrl={row.avatarUrl}
           avatarTheme={row.avatarTheme}
           className={`${dense ? "h-[2rem] w-[2rem]" : compact ? "h-9 w-9" : "h-10 w-10 md:h-12 md:w-12"} shrink-0`}
           textClass="text-sm"
         />
         <div className="min-w-0 flex-1">
-          <p className={`truncate font-semibold text-white ${dense ? "text-[12px] leading-4" : compact ? "text-[15px]" : "text-base md:text-lg"}`}>{row.name}</p>
+          <p className={`truncate font-semibold text-white ${dense ? "text-[12px] leading-4" : compact ? "text-[15px]" : "text-base md:text-lg"}`}>{getDisplayName(row.name)}</p>
           {isDesktop && (compact || dense) ? null : (
             <p className={`${compact ? "text-[12px]" : "text-sm"} text-arenaMuted`}>
               {row.points} {text.points}
@@ -579,7 +579,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
               </span>
               {leaders[0]?.name ? (
                 <span className="show-chip max-w-[22rem] truncate text-[11px] uppercase tracking-[0.18em] text-arenaPulse">
-                  {text.leaderLabel}: {leaders[0].name}
+                  {text.leaderLabel}: {getDisplayName(leaders[0].name)}
                 </span>
               ) : null}
             </div>
