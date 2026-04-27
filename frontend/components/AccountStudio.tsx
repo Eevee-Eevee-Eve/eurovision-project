@@ -210,6 +210,11 @@ export function AccountStudio() {
   }
 
   const resolvedAvatarUrl = resolveMediaUrl(account.avatarUrl);
+  const openAvatarPreview = () => {
+    if (resolvedAvatarUrl) {
+      setAvatarPreviewOpen(true);
+    }
+  };
 
   return (
     <div className="grid gap-5">
@@ -221,13 +226,21 @@ export function AccountStudio() {
             <p className="mt-3 max-w-2xl text-sm text-arenaMuted">{accountCopy.account.subtitle}</p>
           </div>
           <div className="flex items-center gap-4">
-            <UserAvatar
-              name={getDisplayName(account.publicName)}
-              avatarUrl={account.avatarUrl}
-              avatarTheme={account.avatarTheme}
-              className="h-16 w-16"
-              textClass="text-xl"
-            />
+            <button
+              type="button"
+              className="rounded-full outline-none transition hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-arenaBeam disabled:cursor-default disabled:hover:scale-100"
+              onClick={openAvatarPreview}
+              disabled={!resolvedAvatarUrl}
+              aria-label={accountCopy.account.previewAvatar}
+            >
+              <UserAvatar
+                name={getDisplayName(account.publicName)}
+                avatarUrl={account.avatarUrl}
+                avatarTheme={account.avatarTheme}
+                className="h-16 w-16"
+                textClass="text-xl"
+              />
+            </button>
             <div>
               <p className="text-lg font-semibold text-white">{getDisplayName(account.publicName)}</p>
               <p className="text-sm text-arenaMuted">{account.email}</p>
@@ -249,11 +262,13 @@ export function AccountStudio() {
             <input className="arena-input" placeholder={accountCopy.auth.firstName} value={firstName} onChange={(event) => setFirstName(event.target.value)} />
             <input className="arena-input" placeholder={accountCopy.auth.lastName} value={lastName} onChange={(event) => setLastName(event.target.value)} />
             <input className="arena-input" placeholder={accountCopy.auth.displayName} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
-            <select className="arena-input" value={publicDisplayMode} onChange={(event) => setPublicDisplayMode(event.target.value as PublicDisplayMode)}>
-              {Object.entries(accountCopy.publicDisplayModes).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
+            <div className="arena-select-shell">
+              <select className="arena-input arena-select" value={publicDisplayMode} onChange={(event) => setPublicDisplayMode(event.target.value as PublicDisplayMode)}>
+                {Object.entries(accountCopy.publicDisplayModes).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
             <label className="flex items-start gap-3 rounded-[1.3rem] bg-white/[0.03] px-4 py-3 text-sm text-arenaMuted md:col-span-2">
               <input type="checkbox" checked={publicDisplayOptIn} onChange={(event) => setPublicDisplayOptIn(event.target.checked)} className="mt-1 h-4 w-4 rounded" />
               <span>{accountCopy.auth.publicDisplayOptIn}</span>
@@ -275,7 +290,7 @@ export function AccountStudio() {
             <button
               type="button"
               className="rounded-full outline-none transition hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-arenaBeam"
-              onClick={() => resolvedAvatarUrl && setAvatarPreviewOpen(true)}
+              onClick={openAvatarPreview}
               disabled={!resolvedAvatarUrl}
               aria-label={accountCopy.account.previewAvatar}
             >

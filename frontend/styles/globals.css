@@ -106,6 +106,33 @@ select {
   box-shadow: 0 0 0 1px rgba(129, 236, 255, 0.22), 0 0 18px rgba(199, 153, 255, 0.2);
 }
 
+.arena-select-shell {
+  position: relative;
+}
+
+.arena-select-shell::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  right: 1.15rem;
+  top: 50%;
+  height: 0.55rem;
+  width: 0.55rem;
+  border-bottom: 2px solid rgba(233, 230, 252, 0.78);
+  border-right: 2px solid rgba(233, 230, 252, 0.78);
+  transform: translateY(-65%) rotate(45deg);
+}
+
+.arena-select {
+  appearance: none;
+  padding-right: 3rem;
+}
+
+.arena-select option {
+  background: #1e1e32;
+  color: #e9e6fc;
+}
+
 .arena-search-input {
   padding-left: 3.35rem;
 }
