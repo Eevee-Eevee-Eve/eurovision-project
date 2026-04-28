@@ -28,6 +28,10 @@ body {
   overflow-x: hidden;
 }
 
+.bg-arena-grid {
+  background: transparent;
+}
+
 body::before,
 body::after {
   content: "";
@@ -145,6 +149,19 @@ select {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
+.site-nav-link-return,
+.site-mobile-link-return {
+  color: #0d0d1c;
+  background: linear-gradient(135deg, rgba(129, 236, 255, 0.95), rgba(255, 99, 194, 0.9));
+  box-shadow: 0 10px 28px rgba(129, 236, 255, 0.16);
+}
+
+.site-nav-link-return:hover,
+.site-mobile-link-return:hover {
+  color: #0d0d1c;
+  background: linear-gradient(135deg, #81ecff, #ff63c2);
+}
+
 .site-header-actions {
   display: flex;
   align-items: center;
@@ -245,6 +262,15 @@ select {
     linear-gradient(135deg, rgba(129, 236, 255, 0.12), rgba(255, 99, 194, 0.12)),
     rgba(255, 255, 255, 0.08);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.room-title-safe,
+.room-lobby-title {
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .home-hero-compact {

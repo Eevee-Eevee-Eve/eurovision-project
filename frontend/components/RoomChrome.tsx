@@ -99,6 +99,13 @@ export function RoomChrome({
     [roomSummary?.defaultStage, stageKey],
   );
 
+  useEffect(() => {
+    if (!roomSummary) return;
+    window.localStorage.setItem("last_room_slug", roomSlug);
+    window.localStorage.setItem("last_room_name", getRoomName(roomSlug, roomSummary.name));
+    window.localStorage.setItem("last_room_stage", activeStage);
+  }, [activeStage, getRoomName, roomSlug, roomSummary]);
+
   const showStageMeta = !(pageKey === "players" && !stageKey);
 
   const mergedVoteCopy = language === "ru"
@@ -146,8 +153,8 @@ export function RoomChrome({
       };
 
   return (
-    <main className="min-h-screen bg-arena-grid px-4 pb-20 pt-4 text-arenaText md:px-8 md:pt-6">
-      <div className={`mx-auto grid gap-4 ${isDisplayShell ? "max-w-[96rem] 2xl:max-w-[108rem]" : "max-w-[96rem]"}`}>
+    <main className="min-h-screen bg-arena-grid px-4 pb-20 pt-4 text-arenaText md:px-8">
+      <div className={`mx-auto grid gap-5 ${isDisplayShell ? "max-w-[96rem] 2xl:max-w-[108rem]" : "max-w-[96rem]"}`}>
         <SiteHeader />
 
         <div className="glass-panel ghost-grid ghost-grid-room rounded-shell border border-white/10 p-4 md:p-5">
@@ -181,7 +188,7 @@ export function RoomChrome({
                   <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
                     {unlockCopy.roomInfo}
                   </p>
-                  <h1 className={`display-copy mt-2 font-black text-white ${isPhone ? "text-xl" : "text-2xl md:text-3xl"}`}>
+                  <h1 className={`room-title-safe display-copy mt-2 font-black text-white ${isPhone ? "text-xl" : "text-2xl md:text-3xl"}`}>
                     {getRoomName(roomSlug, roomSummary.name)}
                   </h1>
                   <div className="mt-3 flex flex-wrap gap-2">
