@@ -244,6 +244,9 @@ export function AccountStudio() {
             <div>
               <p className="text-lg font-semibold text-white">{getDisplayName(account.publicName)}</p>
               <p className="text-sm text-arenaMuted">{account.email}</p>
+              <Link href={`/stats?player=${account.id}`} className="mt-3 inline-flex rounded-full bg-white/[0.06] px-4 py-2 text-xs font-semibold text-arenaBeam transition hover:bg-white/[0.1]">
+                {language === "ru" ? "Моя статистика" : "My stats"}
+              </Link>
             </div>
           </div>
         </div>
