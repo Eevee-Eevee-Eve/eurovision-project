@@ -870,6 +870,14 @@ select {
   border-color: rgba(129, 236, 255, 0.1);
 }
 
+.live-final-readable-row {
+  contain: layout paint;
+}
+
+.live-final-country {
+  width: clamp(7.5rem, 16vw, 10.75rem);
+}
+
 .live-final-row-moving {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
