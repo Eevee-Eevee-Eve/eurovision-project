@@ -1,7 +1,36 @@
 'use client';
 
 import Link from "next/link";
-import { Award, BarChart3, Crown, Flag, Medal, Search, Sparkles, Star, Target, Trophy, Upload, Users } from "lucide-react";
+import {
+  Activity,
+  Award,
+  BadgeCheck,
+  BarChart3,
+  Bomb,
+  Brain,
+  CalendarCheck,
+  CircleDot,
+  Crown,
+  Flame,
+  Flag,
+  Gauge,
+  Gem,
+  Heart,
+  Landmark,
+  Laugh,
+  ListChecks,
+  Medal,
+  Mountain,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Target,
+  Trophy,
+  Upload,
+  Users,
+  Zap,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { fetchActs, fetchRooms, fetchSeasonStats } from "../lib/api";
 import type { AccountProfile, ActEntry, AvatarTheme, RoomSummary, StageKey } from "../lib/types";
@@ -99,7 +128,207 @@ const ACHIEVEMENTS: Record<string, Achievement> = {
     icon: Star,
     tone: "from-emerald-300/24 to-teal-500/10 text-emerald-100",
   },
+  obvious: {
+    key: "obvious",
+    titleRu: "Слишком очевидно",
+    titleEn: "Too obvious",
+    textRu: "Угадал победителя, которого угадали многие.",
+    textEn: "Guessed the winner most people also saw coming.",
+    icon: BadgeCheck,
+    tone: "from-sky-300/24 to-cyan-500/10 text-sky-100",
+  },
+  almostVanga: {
+    key: "almostVanga",
+    titleRu: "Почти Ванга",
+    titleEn: "Almost Vanga",
+    textRu: "Победитель был в топ-3 прогноза.",
+    textEn: "Had the winner in the predicted top 3.",
+    icon: Brain,
+    tone: "from-purple-300/24 to-fuchsia-500/10 text-purple-100",
+  },
+  topTenKing: {
+    key: "topTenKing",
+    titleRu: "Король десятки",
+    titleEn: "Top-10 ruler",
+    textRu: "Часто угадывает состав верхней десятки.",
+    textEn: "Often predicts the top-10 field correctly.",
+    icon: ListChecks,
+    tone: "from-lime-300/24 to-emerald-500/10 text-lime-100",
+  },
+  podiumSense: {
+    key: "podiumSense",
+    titleRu: "Пьедестальный нюх",
+    titleEn: "Podium sense",
+    textRu: "Чувствует верхнюю тройку.",
+    textEn: "Has a strong read on the podium.",
+    icon: Medal,
+    tone: "from-yellow-200/24 to-orange-500/10 text-yellow-100",
+  },
+  madmanRight: {
+    key: "madmanRight",
+    titleRu: "Безумец был прав",
+    titleEn: "The mad call worked",
+    textRu: "Угадал редкого победителя, в которого почти никто не верил.",
+    textEn: "Picked a winner almost nobody trusted.",
+    icon: Laugh,
+    tone: "from-rose-300/24 to-pink-500/10 text-rose-100",
+  },
+  millimeter: {
+    key: "millimeter",
+    titleRu: "Миллиметровщик",
+    titleEn: "Millimeter mind",
+    textRu: "Минимальное среднее отклонение.",
+    textEn: "Lowest average placement distance.",
+    icon: Gauge,
+    tone: "from-teal-300/24 to-cyan-500/10 text-teal-100",
+  },
+  closeCall: {
+    key: "closeCall",
+    titleRu: "Почти попал, но красиво",
+    titleEn: "Beautiful near miss",
+    textRu: "Много попаданий на плюс-минус одно место.",
+    textEn: "Lots of plus-or-minus-one predictions.",
+    icon: CircleDot,
+    tone: "from-indigo-300/24 to-blue-500/10 text-indigo-100",
+  },
+  dryMath: {
+    key: "dryMath",
+    titleRu: "Сухая математика",
+    titleEn: "Dry math",
+    textRu: "Высокий результат без сильных переоценок.",
+    textEn: "High score without wild overrating.",
+    icon: BarChart3,
+    tone: "from-slate-200/24 to-slate-500/10 text-slate-100",
+  },
+  noPanic: {
+    key: "noPanic",
+    titleRu: "Без паники",
+    titleEn: "No panic",
+    textRu: "Стабильно держит уровень несколько лет.",
+    textEn: "Keeps a steady level across years.",
+    icon: ShieldCheck,
+    tone: "from-green-300/24 to-emerald-500/10 text-green-100",
+  },
+  bottomWhisperer: {
+    key: "bottomWhisperer",
+    titleRu: "Подвал чувствую сердцем",
+    titleEn: "Bottom-table whisperer",
+    textRu: "Хорошо угадывает нижнюю пятерку.",
+    textEn: "Reads the bottom five unusually well.",
+    icon: Mountain,
+    tone: "from-violet-300/24 to-indigo-500/10 text-violet-100",
+  },
+  lastRomantic: {
+    key: "lastRomantic",
+    titleRu: "Последний романтик",
+    titleEn: "Last-place romantic",
+    textRu: "Часто угадывает последнее место.",
+    textEn: "Often nails the last place.",
+    icon: Heart,
+    tone: "from-red-300/24 to-rose-500/10 text-red-100",
+  },
+  antiHype: {
+    key: "antiHype",
+    titleRu: "Антихайп машина",
+    titleEn: "Anti-hype machine",
+    textRu: "Правильно не верит в общего фаворита.",
+    textEn: "Correctly doubts the shared favorite.",
+    icon: Bomb,
+    tone: "from-orange-300/24 to-red-500/10 text-orange-100",
+  },
+  warnedYou: {
+    key: "warnedYou",
+    titleRu: "Я предупреждал",
+    titleEn: "I warned you",
+    textRu: "Занизил страну, которую большинство переоценило.",
+    textEn: "Placed low a country everyone overrated.",
+    icon: Zap,
+    tone: "from-amber-300/24 to-red-500/10 text-amber-100",
+  },
+  secondCurse: {
+    key: "secondCurse",
+    titleRu: "Проклятие второго места",
+    titleEn: "Second-place curse",
+    textRu: "Слишком часто останавливается в шаге от победы.",
+    textEn: "Stops one step from victory too often.",
+    icon: Medal,
+    tone: "from-zinc-200/24 to-zinc-500/10 text-zinc-100",
+  },
+  almostChampion: {
+    key: "almostChampion",
+    titleRu: "Почти чемпион",
+    titleEn: "Almost champion",
+    textRu: "Проиграл сезон с минимальным отрывом.",
+    textEn: "Lost a season by a tiny margin.",
+    icon: Gem,
+    tone: "from-fuchsia-300/24 to-purple-500/10 text-fuchsia-100",
+  },
+  chaosDiploma: {
+    key: "chaosDiploma",
+    titleRu: "Хаос с дипломом",
+    titleEn: "Certified chaos",
+    textRu: "Странные прогнозы, но очки почему-то есть.",
+    textEn: "Wild predictions, somehow still scores.",
+    icon: Activity,
+    tone: "from-blue-300/24 to-pink-500/10 text-blue-100",
+  },
+  heartVote: {
+    key: "heartVote",
+    titleRu: "Голосовал сердцем",
+    titleEn: "Heart voter",
+    textRu: "Регулярно переоценивает любимые страны.",
+    textEn: "Regularly overrates favorite countries.",
+    icon: Heart,
+    tone: "from-pink-300/24 to-rose-500/10 text-pink-100",
+  },
+  comeback: {
+    key: "comeback",
+    titleRu: "Камбэк сезона",
+    titleEn: "Season comeback",
+    textRu: "Сильно вырос после слабого года.",
+    textEn: "Jumped hard after a weak year.",
+    icon: Flame,
+    tone: "from-orange-300/24 to-yellow-500/10 text-orange-100",
+  },
+  veteran: {
+    key: "veteran",
+    titleRu: "Ветеран дивана",
+    titleEn: "Sofa veteran",
+    textRu: "Пять и больше сезонов в деле.",
+    textEn: "Five or more seasons in play.",
+    icon: CalendarCheck,
+    tone: "from-cyan-300/24 to-indigo-500/10 text-cyan-100",
+  },
+  streak: {
+    key: "streak",
+    titleRu: "Стабильная рука",
+    titleEn: "Steady hand",
+    textRu: "Несколько лет подряд в верхней группе.",
+    textEn: "Several years in a row near the top.",
+    icon: Activity,
+    tone: "from-emerald-300/24 to-lime-500/10 text-emerald-100",
+  },
+  countryFan: {
+    key: "countryFan",
+    titleRu: "Фан-клуб одной страны",
+    titleEn: "One-country fan club",
+    textRu: "Одна страна стабильно выше среднего.",
+    textEn: "One country is consistently placed above average.",
+    icon: Flag,
+    tone: "from-sky-300/24 to-blue-500/10 text-sky-100",
+  },
+  bigFive: {
+    key: "bigFive",
+    titleRu: "Большая пятерка, малый риск",
+    titleEn: "Big Five, small risk",
+    textRu: "Хорошо читает автофиналистов.",
+    textEn: "Reads automatic finalists well.",
+    icon: Landmark,
+    tone: "from-yellow-300/24 to-amber-500/10 text-yellow-100",
+  },
 };
+
+const ALL_ACHIEVEMENTS = Object.values(ACHIEVEMENTS);
 
 const SEED_PLAYERS: HistoricalPlayer[] = [
   {
@@ -107,7 +336,15 @@ const SEED_PLAYERS: HistoricalPlayer[] = [
     name: "Анастасия З",
     avatarTheme: { primary: "#ff63c2", secondary: "#7f5cff", initials: "АЗ" },
     favoriteSlot: 13,
-    achievements: [ACHIEVEMENTS.champion, ACHIEVEMENTS.thirteen, ACHIEVEMENTS.sniper],
+    achievements: [
+      ACHIEVEMENTS.champion,
+      ACHIEVEMENTS.thirteen,
+      ACHIEVEMENTS.sniper,
+      ACHIEVEMENTS.topTenKing,
+      ACHIEVEMENTS.closeCall,
+      ACHIEVEMENTS.streak,
+      ACHIEVEMENTS.obvious,
+    ],
     records: [
       { year: 2023, points: 148, exact: 6, close: 11, winners: 1, lastPlaces: 2, rank: 2 },
       { year: 2024, points: 173, exact: 8, close: 14, winners: 1, lastPlaces: 3, rank: 1, champion: true },
@@ -119,7 +356,15 @@ const SEED_PLAYERS: HistoricalPlayer[] = [
     name: "Сергей М.",
     avatarTheme: { primary: "#81ecff", secondary: "#577aff", initials: "СМ" },
     favoriteSlot: 1,
-    achievements: [ACHIEVEMENTS.oracle, ACHIEVEMENTS.basement],
+    achievements: [
+      ACHIEVEMENTS.oracle,
+      ACHIEVEMENTS.basement,
+      ACHIEVEMENTS.antiHype,
+      ACHIEVEMENTS.warnedYou,
+      ACHIEVEMENTS.lastRomantic,
+      ACHIEVEMENTS.madmanRight,
+      ACHIEVEMENTS.bigFive,
+    ],
     records: [
       { year: 2023, points: 132, exact: 4, close: 12, winners: 1, lastPlaces: 4, rank: 3 },
       { year: 2024, points: 158, exact: 6, close: 13, winners: 2, lastPlaces: 3, rank: 2 },
@@ -131,7 +376,14 @@ const SEED_PLAYERS: HistoricalPlayer[] = [
     name: "Евгений М.",
     avatarTheme: { primary: "#f59e0b", secondary: "#ef4444", initials: "ЕМ" },
     favoriteSlot: 24,
-    achievements: [ACHIEVEMENTS.sniper],
+    achievements: [
+      ACHIEVEMENTS.sniper,
+      ACHIEVEMENTS.almostVanga,
+      ACHIEVEMENTS.millimeter,
+      ACHIEVEMENTS.dryMath,
+      ACHIEVEMENTS.comeback,
+      ACHIEVEMENTS.countryFan,
+    ],
     records: [
       { year: 2023, points: 121, exact: 5, close: 8, winners: 0, lastPlaces: 1, rank: 4 },
       { year: 2024, points: 139, exact: 5, close: 12, winners: 1, lastPlaces: 1, rank: 4 },
@@ -209,6 +461,8 @@ export function GlobalStatsHub() {
             average: "Средние очки",
             close: "Близких мест",
             achievements: "Ачивки",
+            achievementsCatalog: "Коллекция ачивок",
+            achievementsCatalogText: "Полный набор бейджей, которые будут выдаваться автоматически после импорта архивных финалов.",
             playerRating: "Рейтинг игроков",
             playerHint: "После импорта твоих записей эти карточки будут строиться по всем зарегистрированным аккаунтам.",
             profile: "Профиль игрока",
@@ -241,6 +495,8 @@ export function GlobalStatsHub() {
             average: "Average points",
             close: "Close calls",
             achievements: "Achievements",
+            achievementsCatalog: "Achievement collection",
+            achievementsCatalogText: "The full badge set that will be awarded automatically after importing archived finals.",
             playerRating: "Player ranking",
             playerHint: "After importing your records, these cards will be built across all registered accounts.",
             profile: "Player profile",
@@ -466,6 +722,24 @@ export function GlobalStatsHub() {
       <section className="show-card p-5 md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
+            <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">{copy.achievementsCatalog}</p>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-arenaMuted">{copy.achievementsCatalogText}</p>
+          </div>
+          <span className="show-chip text-[11px] text-arenaMuted">
+            <Medal size={13} />
+            {ALL_ACHIEVEMENTS.length}
+          </span>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {ALL_ACHIEVEMENTS.map((achievement) => (
+            <AchievementBadgeCard key={achievement.key} achievement={achievement} language={language} />
+          ))}
+        </div>
+      </section>
+
+      <section className="show-card p-5 md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
             <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.countries}</p>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-arenaMuted">{copy.countryHint}</p>
           </div>
@@ -547,6 +821,29 @@ function AchievementPill({ achievement, language, compact = false }: { achieveme
   );
 }
 
+function AchievementBadgeCard({ achievement, language }: { achievement: Achievement; language: "ru" | "en" }) {
+  const Icon = achievement.icon;
+  return (
+    <div className={`achievement-card show-panel min-w-0 overflow-hidden bg-gradient-to-br ${achievement.tone}`}>
+      <div className="achievement-card-shine" />
+      <div className="relative z-10 flex items-start gap-3 p-4">
+        <div className="achievement-medal shrink-0">
+          <Icon size={23} />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-black text-white">{language === "ru" ? achievement.titleRu : achievement.titleEn}</p>
+          <p className="mt-2 text-xs leading-5 opacity-80">{language === "ru" ? achievement.textRu : achievement.textEn}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function countryFlagEmoji(code: string) {
+  if (!/^[A-Z]{2}$/.test(code)) return "·";
+  return String.fromCodePoint(...code.split("").map((letter) => letter.charCodeAt(0) + 127397));
+}
+
 function CountryCard({
   country,
   labels,
@@ -559,7 +856,9 @@ function CountryCard({
   return (
     <div className="show-panel min-w-0 overflow-hidden p-4">
       <div className="flex items-center gap-3">
-        <img src={country.flagUrl} alt="" className="h-12 w-12 rounded-full object-cover" loading="lazy" />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.08] text-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+          {countryFlagEmoji(country.code)}
+        </div>
         <div className="min-w-0">
           <p className="truncate text-lg font-black text-white">{countryName}</p>
           <p className="text-sm text-arenaMuted">{country.appearances} {labels.appearances}</p>
