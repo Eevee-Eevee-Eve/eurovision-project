@@ -999,7 +999,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           </div>
         </section>
       ) : (
-        <section className="show-card px-4 py-3.5 md:p-5">
+        <section className="show-card px-4 py-3.5 md:hidden md:p-5">
           <div className="max-w-4xl">
             <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{text.kicker}</p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-arenaMuted">

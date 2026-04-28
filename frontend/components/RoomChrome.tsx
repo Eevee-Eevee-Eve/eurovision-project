@@ -37,6 +37,7 @@ export function RoomChrome({
   const compactRoomShell = isPhone && (pageKey === "vote" || pageKey === "live" || pageKey === "players");
   const isDisplayShell = pageKey === "live" || pageKey === "players";
   const minimalDisplayShell = isDisplayShell && !isPhone;
+  const mergedDesktopShell = !isPhone && pageKey === "vote";
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [needsRoomPassword, setNeedsRoomPassword] = useState(false);
   const [roomSummary, setRoomSummary] = useState<RoomSummary | null>(null);
@@ -104,6 +105,17 @@ export function RoomChrome({
     [roomSummary?.defaultStage, stageKey],
   );
   const showStageMeta = !(pageKey === "players" && !stageKey);
+  const mergedVoteCopy = language === "ru"
+    ? {
+        kicker: "Телефон / голосование",
+        title: "Голосование",
+        description: "Перетаскивай артистов в свой порядок. Тап по строке открывает карточку с описанием, заметкой и видео.",
+      }
+    : {
+        kicker: "Phone / voting",
+        title: "Voting",
+        description: "Drag acts into your own order. Tap any row to open the card with details, notes, and video.",
+      };
 
   const unlockCopy = language === "ru"
     ? {
@@ -210,8 +222,8 @@ export function RoomChrome({
             </div>
 
             {!checkingAccess && !roomMissing && roomSummary && !isRoomLanding && !compactRoomShell && !minimalDisplayShell ? (
-              <div className="grid gap-3">
-                <div className="show-panel p-4">
+              <div className={mergedDesktopShell ? "show-panel room-context-merged p-4 md:p-5" : "grid gap-3"}>
+                <div className={mergedDesktopShell ? "min-w-0" : "show-panel p-4"}>
                   <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
                     {unlockCopy.roomInfo}
                   </p>
@@ -243,7 +255,22 @@ export function RoomChrome({
                     ) : null}
                   </div>
                 </div>
-
+                {mergedDesktopShell ? (
+                  <div className="min-w-0 md:text-right">
+                    <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
+                      {mergedVoteCopy.kicker}
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 md:justify-end">
+                      <h2 className="display-copy text-[1.65rem] font-black leading-none text-white md:text-4xl">
+                        {mergedVoteCopy.title}
+                      </h2>
+                      <span className="show-chip text-xs text-arenaBeam">{getStageLabel(activeStage)}</span>
+                    </div>
+                    <p className="mt-2 max-w-3xl text-sm leading-6 text-arenaMuted md:ml-auto">
+                      {mergedVoteCopy.description}
+                    </p>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 
