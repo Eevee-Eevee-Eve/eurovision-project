@@ -229,7 +229,7 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
               <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
                 {text.kicker}
               </p>
-            <h2 className="display-copy mt-3 text-2xl font-black md:text-3xl">{roomName}</h2>
+            <h2 className="room-lobby-title display-copy mt-3 text-2xl font-black md:text-3xl">{roomName}</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-arenaMuted">{text.description}</p>
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -288,7 +288,7 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
             </p>
             <div className="mt-4 grid gap-8 xl:grid-cols-[minmax(0,0.84fr)_minmax(0,1.16fr)] xl:items-end">
               <div className="max-w-3xl">
-                <h2 className="display-copy text-3xl font-black md:text-6xl">{roomName}</h2>
+                <h2 className="room-lobby-title display-copy text-3xl font-black md:text-6xl">{roomName}</h2>
                 <p className="mt-4 text-sm leading-7 text-arenaMuted md:text-base">
                   {text.description}
                 </p>

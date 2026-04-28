@@ -24,6 +24,7 @@ export default function Home() {
   const [roomSearch, setRoomSearch] = useState("");
   const [roomName, setRoomName] = useState("");
   const [roomPassword, setRoomPassword] = useState("");
+  const [roomStage, setRoomStage] = useState<RoomSummary["defaultStage"]>("semi1");
   const [createPending, setCreatePending] = useState(false);
   const [createError, setCreateError] = useState("");
 
@@ -129,12 +130,15 @@ export default function Home() {
               "Room creation unlocks as soon as you sign in.",
             createNameLabel: "Room name",
             createNamePlaceholder: "Example: Morozov semi-final party",
+            createStageLabel: "Event",
             createPasswordLabel: "Room password",
             createPasswordPlaceholder: "Optional",
             createButton: "Create room",
             createNeedAuth: "Sign in first",
             createHint:
-              "If nobody stays in the room for 4 hours, it disappears automatically.",
+              "The room stays available until the event, then archives 4 hours after results are published. The creator receives a CSV table by email.",
+            createLimitHint: "Each account can create up to 3 rooms.",
+            nameLengthHint: "Up to 64 characters.",
             temporary: "Temporary",
             privateRoom: "Password",
             noRooms: "Only the main room is active right now.",
@@ -189,7 +193,7 @@ export default function Home() {
       const payload = await createTemporaryRoom({
         name: roomName,
         password: roomPassword,
-        defaultStage: "semi1",
+        defaultStage: roomStage,
       });
       router.push(`/${payload.room.slug}`);
     } catch (error) {
@@ -200,6 +204,12 @@ export default function Home() {
             ? "Комната с таким именем уже существует. Выбери другое название."
             : "A room with this name already exists. Choose a different name.",
         );
+      } else if (error instanceof ApiError && error.code === "ROOM_LIMIT_REACHED") {
+        setCreateError(
+          language === "ru"
+            ? "На один аккаунт можно создать максимум 3 комнаты."
+            : "Each account can create up to 3 rooms.",
+        );
       } else {
         setCreateError(error instanceof Error ? error.message : "Unable to create room.");
       }
@@ -209,6 +219,21 @@ export default function Home() {
   }
 
   const showAuthFirst = !loading && !account;
+  const createStageLabel = "createStageLabel" in text
+    ? text.createStageLabel
+    : language === "ru"
+      ? "Событие"
+      : "Event";
+  const createLimitHint = "createLimitHint" in text
+    ? text.createLimitHint
+    : language === "ru"
+      ? "На один аккаунт можно создать до 3 комнат."
+      : "Each account can create up to 3 rooms.";
+  const nameLengthHint = "nameLengthHint" in text
+    ? text.nameLengthHint
+    : language === "ru"
+      ? "До 64 символов."
+      : "Up to 64 characters.";
 
   return (
     <main className="min-h-screen bg-arena-grid px-4 pb-24 pt-6 text-arenaText md:px-8">
@@ -298,7 +323,7 @@ export default function Home() {
                 <div key={room.slug} className="show-panel p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-lg font-semibold text-white">{getRoomName(room.slug, room.name)}</p>
+                      <p className="room-lobby-title text-lg font-semibold text-white">{getRoomName(room.slug, room.name)}</p>
                       <p className="mt-2 text-sm text-arenaMuted">
                         {getRoomCityLabel(room.slug, room.cityLabel)}
                       </p>
@@ -366,6 +391,7 @@ export default function Home() {
                   <input
                     value={roomName}
                     onChange={(event) => setRoomName(event.target.value)}
+                    maxLength={64}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
                         event.preventDefault();
@@ -375,6 +401,21 @@ export default function Home() {
                     placeholder={text.createNamePlaceholder}
                     className="arena-input home-input-create"
                   />
+                  <span className="text-xs text-arenaMuted/80">{nameLengthHint}</span>
+                </label>
+                <label className="grid gap-2 text-sm text-arenaMuted">
+                  <span>{createStageLabel}</span>
+                  <span className="arena-select-shell">
+                    <select
+                      value={roomStage}
+                      onChange={(event) => setRoomStage(event.target.value as RoomSummary["defaultStage"])}
+                      className="arena-select home-input-create"
+                    >
+                      <option value="semi1">{getStageLabel("semi1")}</option>
+                      <option value="semi2">{getStageLabel("semi2")}</option>
+                      <option value="final">{getStageLabel("final")}</option>
+                    </select>
+                  </span>
                 </label>
                 <label className="grid gap-2 text-sm text-arenaMuted">
                   <span>{text.createPasswordLabel}</span>
@@ -400,7 +441,9 @@ export default function Home() {
                   <PlusCircle size={16} />
                   {createPending ? "..." : text.createButton}
                 </button>
-                <p className="text-xs leading-6 text-arenaMuted">{text.createHint}</p>
+                <p className="text-xs leading-6 text-arenaMuted">
+                  {createLimitHint} {text.createHint}
+                </p>
               </div>
             ) : (
               <div className="mt-5 flex flex-wrap gap-3">
