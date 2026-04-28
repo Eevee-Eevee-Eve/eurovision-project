@@ -3,17 +3,13 @@
 import Link from "next/link";
 import { MonitorPlay, NotebookPen } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { getAccountCopy } from "../lib/account-copy";
 import { ApiError, fetchRoom, unlockRoom } from "../lib/api";
 import { useDeviceTier } from "../lib/device";
 import type { RoomSummary, StageKey } from "../lib/types";
-import { useAccount } from "./AccountProvider";
-import { BrandLogo } from "./BrandLogo";
-import { LanguageSwitcher } from "./LanguageSwitcher";
+import { SiteHeader } from "./SiteHeader";
 import { useLanguage } from "./LanguageProvider";
-import { UserAvatar } from "./UserAvatar";
 
-const navItems = [
+const roomNavItems = [
   { key: "vote", labelRu: "Голосование", labelEn: "Voting", icon: NotebookPen },
   { key: "live", labelRu: "Результаты", labelEn: "Results", icon: MonitorPlay },
 ] as const;
@@ -29,10 +25,8 @@ export function RoomChrome({
   pageKey: "vote" | "live" | "players" | "room";
   children: ReactNode;
 }) {
-  const { getDisplayName, getRoomName, getStageLabel, language } = useLanguage();
-  const { account } = useAccount();
+  const { getRoomName, getStageLabel, language } = useLanguage();
   const { isPhone } = useDeviceTier();
-  const accountCopy = getAccountCopy(language);
   const isRoomLanding = pageKey === "room";
   const compactRoomShell = isPhone && (pageKey === "vote" || pageKey === "live" || pageKey === "players");
   const isDisplayShell = pageKey === "live" || pageKey === "players";
@@ -104,7 +98,9 @@ export function RoomChrome({
     () => stageKey || roomSummary?.defaultStage || "semi1",
     [roomSummary?.defaultStage, stageKey],
   );
+
   const showStageMeta = !(pageKey === "players" && !stageKey);
+
   const mergedVoteCopy = language === "ru"
     ? {
         kicker: "Телефон / голосование",
@@ -123,19 +119,15 @@ export function RoomChrome({
         missingTitle: "Комната не найдена",
         missingText: "Эта комната уже исчезла или ссылка неверная.",
         lockedTitle: "Комната закрыта паролем",
-        lockedText:
-          "Сначала открой комнату паролем, а потом уже переходи к голосованию и результатам.",
+        lockedText: "Сначала открой комнату паролем, а потом переходи к голосованию и результатам.",
         passwordLabel: "Пароль комнаты",
         passwordPlaceholder: "Введите пароль",
         open: "Открыть комнату",
         backHome: "На главную",
         roomInfo: "Комната",
-        accountInfo: "Аккаунт",
         stageLabel: "Текущий этап",
         temporary: "Временная",
         privateRoom: "С паролем",
-        guest: "Гость",
-        accountHint: "Войти можно позже, прямо перед отправкой бюллетеня.",
       }
     : {
         loading: "Checking room access...",
@@ -148,78 +140,40 @@ export function RoomChrome({
         open: "Open room",
         backHome: "Back home",
         roomInfo: "Room",
-        accountInfo: "Account",
         stageLabel: "Current stage",
         temporary: "Temporary",
         privateRoom: "Password",
-        guest: "Guest",
-        accountHint: "You can sign in later, right before submitting a ballot.",
       };
 
   return (
     <main className="min-h-screen bg-arena-grid px-4 pb-20 pt-4 text-arenaText md:px-8 md:pt-6">
-      <div className={`mx-auto ${isDisplayShell ? "max-w-[96rem] 2xl:max-w-[108rem]" : "max-w-7xl"}`}>
+      <div className={`mx-auto grid gap-4 ${isDisplayShell ? "max-w-[96rem] 2xl:max-w-[108rem]" : "max-w-7xl"}`}>
+        <SiteHeader />
+
         <div className="glass-panel ghost-grid ghost-grid-room rounded-shell border border-white/10 p-4 md:p-5">
           <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 flex-1 items-center gap-4">
-                <BrandLogo variant="header" />
+            {!isRoomLanding ? (
+              <nav className="room-section-nav" aria-label={language === "ru" ? "Навигация комнаты" : "Room navigation"}>
+                {roomNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const href = `/${roomSlug}/${item.key}/${activeStage}`;
+                  const isActive = item.key === "live"
+                    ? pageKey === "live" || pageKey === "players"
+                    : pageKey === item.key;
 
-                {!isRoomLanding && !compactRoomShell ? (
-                  <nav className="hidden min-w-0 flex-wrap gap-2 md:flex" aria-label="Room navigation">
-                    {navItems.map((item) => {
-                      const Icon = item.icon;
-                      const href = `/${roomSlug}/${item.key}/${activeStage}`;
-                      const isActive = item.key === "live"
-                        ? pageKey === "live" || pageKey === "players"
-                        : pageKey === item.key;
-
-                      return (
-                        <Link
-                          key={item.key}
-                          href={href}
-                          className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition ${
-                            isActive
-                              ? "bg-arenaSurfaceMax text-white shadow-glow"
-                              : "bg-white/[0.04] text-arenaMuted hover:bg-white/[0.08] hover:text-white"
-                          } ${minimalDisplayShell ? "px-3 py-1.5 text-[13px]" : ""}`}
-                        >
-                          <Icon size={16} />
-                          <span className="label-copy uppercase tracking-[0.18em]">
-                            {language === "ru" ? item.labelRu : item.labelEn}
-                          </span>
-                        </Link>
-                      );
-                    })}
-                  </nav>
-                ) : null}
-              </div>
-              <div className="flex items-center gap-2">
-                <LanguageSwitcher />
-                <Link
-                  href="/account"
-                  className={`inline-flex items-center justify-center overflow-hidden border border-white/10 bg-white/[0.04] transition hover:bg-white/[0.08] ${
-                    account ? "h-11 w-11 rounded-full" : "h-11 rounded-full px-4"
-                  }`}
-                  aria-label={account ? accountCopy.navAccount : accountCopy.auth.signIn}
-                  title={account ? accountCopy.navAccount : accountCopy.auth.signIn}
-                >
-                  {account ? (
-                    <UserAvatar
-                      name={getDisplayName(account.publicName)}
-                      avatarUrl={account.avatarUrl}
-                      avatarTheme={account.avatarTheme}
-                      className="h-full w-full"
-                      textClass="text-[0.9rem]"
-                    />
-                  ) : (
-                    <span className="label-copy text-[10px] uppercase tracking-[0.2em] text-white/80">
-                      {language === "ru" ? "Войти" : "Sign in"}
-                    </span>
-                  )}
-                </Link>
-              </div>
-            </div>
+                  return (
+                    <Link
+                      key={item.key}
+                      href={href}
+                      className={`room-section-link ${isActive ? "room-section-link-active" : ""}`}
+                    >
+                      <Icon size={16} />
+                      <span>{language === "ru" ? item.labelRu : item.labelEn}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+            ) : null}
 
             {!checkingAccess && !roomMissing && roomSummary && !isRoomLanding && !compactRoomShell && !minimalDisplayShell ? (
               <div className={mergedDesktopShell ? "show-panel room-context-merged p-4 md:p-5" : "grid gap-3"}>
@@ -255,6 +209,7 @@ export function RoomChrome({
                     ) : null}
                   </div>
                 </div>
+
                 {mergedDesktopShell ? (
                   <div className="min-w-0 md:text-right">
                     <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
@@ -274,35 +229,6 @@ export function RoomChrome({
               </div>
             ) : null}
 
-            {!isRoomLanding && !compactRoomShell ? (
-              <div className="flex flex-wrap gap-2 md:hidden">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const href = `/${roomSlug}/${item.key}/${activeStage}`;
-                  const isActive = item.key === "live"
-                    ? pageKey === "live" || pageKey === "players"
-                    : pageKey === item.key;
-
-                  return (
-                    <Link
-                      key={item.key}
-                      href={href}
-                      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition ${
-                        isActive
-                          ? "bg-arenaSurfaceMax text-white shadow-glow"
-                          : "bg-white/[0.04] text-arenaMuted hover:bg-white/[0.08] hover:text-white"
-                      } ${minimalDisplayShell ? "px-3 py-1.5 text-[13px]" : ""}`}
-                    >
-                      <Icon size={16} />
-                      <span className="label-copy uppercase tracking-[0.18em]">
-                        {language === "ru" ? item.labelRu : item.labelEn}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : null}
-
             <div>
               {checkingAccess ? (
                 <div className="show-card p-6 text-sm text-arenaMuted">{unlockCopy.loading}</div>
@@ -313,10 +239,7 @@ export function RoomChrome({
                   </p>
                   <p className="mt-4 text-sm leading-7 text-arenaMuted">{unlockCopy.missingText}</p>
                   <div className="mt-5">
-                    <Link
-                      href="/"
-                      className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm"
-                    >
+                    <Link href="/" className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm">
                       {unlockCopy.backHome}
                     </Link>
                   </div>
@@ -355,10 +278,7 @@ export function RoomChrome({
                       >
                         {submitting ? "..." : unlockCopy.open}
                       </button>
-                      <Link
-                        href="/"
-                        className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm"
-                      >
+                      <Link href="/" className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm">
                         {unlockCopy.backHome}
                       </Link>
                     </div>

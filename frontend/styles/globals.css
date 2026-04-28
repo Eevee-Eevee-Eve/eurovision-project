@@ -190,6 +190,53 @@ select {
   padding: 0.9rem 1rem;
 }
 
+.room-section-nav {
+  display: flex;
+  gap: 0.45rem;
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 0.35rem;
+  scrollbar-width: none;
+}
+
+.room-section-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.room-section-link {
+  display: inline-flex;
+  min-height: 2.55rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.65rem 0.95rem;
+  color: #aaa5bf;
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease;
+}
+
+.room-section-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.room-section-link-active {
+  color: #fff;
+  background:
+    linear-gradient(135deg, rgba(129, 236, 255, 0.12), rgba(255, 99, 194, 0.12)),
+    rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
 .home-hero-compact {
   padding: clamp(1.25rem, 3vw, 2rem);
 }
