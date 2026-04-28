@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { fetchActs, fetchRooms, fetchSeasonStats } from "../lib/api";
+import { EUROVISION_COUNTRY_STATS, type EurovisionCountryStat } from "../lib/eurovision-country-stats";
 import type { AccountProfile, ActEntry, AvatarTheme, RoomSummary, StageKey } from "../lib/types";
 import { FALLBACK_ROOM } from "../lib/rooms";
 import { useAccount } from "./AccountProvider";
@@ -70,23 +71,7 @@ type HistoricalPlayer = {
   favoriteSlot?: number;
 };
 
-type CountryHistory = {
-  code: string;
-  name: string;
-  flagUrl: string;
-  former?: boolean;
-  highlightArtist?: string;
-  highlightSong?: string;
-  highlightPhoto?: string | null;
-  highlightRank?: number | null;
-  highlightYear?: number;
-  appearances: number;
-  wins: number;
-  top10: number;
-  lastPlaces: number;
-  thirteenthPlaces: number;
-  averageRank: number;
-};
+type CountryHistory = EurovisionCountryStat;
 
 const ACHIEVEMENTS: Record<string, Achievement> = {
   champion: {
@@ -398,61 +383,6 @@ const SEED_PLAYERS: HistoricalPlayer[] = [
   },
 ];
 
-const SEED_COUNTRIES: CountryHistory[] = [
-  { code: "AL", name: "Albania", flagUrl: "https://flagcdn.com/w80/al.png", highlightArtist: "Rona Nishliu", highlightSong: "Suus", highlightRank: 5, highlightYear: 2012, appearances: 20, wins: 0, top10: 2, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 17.2 },
-  { code: "AD", name: "Andorra", flagUrl: "https://flagcdn.com/w80/ad.png", highlightArtist: "Anonymous", highlightSong: "Salvem el món", highlightRank: 12, highlightYear: 2007, appearances: 6, wins: 0, top10: 0, lastPlaces: 0, thirteenthPlaces: 0, averageRank: 18.9 },
-  { code: "AM", name: "Armenia", flagUrl: "https://flagcdn.com/w80/am.png", highlightArtist: "Sirusho", highlightSong: "Qélé, Qélé", highlightRank: 4, highlightYear: 2008, appearances: 17, wins: 0, top10: 7, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 11.2 },
-  { code: "AU", name: "Australia", flagUrl: "https://flagcdn.com/w80/au.png", highlightArtist: "Dami Im", highlightSong: "Sound of Silence", highlightRank: 2, highlightYear: 2016, appearances: 9, wins: 0, top10: 4, lastPlaces: 0, thirteenthPlaces: 0, averageRank: 11.7 },
-  { code: "AT", name: "Austria", flagUrl: "https://flagcdn.com/w80/at.png", highlightArtist: "JJ", highlightSong: "Wasted Love", highlightRank: 1, highlightYear: 2025, appearances: 57, wins: 3, top10: 19, lastPlaces: 8, thirteenthPlaces: 2, averageRank: 14.1 },
-  { code: "AZ", name: "Azerbaijan", flagUrl: "https://flagcdn.com/w80/az.png", highlightArtist: "Ell & Nikki", highlightSong: "Running Scared", highlightRank: 1, highlightYear: 2011, appearances: 16, wins: 1, top10: 7, lastPlaces: 0, thirteenthPlaces: 0, averageRank: 12.4 },
-  { code: "BY", name: "Belarus", flagUrl: "https://flagcdn.com/w80/by.png", highlightArtist: "Dmitry Koldun", highlightSong: "Work Your Magic", highlightRank: 6, highlightYear: 2007, appearances: 16, wins: 0, top10: 1, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 16.8 },
-  { code: "BE", name: "Belgium", flagUrl: "https://flagcdn.com/w80/be.png", highlightArtist: "Sandra Kim", highlightSong: "J'aime la vie", highlightRank: 1, highlightYear: 1986, appearances: 65, wins: 1, top10: 27, lastPlaces: 8, thirteenthPlaces: 3, averageRank: 13.2 },
-  { code: "BA", name: "Bosnia and Herzegovina", flagUrl: "https://flagcdn.com/w80/ba.png", highlightArtist: "Hari Mata Hari", highlightSong: "Lejla", highlightRank: 3, highlightYear: 2006, appearances: 19, wins: 0, top10: 5, lastPlaces: 0, thirteenthPlaces: 0, averageRank: 12.8 },
-  { code: "BG", name: "Bulgaria", flagUrl: "https://flagcdn.com/w80/bg.png", highlightArtist: "Kristian Kostov", highlightSong: "Beautiful Mess", highlightRank: 2, highlightYear: 2017, appearances: 14, wins: 0, top10: 4, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 14.7 },
-  { code: "HR", name: "Croatia", flagUrl: "https://flagcdn.com/w80/hr.png", highlightArtist: "Baby Lasagna", highlightSong: "Rim Tim Tagi Dim", highlightRank: 2, highlightYear: 2024, appearances: 29, wins: 0, top10: 8, lastPlaces: 0, thirteenthPlaces: 2, averageRank: 13.9 },
-  { code: "CY", name: "Cyprus", flagUrl: "https://flagcdn.com/w80/cy.png", highlightArtist: "Eleni Foureira", highlightSong: "Fuego", highlightRank: 2, highlightYear: 2018, appearances: 40, wins: 0, top10: 12, lastPlaces: 0, thirteenthPlaces: 2, averageRank: 14.6 },
-  { code: "CZ", name: "Czechia", flagUrl: "https://flagcdn.com/w80/cz.png", highlightArtist: "Mikolas Josef", highlightSong: "Lie to Me", highlightRank: 6, highlightYear: 2018, appearances: 12, wins: 0, top10: 2, lastPlaces: 0, thirteenthPlaces: 0, averageRank: 18.1 },
-  { code: "DK", name: "Denmark", flagUrl: "https://flagcdn.com/w80/dk.png", highlightArtist: "Emmelie de Forest", highlightSong: "Only Teardrops", highlightRank: 1, highlightYear: 2013, appearances: 52, wins: 3, top10: 26, lastPlaces: 1, thirteenthPlaces: 2, averageRank: 11.9 },
-  { code: "EE", name: "Estonia", flagUrl: "https://flagcdn.com/w80/ee.png", highlightArtist: "Tanel Padar, Dave Benton & 2XL", highlightSong: "Everybody", highlightRank: 1, highlightYear: 2001, appearances: 29, wins: 1, top10: 11, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 14.3 },
-  { code: "FI", name: "Finland", flagUrl: "https://flagcdn.com/w80/fi.png", highlightArtist: "Lordi", highlightSong: "Hard Rock Hallelujah", highlightRank: 1, highlightYear: 2006, appearances: 57, wins: 1, top10: 13, lastPlaces: 11, thirteenthPlaces: 3, averageRank: 16.6 },
-  { code: "FR", name: "France", flagUrl: "https://flagcdn.com/w80/fr.png", highlightArtist: "Marie Myriam", highlightSong: "L'oiseau et l'enfant", highlightRank: 1, highlightYear: 1977, appearances: 66, wins: 5, top10: 39, lastPlaces: 1, thirteenthPlaces: 4, averageRank: 10.6 },
-  { code: "GE", name: "Georgia", flagUrl: "https://flagcdn.com/w80/ge.png", highlightArtist: "Eldrine", highlightSong: "One More Day", highlightRank: 9, highlightYear: 2011, appearances: 16, wins: 0, top10: 2, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 17.7 },
-  { code: "DE", name: "Germany", flagUrl: "https://flagcdn.com/w80/de.png", highlightArtist: "Lena", highlightSong: "Satellite", highlightRank: 1, highlightYear: 2010, appearances: 67, wins: 2, top10: 34, lastPlaces: 10, thirteenthPlaces: 4, averageRank: 13.8 },
-  { code: "GR", name: "Greece", flagUrl: "https://flagcdn.com/w80/gr.png", highlightArtist: "Helena Paparizou", highlightSong: "My Number One", highlightRank: 1, highlightYear: 2005, appearances: 44, wins: 1, top10: 20, lastPlaces: 0, thirteenthPlaces: 2, averageRank: 11.5 },
-  { code: "HU", name: "Hungary", flagUrl: "https://flagcdn.com/w80/hu.png", highlightArtist: "Friderika", highlightSong: "Kinek mondjam el vétkeimet?", highlightRank: 4, highlightYear: 1994, appearances: 17, wins: 0, top10: 5, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 14.9 },
-  { code: "IS", name: "Iceland", flagUrl: "https://flagcdn.com/w80/is.png", highlightArtist: "Yohanna", highlightSong: "Is It True?", highlightRank: 2, highlightYear: 2009, appearances: 35, wins: 0, top10: 7, lastPlaces: 2, thirteenthPlaces: 2, averageRank: 15.1 },
-  { code: "IE", name: "Ireland", flagUrl: "https://flagcdn.com/w80/ie.png", highlightArtist: "Eimear Quinn", highlightSong: "The Voice", highlightRank: 1, highlightYear: 1996, appearances: 57, wins: 7, top10: 31, lastPlaces: 2, thirteenthPlaces: 2, averageRank: 11.4 },
-  { code: "IL", name: "Israel", flagUrl: "https://flagcdn.com/w80/il.png", highlightArtist: "Netta", highlightSong: "Toy", highlightRank: 1, highlightYear: 2018, appearances: 47, wins: 4, top10: 22, lastPlaces: 0, thirteenthPlaces: 3, averageRank: 11.8 },
-  { code: "IT", name: "Italy", flagUrl: "https://flagcdn.com/w80/it.png", highlightArtist: "Måneskin", highlightSong: "Zitti e buoni", highlightRank: 1, highlightYear: 2021, appearances: 50, wins: 3, top10: 37, lastPlaces: 1, thirteenthPlaces: 1, averageRank: 8.9 },
-  { code: "LV", name: "Latvia", flagUrl: "https://flagcdn.com/w80/lv.png", highlightArtist: "Marie N", highlightSong: "I Wanna", highlightRank: 1, highlightYear: 2002, appearances: 24, wins: 1, top10: 5, lastPlaces: 1, thirteenthPlaces: 0, averageRank: 17.3 },
-  { code: "LT", name: "Lithuania", flagUrl: "https://flagcdn.com/w80/lt.png", highlightArtist: "LT United", highlightSong: "We Are the Winners", highlightRank: 6, highlightYear: 2006, appearances: 24, wins: 0, top10: 4, lastPlaces: 0, thirteenthPlaces: 2, averageRank: 15.9 },
-  { code: "LU", name: "Luxembourg", flagUrl: "https://flagcdn.com/w80/lu.png", highlightArtist: "Corinne Hermès", highlightSong: "Si la vie est cadeau", highlightRank: 1, highlightYear: 1983, appearances: 39, wins: 5, top10: 26, lastPlaces: 0, thirteenthPlaces: 0, averageRank: 8.4 },
-  { code: "MT", name: "Malta", flagUrl: "https://flagcdn.com/w80/mt.png", highlightArtist: "Ira Losco", highlightSong: "7th Wonder", highlightRank: 2, highlightYear: 2002, appearances: 35, wins: 0, top10: 14, lastPlaces: 2, thirteenthPlaces: 1, averageRank: 13.7 },
-  { code: "MD", name: "Moldova", flagUrl: "https://flagcdn.com/w80/md.png", highlightArtist: "Sunstroke Project", highlightSong: "Hey Mamma", highlightRank: 3, highlightYear: 2017, appearances: 19, wins: 0, top10: 5, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 13.5 },
-  { code: "MC", name: "Monaco", flagUrl: "https://flagcdn.com/w80/mc.png", highlightArtist: "Séverine", highlightSong: "Un banc, un arbre, une rue", highlightRank: 1, highlightYear: 1971, appearances: 24, wins: 1, top10: 16, lastPlaces: 1, thirteenthPlaces: 1, averageRank: 9.5 },
-  { code: "ME", name: "Montenegro", flagUrl: "https://flagcdn.com/w80/me.png", highlightArtist: "Knez", highlightSong: "Adio", highlightRank: 13, highlightYear: 2015, appearances: 12, wins: 0, top10: 0, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 19.1 },
-  { code: "MA", name: "Morocco", flagUrl: "https://flagcdn.com/w80/ma.png", highlightArtist: "Samira Bensaïd", highlightSong: "Bitaqat Hub", highlightRank: 18, highlightYear: 1980, appearances: 1, wins: 0, top10: 0, lastPlaces: 0, thirteenthPlaces: 0, averageRank: 18.0 },
-  { code: "NL", name: "Netherlands", flagUrl: "https://flagcdn.com/w80/nl.png", highlightArtist: "Duncan Laurence", highlightSong: "Arcade", highlightRank: 1, highlightYear: 2019, appearances: 63, wins: 5, top10: 30, lastPlaces: 5, thirteenthPlaces: 3, averageRank: 12.8 },
-  { code: "MK", name: "North Macedonia", flagUrl: "https://flagcdn.com/w80/mk.png", highlightArtist: "Tamara Todevska", highlightSong: "Proud", highlightRank: 7, highlightYear: 2019, appearances: 21, wins: 0, top10: 1, lastPlaces: 0, thirteenthPlaces: 0, averageRank: 17.9 },
-  { code: "NO", name: "Norway", flagUrl: "https://flagcdn.com/w80/no.png", highlightArtist: "Alexander Rybak", highlightSong: "Fairytale", highlightRank: 1, highlightYear: 2009, appearances: 63, wins: 3, top10: 26, lastPlaces: 11, thirteenthPlaces: 3, averageRank: 13.4 },
-  { code: "PL", name: "Poland", flagUrl: "https://flagcdn.com/w80/pl.png", highlightArtist: "Edyta Górniak", highlightSong: "To nie ja!", highlightRank: 2, highlightYear: 1994, appearances: 27, wins: 0, top10: 4, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 16.1 },
-  { code: "PT", name: "Portugal", flagUrl: "https://flagcdn.com/w80/pt.png", highlightArtist: "Salvador Sobral", highlightSong: "Amar pelos dois", highlightRank: 1, highlightYear: 2017, appearances: 56, wins: 1, top10: 12, lastPlaces: 4, thirteenthPlaces: 2, averageRank: 15.4 },
-  { code: "RO", name: "Romania", flagUrl: "https://flagcdn.com/w80/ro.png", highlightArtist: "Paula Seling & Ovi", highlightSong: "Playing with Fire", highlightRank: 3, highlightYear: 2010, appearances: 23, wins: 0, top10: 6, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 13.1 },
-  { code: "RU", name: "Russia", flagUrl: "https://flagcdn.com/w80/ru.png", highlightArtist: "Dima Bilan", highlightSong: "Believe", highlightRank: 1, highlightYear: 2008, appearances: 23, wins: 1, top10: 14, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 9.8 },
-  { code: "SM", name: "San Marino", flagUrl: "https://flagcdn.com/w80/sm.png", highlightArtist: "Serhat", highlightSong: "Say Na Na Na", highlightRank: 19, highlightYear: 2019, appearances: 14, wins: 0, top10: 0, lastPlaces: 0, thirteenthPlaces: 0, averageRank: 20.7 },
-  { code: "RS", name: "Serbia", flagUrl: "https://flagcdn.com/w80/rs.png", highlightArtist: "Marija Šerifović", highlightSong: "Molitva", highlightRank: 1, highlightYear: 2007, appearances: 17, wins: 1, top10: 7, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 11.9 },
-  { code: "CS", name: "Serbia and Montenegro", flagUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Flag_of_Serbia_and_Montenegro.svg/80px-Flag_of_Serbia_and_Montenegro.svg.png", former: true, highlightArtist: "Željko Joksimović", highlightSong: "Lane moje", highlightRank: 2, highlightYear: 2004, appearances: 2, wins: 0, top10: 2, lastPlaces: 0, thirteenthPlaces: 0, averageRank: 5.0 },
-  { code: "SK", name: "Slovakia", flagUrl: "https://flagcdn.com/w80/sk.png", highlightArtist: "Marcel Palonder", highlightSong: "Kým nás máš", highlightRank: 18, highlightYear: 1996, appearances: 7, wins: 0, top10: 0, lastPlaces: 0, thirteenthPlaces: 0, averageRank: 19.4 },
-  { code: "SI", name: "Slovenia", flagUrl: "https://flagcdn.com/w80/si.png", highlightArtist: "Darja Švajger", highlightSong: "Prisluhni mi", highlightRank: 7, highlightYear: 1995, appearances: 29, wins: 0, top10: 3, lastPlaces: 0, thirteenthPlaces: 2, averageRank: 15.8 },
-  { code: "ES", name: "Spain", flagUrl: "https://flagcdn.com/w80/es.png", highlightArtist: "Salomé", highlightSong: "Vivo cantando", highlightRank: 1, highlightYear: 1969, appearances: 65, wins: 2, top10: 30, lastPlaces: 5, thirteenthPlaces: 4, averageRank: 13.5 },
-  { code: "SE", name: "Sweden", flagUrl: "https://flagcdn.com/w80/se.png", highlightArtist: "Loreen", highlightSong: "Tattoo", highlightRank: 1, highlightYear: 2023, appearances: 63, wins: 7, top10: 43, lastPlaces: 2, thirteenthPlaces: 2, averageRank: 8.7 },
-  { code: "CH", name: "Switzerland", flagUrl: "https://flagcdn.com/w80/ch.png", highlightArtist: "Nemo", highlightSong: "The Code", highlightRank: 1, highlightYear: 2024, appearances: 65, wins: 3, top10: 30, lastPlaces: 9, thirteenthPlaces: 3, averageRank: 13.7 },
-  { code: "TR", name: "Turkey", flagUrl: "https://flagcdn.com/w80/tr.png", highlightArtist: "Sertab Erener", highlightSong: "Everyway That I Can", highlightRank: 1, highlightYear: 2003, appearances: 34, wins: 1, top10: 10, lastPlaces: 3, thirteenthPlaces: 1, averageRank: 13.2 },
-  { code: "UA", name: "Ukraine", flagUrl: "https://flagcdn.com/w80/ua.png", highlightArtist: "Kalush Orchestra", highlightSong: "Stefania", highlightRank: 1, highlightYear: 2022, appearances: 20, wins: 3, top10: 14, lastPlaces: 0, thirteenthPlaces: 2, averageRank: 7.1 },
-  { code: "GB", name: "United Kingdom", flagUrl: "https://flagcdn.com/w80/gb.png", highlightArtist: "Katrina and the Waves", highlightSong: "Love Shine a Light", highlightRank: 1, highlightYear: 1997, appearances: 66, wins: 5, top10: 41, lastPlaces: 5, thirteenthPlaces: 4, averageRank: 10.9 },
-  { code: "YU", name: "Yugoslavia", flagUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Flag_of_SFR_Yugoslavia.svg/80px-Flag_of_SFR_Yugoslavia.svg.png", former: true, highlightArtist: "Riva", highlightSong: "Rock Me", highlightRank: 1, highlightYear: 1989, appearances: 27, wins: 1, top10: 15, lastPlaces: 1, thirteenthPlaces: 1, averageRank: 10.4 },
-];
-
 const stages: StageKey[] = ["semi1", "semi2", "final"];
 
 function totals(player: HistoricalPlayer) {
@@ -624,7 +554,7 @@ export function GlobalStatsHub() {
   const playerTotals = selectedPlayer ? totals(selectedPlayer) : null;
 
   const countryStats = useMemo(() => {
-    const byCode = new Map(SEED_COUNTRIES.map((country) => [country.code, country]));
+    const byCode = new Map(EUROVISION_COUNTRY_STATS.map((country) => [country.code, country]));
     currentActs.forEach((act) => {
       if (byCode.has(act.code)) return;
       byCode.set(act.code, {
@@ -633,8 +563,8 @@ export function GlobalStatsHub() {
         flagUrl: act.flagUrl,
         highlightArtist: act.artist,
         highlightSong: act.song,
-        highlightPhoto: act.photoUrl,
-        highlightRank: act.rank,
+        highlightPhoto: act.photoUrl || undefined,
+        highlightRank: act.rank || undefined,
         highlightYear: 2026,
         appearances: 1,
         wins: act.rank === 1 ? 1 : 0,
@@ -883,7 +813,7 @@ function AchievementBadgeCard({ achievement, language }: { achievement: Achievem
   return (
     <div className={`achievement-card show-panel min-w-0 overflow-hidden bg-gradient-to-br ${achievement.tone}`}>
       <div className="achievement-card-shine" />
-      <div className="relative z-10 flex h-full items-center gap-3 p-3.5">
+      <div className="achievement-card-content relative z-10 flex items-start gap-3 p-4">
         <div className="achievement-medal shrink-0">
           <Icon size={21} />
         </div>
