@@ -566,6 +566,10 @@ export function GlobalStatsHub() {
         highlightPhoto: act.photoUrl || undefined,
         highlightRank: act.rank || undefined,
         highlightYear: 2026,
+        firstYear: 2026,
+        latestYear: 2026,
+        winYears: act.rank === 1 ? [2026] : [],
+        top10Rate: act.rank && act.rank <= 10 ? 100 : 0,
         appearances: 1,
         wins: act.rank === 1 ? 1 : 0,
         top10: act.rank && act.rank <= 10 ? 1 : 0,
@@ -636,7 +640,7 @@ export function GlobalStatsHub() {
             {ALL_ACHIEVEMENTS.length}
           </span>
         </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="achievement-vault show-scroll mt-5 grid gap-3 pr-1 sm:grid-cols-2 xl:grid-cols-3">
           {ALL_ACHIEVEMENTS.map((achievement) => (
             <AchievementBadgeCard key={achievement.key} achievement={achievement} language={language} />
           ))}
@@ -738,6 +742,7 @@ export function GlobalStatsHub() {
               key={country.code}
               country={country}
               countryName={getCountryName(country.code, country.name)}
+              language={language}
               labels={{ appearances: copy.appearances, wins: copy.wins, top10: copy.top10, lastPlaces: copy.lastPlaces, thirteenth: copy.thirteenth, avgRank: copy.avgRank }}
             />
           ))}
@@ -810,16 +815,20 @@ function AchievementPill({ achievement, language, compact = false }: { achieveme
 
 function AchievementBadgeCard({ achievement, language }: { achievement: Achievement; language: "ru" | "en" }) {
   const Icon = achievement.icon;
+  const badgeLabel = language === "ru" ? "цель сезона" : "season target";
   return (
-    <div className={`achievement-card show-panel min-w-0 overflow-hidden bg-gradient-to-br ${achievement.tone}`}>
+    <div className={`achievement-card steam-achievement min-w-0 overflow-hidden bg-gradient-to-br ${achievement.tone}`}>
       <div className="achievement-card-shine" />
-      <div className="achievement-card-content relative z-10 flex items-start gap-3 p-4">
+      <div className="achievement-card-content relative z-10 grid grid-cols-[auto_1fr] items-center gap-3 p-3">
         <div className="achievement-medal shrink-0">
           <Icon size={21} />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-black leading-tight text-white">{language === "ru" ? achievement.titleRu : achievement.titleEn}</p>
-          <p className="mt-1.5 text-xs leading-5 opacity-85">{language === "ru" ? achievement.textRu : achievement.textEn}</p>
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <p className="truncate text-sm font-black leading-tight text-white">{language === "ru" ? achievement.titleRu : achievement.titleEn}</p>
+            <span className="achievement-rarity shrink-0">{badgeLabel}</span>
+          </div>
+          <p className="mt-1 line-clamp-2 text-xs leading-5 text-white/72">{language === "ru" ? achievement.textRu : achievement.textEn}</p>
         </div>
       </div>
     </div>
@@ -830,19 +839,34 @@ function CountryCard({
   country,
   labels,
   countryName,
+  language,
 }: {
   country: CountryHistory;
   labels: Record<"appearances" | "wins" | "top10" | "lastPlaces" | "thirteenth" | "avgRank", string>;
   countryName: string;
+  language: "ru" | "en";
 }) {
-  const fallbackGradient = `linear-gradient(135deg, ${country.wins ? "rgba(255, 99, 194, 0.28)" : "rgba(129, 236, 255, 0.18)"}, rgba(36, 36, 58, 0.94))`;
+  const fallbackGradient = `linear-gradient(135deg, ${country.wins ? "rgba(255, 99, 194, 0.2)" : "rgba(129, 236, 255, 0.14)"}, rgba(36, 36, 58, 0.96))`;
+  const yearRange = country.firstYear === country.latestYear ? String(country.firstYear) : `${country.firstYear}—${country.latestYear}`;
+  const winYears = country.winYears.length ? country.winYears.slice(-4).join(", ") : language === "ru" ? "пока без побед" : "no wins yet";
+  const headline = !country.highlightRank
+    ? language === "ru" ? "архив пополняется" : "archive pending"
+    : country.highlightRank === 1
+    ? language === "ru" ? `Победа ${country.highlightYear}` : `${country.highlightYear} winner`
+    : language === "ru" ? `Лучшее место: #${country.highlightRank}` : `Best rank: #${country.highlightRank}`;
+  const funLine = country.lastPlaces >= 5
+    ? language === "ru" ? "Драматичная история с последними местами." : "A dramatic record at the bottom."
+    : country.top10Rate >= 55
+      ? language === "ru" ? "Частый гость верхней десятки." : "A frequent top-10 guest."
+      : country.thirteenthPlaces >= 4
+        ? language === "ru" ? "Подозрительно часто рядом с 13-м местом." : "Suspiciously close to 13th place."
+        : language === "ru" ? "История ровнее, чем кажется с первого взгляда." : "A steadier record than it first looks.";
+
   return (
     <Link href={`/stats/countries/${country.code.toLowerCase()}`} className="country-history-card show-panel block min-w-0 overflow-hidden transition hover:-translate-y-0.5 hover:bg-white/[0.075]">
-      <div className="country-history-media" style={{ background: country.highlightPhoto ? undefined : fallbackGradient }}>
-        {country.highlightPhoto ? (
-          <img src={country.highlightPhoto} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
-        ) : null}
+      <div className="country-history-media" style={{ background: fallbackGradient }}>
         <div className="country-history-overlay" />
+        <span className="country-history-watermark">{country.code}</span>
         <span className="country-history-flag-fallback">{country.code}</span>
         <img
           src={country.flagUrl}
@@ -854,17 +878,17 @@ function CountryCard({
           }}
         />
         <div className="absolute bottom-4 left-4 right-4 min-w-0">
-          <p className="truncate text-2xl font-black text-white">{countryName}</p>
-          <p className="mt-1 truncate text-sm text-white/72">
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-2xl font-black text-white">{countryName}</p>
+              <p className="mt-1 truncate text-sm text-white/72">
             {country.highlightArtist
               ? `${country.highlightArtist}${country.highlightSong ? ` · ${country.highlightSong}` : ""}`
               : `${country.appearances} ${labels.appearances}`}
-          </p>
-          {country.highlightRank ? (
-            <span className="mt-3 inline-flex rounded-full border border-white/15 bg-black/25 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur">
-              #{country.highlightRank} · {country.highlightYear}
-            </span>
-          ) : null}
+              </p>
+            </div>
+            <span className="country-best-badge">{headline}</span>
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2 p-4 text-center">
@@ -872,10 +896,14 @@ function CountryCard({
         <SmallStat label={labels.top10} value={String(country.top10)} />
         <SmallStat label={labels.avgRank} value={country.averageRank ? country.averageRank.toFixed(1) : "—"} />
       </div>
-      <div className="flex flex-wrap gap-2 px-4 pb-4 text-xs text-arenaMuted">
-        <span className="show-chip">{country.appearances} {labels.appearances}</span>
-        <span className="show-chip">{country.lastPlaces} {labels.lastPlaces}</span>
-        <span className="show-chip">{country.thirteenthPlaces} {labels.thirteenth}</span>
+      <div className="grid gap-2 px-4 pb-4 text-xs text-arenaMuted">
+        <div className="grid grid-cols-2 gap-2">
+          <span className="show-chip">{country.appearances} {labels.appearances}</span>
+          <span className="show-chip">{yearRange}</span>
+          <span className="show-chip">{country.top10Rate}% top-10</span>
+          <span className="show-chip">{labels.wins}: {winYears}</span>
+        </div>
+        <p className="rounded-[1rem] border border-white/8 bg-white/[0.035] px-3 py-2 leading-5 text-white/68">{funLine}</p>
       </div>
     </Link>
   );

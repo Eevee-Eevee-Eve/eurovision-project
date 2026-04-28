@@ -291,6 +291,8 @@ function buildCountries() {
       const lastPlaces = country.rows.filter((row) => row.rank === lastPlaceByYear.get(row.year)).length;
       const thirteenthPlaces = country.ranks.filter((rank) => rank === 13).length;
       const averageRank = country.ranks.reduce((sum, rank) => sum + rank, 0) / country.ranks.length;
+      const years = [...country.years].sort((left, right) => left - right);
+      const winYears = country.rows.filter((row) => row.rank === 1).map((row) => row.year).sort((left, right) => left - right);
       const code = country.code;
       const assetCode = code.toLowerCase();
 
@@ -305,6 +307,10 @@ function buildCountries() {
         highlightVideoUrl: best.videoUrl || undefined,
         highlightRank: best.rank,
         highlightYear: best.year,
+        firstYear: years[0],
+        latestYear: years[years.length - 1],
+        winYears,
+        top10Rate: Number(((top10 / appearances) * 100).toFixed(0)),
         appearances,
         wins,
         top10,
@@ -343,6 +349,10 @@ export type EurovisionCountryStat = {
   highlightPhoto?: string;
   highlightRank?: number;
   highlightYear?: number;
+  firstYear: number;
+  latestYear: number;
+  winYears: number[];
+  top10Rate: number;
   appearances: number;
   wins: number;
   top10: number;
