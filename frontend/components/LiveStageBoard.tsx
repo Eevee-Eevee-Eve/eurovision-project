@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { Sparkles, Trophy, Users } from "lucide-react";
+import { Maximize2, Minimize2, Sparkles, Trophy, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createRoomSocket, fetchLeaderboard, fetchRoom, fetchStageResults } from "../lib/api";
 import { useDeviceTier } from "../lib/device";
@@ -27,6 +27,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   const [leaderMovement, setLeaderMovement] = useState<Record<string, number | null>>({});
   const [mobilePlayersMode, setMobilePlayersMode] = useState<"focus" | "all">("focus");
   const [desktopBoardMode, setDesktopBoardMode] = useState<"split" | "players">("split");
+  const [fullscreenActive, setFullscreenActive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const previousRanks = useRef<Record<string, number>>({});
@@ -300,6 +301,25 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     window.localStorage.setItem("desktop_live_mode", desktopBoardMode);
   }, [desktopBoardMode, isDesktop]);
 
+  useEffect(() => {
+    const syncFullscreen = () => setFullscreenActive(Boolean(document.fullscreenElement));
+    syncFullscreen();
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        return;
+      }
+      await document.documentElement.requestFullscreen();
+    } catch (fullscreenError) {
+      console.error(fullscreenError);
+    }
+  };
+
   const summaryCards = useMemo(
     () => [
       {
@@ -354,7 +374,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
       <motion.div
         key={row.id}
         layout="position"
-        className={`show-panel live-results-row ${isMoving ? "live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${dense ? "h-[3.1rem] px-2 py-[0.15rem]" : compact ? "px-3 py-2" : "p-3 md:p-4"} flex items-center ${dense ? "gap-1.5" : "gap-3 md:gap-4"} ${
+        className={`show-panel live-results-row live-room-player-row ${isMoving ? "live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${dense ? "h-[3.1rem] px-2 py-[0.15rem]" : compact ? "px-3 py-2" : "p-3 md:p-4"} flex items-center ${dense ? "gap-1.5" : "gap-3 md:gap-4"} ${
           isCurrentUser
             ? "border-cyan-300/20 bg-[radial-gradient(circle_at_top_left,rgba(129,236,255,0.16),transparent_52%),rgba(255,255,255,0.04)] shadow-[0_0_0_1px_rgba(129,236,255,0.08),0_24px_40px_rgba(44,86,120,0.2)]"
             : ""
@@ -402,7 +422,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     const flagUrl = resolveMediaUrl(act.flagUrl);
     const countryName = getCountryName(act.code, act.country);
     const desktopRowClass = isFinal
-      ? "live-final-readable-row flex min-h-[4.35rem] items-center gap-3 px-3 py-2 md:px-3.5"
+      ? "live-final-readable-row flex h-[3.3rem] items-center gap-2 px-2.5 py-1.5 md:px-3"
       : "flex h-[3.05rem] items-center gap-1.5 px-2 py-[0.15rem] md:px-2 md:py-[0.2rem]";
 
     return (
@@ -416,25 +436,22 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
             : ""
         } ${act.revealed ? "" : "opacity-80"}`}
       >
-        <div className={`show-rank shrink-0 font-black ${isFinal ? "h-[2.55rem] w-[2.55rem] text-[15px]" : "h-[2rem] w-[2rem] text-[13px] md:h-[2.1rem] md:w-[2.1rem] md:text-[14px]"} ${isTopThree ? "live-top3-rank" : ""} ${isQualifier ? "border-emerald-300/20 shadow-[0_0_0_1px_rgba(70,220,165,0.08),0_18px_32px_rgba(22,118,89,0.18)] text-emerald-100" : "text-arenaText"}`}>
+        <div className={`show-rank shrink-0 font-black ${isFinal ? "h-[2.25rem] w-[2.25rem] text-[14px]" : "h-[2rem] w-[2rem] text-[13px] md:h-[2.1rem] md:w-[2.1rem] md:text-[14px]"} ${isTopThree ? "live-top3-rank" : ""} ${isQualifier ? "border-emerald-300/20 shadow-[0_0_0_1px_rgba(70,220,165,0.08),0_18px_32px_rgba(22,118,89,0.18)] text-emerald-100" : "text-arenaText"}`}>
           {act.rank || "-"}
         </div>
-        <div className={`min-w-0 flex flex-1 ${isFinal ? "items-center gap-3" : "items-center gap-2"}`}>
-          <div className={`min-w-0 flex flex-1 ${isFinal ? "items-center gap-3" : "items-center gap-1.5"}`}>
+        <div className={`min-w-0 flex flex-1 ${isFinal ? "items-center gap-2" : "items-center gap-2"}`}>
+          <div className={`min-w-0 flex flex-1 ${isFinal ? "items-center" : "items-center gap-1.5"}`}>
             <div className={`inline-flex min-w-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 ${isFinal ? "live-final-country shrink-0" : ""}`}>
               <img
                 src={flagUrl || undefined}
                 alt=""
-                className={`${isFinal ? "h-5 w-5" : "h-4 w-4"} shrink-0 rounded-full object-cover ring-1 ring-white/15`}
+                className={`${isFinal ? "h-[1.15rem] w-[1.15rem]" : "h-4 w-4"} shrink-0 rounded-full object-cover ring-1 ring-white/15`}
                 loading="lazy"
               />
               <span className={`truncate font-semibold text-white ${isFinal ? "text-[13px] md:text-[14px]" : "text-[12px] md:text-[13px]"}`}>{countryName}</span>
             </div>
             {isFinal ? (
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-semibold leading-5 text-white/95 md:text-[15px]">{act.artist}</p>
-                <p className="truncate text-[12px] leading-4 text-arenaMuted md:text-[13px]">{act.song}</p>
-              </div>
+              null
             ) : (
               <div className="min-w-0 flex items-center gap-1.5">
                 <span className="truncate text-[12px] font-medium text-white/92 md:text-[13px]">{act.artist}</span>
@@ -460,11 +477,11 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
           </div>
         </div>
         {!isSemi && act.totalPoints != null ? (
-          <div className={`ml-1.5 shrink-0 text-right ${isFinal ? "w-[4.1rem]" : "w-[3.2rem]"} ${isMoving ? "live-final-points live-final-points-hot" : "live-final-points"}`}>
-            <p className="label-copy text-[8px] uppercase tracking-[0.18em] text-arenaMuted">
+          <div className={`ml-1 shrink-0 text-right ${isFinal ? "w-[3.2rem]" : "w-[3.2rem]"} ${isMoving ? "live-final-points live-final-points-hot" : "live-final-points"}`}>
+            <p className="label-copy text-[7px] uppercase tracking-[0.16em] text-arenaMuted">
               {text.finalPoints}
             </p>
-            <p className={`display-copy font-black text-white ${isFinal ? "text-[18px] md:text-[20px]" : "text-[14px] md:text-[16px]"}`}>{act.totalPoints}</p>
+            <p className={`display-copy font-black text-white ${isFinal ? "text-[15px] md:text-[16px]" : "text-[14px] md:text-[16px]"}`}>{act.totalPoints}</p>
           </div>
         ) : null}
       </motion.div>
@@ -593,6 +610,16 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
                   {text.leaderLabel}: {getDisplayName(leaders[0].name)}
                 </span>
               ) : null}
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                className="show-chip text-[11px] uppercase tracking-[0.18em] text-arenaText transition hover:border-cyan-200/20 hover:text-white"
+                aria-label={fullscreenActive ? (language === "ru" ? "Выйти из полноэкранного режима" : "Exit fullscreen") : (language === "ru" ? "На весь экран" : "Fullscreen")}
+                title={fullscreenActive ? (language === "ru" ? "Выйти из полноэкранного режима" : "Exit fullscreen") : (language === "ru" ? "На весь экран" : "Fullscreen")}
+              >
+                {fullscreenActive ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                {language === "ru" ? "Экран" : "Screen"}
+              </button>
             </div>
           </div>
         ) : (

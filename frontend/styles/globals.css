@@ -875,7 +875,14 @@ select {
 }
 
 .live-final-country {
-  width: clamp(7.5rem, 16vw, 10.75rem);
+  width: min(100%, clamp(8.75rem, 14vw, 12rem));
+  justify-content: flex-start;
+}
+
+.live-room-player-row.live-top3-row {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
 .live-final-row-moving {
