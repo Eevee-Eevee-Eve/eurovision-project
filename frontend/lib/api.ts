@@ -110,6 +110,12 @@ export async function unlockRoom(roomSlug: string, password: string) {
   });
 }
 
+export async function deleteTemporaryRoom(roomSlug: string) {
+  return sendJson<{ ok: true; roomSlug: string }>(`/api/rooms/${roomSlug}`, {
+    method: "DELETE",
+  });
+}
+
 export async function fetchRoom(roomSlug: string) {
   return readJson<RoomDetails>(`/api/room/${roomSlug}`);
 }
