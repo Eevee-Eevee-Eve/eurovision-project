@@ -147,7 +147,7 @@ export function RoomChrome({
 
   return (
     <main className="min-h-screen bg-arena-grid px-4 pb-20 pt-4 text-arenaText md:px-8 md:pt-6">
-      <div className={`mx-auto grid gap-4 ${isDisplayShell ? "max-w-[96rem] 2xl:max-w-[108rem]" : "max-w-7xl"}`}>
+      <div className={`mx-auto grid gap-4 ${isDisplayShell ? "max-w-[96rem] 2xl:max-w-[108rem]" : "max-w-[96rem]"}`}>
         <SiteHeader />
 
         <div className="glass-panel ghost-grid ghost-grid-room rounded-shell border border-white/10 p-4 md:p-5">

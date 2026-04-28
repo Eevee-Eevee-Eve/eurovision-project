@@ -12,6 +12,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -82,11 +83,10 @@ select {
 }
 
 .site-header {
-  position: sticky;
-  top: 0.75rem;
+  position: relative;
   z-index: 50;
   margin-inline: auto;
-  width: min(100%, 72rem);
+  width: 100%;
 }
 
 .site-header-inner {
@@ -149,6 +149,16 @@ select {
   display: flex;
   align-items: center;
   gap: 0.45rem;
+}
+
+.site-language-inline {
+  display: none;
+}
+
+.site-mobile-language {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0.35rem;
 }
 
 .site-account-button,
@@ -244,6 +254,14 @@ select {
 @media (min-width: 768px) {
   .site-nav-desktop {
     display: inline-flex;
+  }
+
+  .site-language-inline {
+    display: block;
+  }
+
+  .site-mobile-language {
+    display: none;
   }
 
   .site-menu-button {

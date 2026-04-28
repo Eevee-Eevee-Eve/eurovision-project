@@ -929,7 +929,7 @@ export function AdminControlRoom() {
   if (!authenticated) {
     return (
       <main className="min-h-screen bg-arena-grid px-4 pb-24 pt-6 text-arenaText md:px-8">
-        <div className="mx-auto grid max-w-5xl gap-5">
+        <div className="mx-auto grid max-w-[96rem] gap-5">
           <section className="show-card p-6 md:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
@@ -1001,7 +1001,7 @@ export function AdminControlRoom() {
 
   return (
     <main className="min-h-screen bg-arena-grid px-4 pb-24 pt-6 text-arenaText md:px-8">
-      <div className="mx-auto grid max-w-7xl gap-5">
+      <div className="mx-auto grid max-w-[96rem] gap-5">
         <section className="glass-panel ghost-grid rounded-shell border border-white/10 p-5 md:p-6">
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
