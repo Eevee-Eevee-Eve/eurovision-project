@@ -74,6 +74,11 @@ type CountryHistory = {
   code: string;
   name: string;
   flagUrl: string;
+  highlightArtist?: string;
+  highlightSong?: string;
+  highlightPhoto?: string | null;
+  highlightRank?: number | null;
+  highlightYear?: number;
   appearances: number;
   wins: number;
   top10: number;
@@ -393,12 +398,12 @@ const SEED_PLAYERS: HistoricalPlayer[] = [
 ];
 
 const SEED_COUNTRIES: CountryHistory[] = [
-  { code: "SE", name: "Sweden", flagUrl: "https://flagcdn.com/w80/se.png", appearances: 12, wins: 3, top10: 9, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 5.8 },
-  { code: "IT", name: "Italy", flagUrl: "https://flagcdn.com/w80/it.png", appearances: 11, wins: 2, top10: 8, lastPlaces: 0, thirteenthPlaces: 0, averageRank: 6.3 },
-  { code: "UA", name: "Ukraine", flagUrl: "https://flagcdn.com/w80/ua.png", appearances: 10, wins: 2, top10: 7, lastPlaces: 0, thirteenthPlaces: 2, averageRank: 7.1 },
-  { code: "NO", name: "Norway", flagUrl: "https://flagcdn.com/w80/no.png", appearances: 12, wins: 1, top10: 5, lastPlaces: 3, thirteenthPlaces: 1, averageRank: 13.4 },
-  { code: "DE", name: "Germany", flagUrl: "https://flagcdn.com/w80/de.png", appearances: 12, wins: 0, top10: 2, lastPlaces: 4, thirteenthPlaces: 0, averageRank: 18.2 },
-  { code: "FR", name: "France", flagUrl: "https://flagcdn.com/w80/fr.png", appearances: 12, wins: 1, top10: 6, lastPlaces: 1, thirteenthPlaces: 1, averageRank: 10.6 },
+  { code: "SE", name: "Sweden", flagUrl: "https://flagcdn.com/w80/se.png", highlightArtist: "FELICIA", highlightSong: "My Symphony", highlightRank: 1, highlightYear: 2025, appearances: 12, wins: 3, top10: 9, lastPlaces: 0, thirteenthPlaces: 1, averageRank: 5.8 },
+  { code: "IT", name: "Italy", flagUrl: "https://flagcdn.com/w80/it.png", highlightArtist: "Sal Da Vinci", highlightSong: "Per Sempre", highlightRank: 2, highlightYear: 2024, appearances: 11, wins: 2, top10: 8, lastPlaces: 0, thirteenthPlaces: 0, averageRank: 6.3 },
+  { code: "UA", name: "Ukraine", flagUrl: "https://flagcdn.com/w80/ua.png", highlightArtist: "Viva", highlightSong: "Rising", highlightRank: 1, highlightYear: 2023, appearances: 10, wins: 2, top10: 7, lastPlaces: 0, thirteenthPlaces: 2, averageRank: 7.1 },
+  { code: "NO", name: "Norway", flagUrl: "https://flagcdn.com/w80/no.png", highlightArtist: "Søren", highlightSong: "Før vi går", highlightRank: 5, highlightYear: 2022, appearances: 12, wins: 1, top10: 5, lastPlaces: 3, thirteenthPlaces: 1, averageRank: 13.4 },
+  { code: "DE", name: "Germany", flagUrl: "https://flagcdn.com/w80/de.png", highlightArtist: "Sarah", highlightSong: "Fire", highlightRank: 8, highlightYear: 2021, appearances: 12, wins: 0, top10: 2, lastPlaces: 4, thirteenthPlaces: 0, averageRank: 18.2 },
+  { code: "FR", name: "France", flagUrl: "https://flagcdn.com/w80/fr.png", highlightArtist: "Monroe", highlightSong: "Regarde-moi", highlightRank: 3, highlightYear: 2025, appearances: 12, wins: 1, top10: 6, lastPlaces: 1, thirteenthPlaces: 1, averageRank: 10.6 },
 ];
 
 const stages: StageKey[] = ["semi1", "semi2", "final"];
@@ -579,6 +584,11 @@ export function GlobalStatsHub() {
         code: act.code,
         name: act.country,
         flagUrl: act.flagUrl,
+        highlightArtist: act.artist,
+        highlightSong: act.song,
+        highlightPhoto: act.photoUrl,
+        highlightRank: act.rank,
+        highlightYear: 2026,
         appearances: 1,
         wins: act.rank === 1 ? 1 : 0,
         top10: act.rank && act.rank <= 10 ? 1 : 0,
@@ -730,7 +740,7 @@ export function GlobalStatsHub() {
             {ALL_ACHIEVEMENTS.length}
           </span>
         </div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {ALL_ACHIEVEMENTS.map((achievement) => (
             <AchievementBadgeCard key={achievement.key} achievement={achievement} language={language} />
           ))}
@@ -826,22 +836,17 @@ function AchievementBadgeCard({ achievement, language }: { achievement: Achievem
   return (
     <div className={`achievement-card show-panel min-w-0 overflow-hidden bg-gradient-to-br ${achievement.tone}`}>
       <div className="achievement-card-shine" />
-      <div className="relative z-10 flex items-start gap-3 p-4">
+      <div className="relative z-10 flex h-full items-center gap-3 p-3.5">
         <div className="achievement-medal shrink-0">
-          <Icon size={23} />
+          <Icon size={21} />
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-black text-white">{language === "ru" ? achievement.titleRu : achievement.titleEn}</p>
-          <p className="mt-2 text-xs leading-5 opacity-80">{language === "ru" ? achievement.textRu : achievement.textEn}</p>
+          <p className="text-sm font-black leading-tight text-white">{language === "ru" ? achievement.titleRu : achievement.titleEn}</p>
+          <p className="mt-1.5 text-xs leading-5 opacity-85">{language === "ru" ? achievement.textRu : achievement.textEn}</p>
         </div>
       </div>
     </div>
   );
-}
-
-function countryFlagEmoji(code: string) {
-  if (!/^[A-Z]{2}$/.test(code)) return "·";
-  return String.fromCodePoint(...code.split("").map((letter) => letter.charCodeAt(0) + 127397));
 }
 
 function CountryCard({
@@ -853,26 +858,39 @@ function CountryCard({
   labels: Record<"appearances" | "wins" | "top10" | "lastPlaces" | "thirteenth" | "avgRank", string>;
   countryName: string;
 }) {
+  const fallbackGradient = `linear-gradient(135deg, ${country.wins ? "rgba(255, 99, 194, 0.28)" : "rgba(129, 236, 255, 0.18)"}, rgba(36, 36, 58, 0.94))`;
   return (
-    <div className="show-panel min-w-0 overflow-hidden p-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.08] text-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-          {countryFlagEmoji(country.code)}
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-lg font-black text-white">{countryName}</p>
-          <p className="text-sm text-arenaMuted">{country.appearances} {labels.appearances}</p>
+    <Link href={`/stats/countries/${country.code.toLowerCase()}`} className="country-history-card show-panel block min-w-0 overflow-hidden transition hover:-translate-y-0.5 hover:bg-white/[0.075]">
+      <div className="country-history-media" style={{ background: country.highlightPhoto ? undefined : fallbackGradient }}>
+        {country.highlightPhoto ? (
+          <img src={country.highlightPhoto} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+        ) : null}
+        <div className="country-history-overlay" />
+        <img src={country.flagUrl} alt="" className="country-history-flag" loading="lazy" />
+        <div className="absolute bottom-4 left-4 right-4 min-w-0">
+          <p className="truncate text-2xl font-black text-white">{countryName}</p>
+          <p className="mt-1 truncate text-sm text-white/72">
+            {country.highlightArtist
+              ? `${country.highlightArtist}${country.highlightSong ? ` · ${country.highlightSong}` : ""}`
+              : `${country.appearances} ${labels.appearances}`}
+          </p>
+          {country.highlightRank ? (
+            <span className="mt-3 inline-flex rounded-full border border-white/15 bg-black/25 px-3 py-1 text-xs font-semibold text-white/90 backdrop-blur">
+              #{country.highlightRank} · {country.highlightYear}
+            </span>
+          ) : null}
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+      <div className="grid grid-cols-3 gap-2 p-4 text-center">
         <SmallStat label={labels.wins} value={String(country.wins)} />
         <SmallStat label={labels.top10} value={String(country.top10)} />
         <SmallStat label={labels.avgRank} value={country.averageRank ? country.averageRank.toFixed(1) : "—"} />
       </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs text-arenaMuted">
+      <div className="flex flex-wrap gap-2 px-4 pb-4 text-xs text-arenaMuted">
+        <span className="show-chip">{country.appearances} {labels.appearances}</span>
         <span className="show-chip">{country.lastPlaces} {labels.lastPlaces}</span>
         <span className="show-chip">{country.thirteenthPlaces} {labels.thirteenth}</span>
       </div>
-    </div>
+    </Link>
   );
 }
