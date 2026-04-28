@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowLeft, Flag, Trophy } from "lucide-react";
 import { SiteHeader } from "../../../../components/SiteHeader";
 
+export const dynamic = "force-dynamic";
+
 export default function CountryStatsPage({ params }: { params: { countryCode: string } }) {
   const code = params.countryCode.toUpperCase();
 
@@ -26,7 +28,7 @@ export default function CountryStatsPage({ params }: { params: { countryCode: st
             <div className="show-panel p-5">
               <Flag className="text-arenaBeam" size={28} />
               <p className="mt-4 text-sm leading-7 text-arenaMuted">
-                Страница уже подключена как маршрут, данные подгрузим вместе с импортом архива.
+                Страница уже подключена как маршрут. Данные подгрузим вместе с импортом архива.
               </p>
               <div className="mt-4 inline-flex rounded-full border border-amber-200/20 bg-amber-300/10 px-4 py-2 text-sm text-amber-100">
                 <Trophy size={16} className="mr-2" />
