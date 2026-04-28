@@ -35,6 +35,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   const { account } = useAccount();
   const { isPhone, isTablet, isDesktop } = useDeviceTier();
   const isSemi = stageKey === "semi1" || stageKey === "semi2";
+  const isFinal = stageKey === "final";
 
   useEffect(() => {
     let active = true;
@@ -400,43 +401,53 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     const podiumClass = act.rank === 1 ? "live-podium-1" : act.rank === 2 ? "live-podium-2" : act.rank === 3 ? "live-podium-3" : "";
     const flagUrl = resolveMediaUrl(act.flagUrl);
     const countryName = getCountryName(act.code, act.country);
+    const desktopRowClass = isFinal
+      ? "live-final-readable-row flex min-h-[4.35rem] items-center gap-3 px-3 py-2 md:px-3.5"
+      : "flex h-[3.05rem] items-center gap-1.5 px-2 py-[0.15rem] md:px-2 md:py-[0.2rem]";
 
     return (
       <motion.div
         key={act.code}
         layout="position"
         transition={rowTransition}
-        className={`show-panel live-results-row ${isMoving ? "live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${isCutoffRow ? "live-cutoff-row" : ""} ${isBelowCutoffRow ? "live-cutoff-below-row" : ""} ${!isSemi && act.revealed ? "live-final-row" : ""} ${!isSemi && isMoving ? "live-final-row-moving" : ""} flex h-[3.05rem] items-center gap-1.5 px-2 py-[0.15rem] md:px-2 md:py-[0.2rem] ${
+        className={`show-panel live-results-row ${desktopRowClass} ${isMoving ? "live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${isCutoffRow ? "live-cutoff-row" : ""} ${isBelowCutoffRow ? "live-cutoff-below-row" : ""} ${!isSemi && act.revealed ? "live-final-row" : ""} ${!isSemi && isMoving ? "live-final-row-moving" : ""} ${
           isQualifier
             ? "border-emerald-300/12 bg-[radial-gradient(circle_at_top_left,rgba(70,220,165,0.12),transparent_46%),rgba(255,255,255,0.03)]"
             : ""
         } ${act.revealed ? "" : "opacity-80"}`}
       >
-        <div className={`show-rank h-[2rem] w-[2rem] shrink-0 text-[13px] font-black md:h-[2.1rem] md:w-[2.1rem] md:text-[14px] ${isTopThree ? "live-top3-rank" : ""} ${isQualifier ? "border-emerald-300/20 shadow-[0_0_0_1px_rgba(70,220,165,0.08),0_18px_32px_rgba(22,118,89,0.18)] text-emerald-100" : "text-arenaText"}`}>
+        <div className={`show-rank shrink-0 font-black ${isFinal ? "h-[2.55rem] w-[2.55rem] text-[15px]" : "h-[2rem] w-[2rem] text-[13px] md:h-[2.1rem] md:w-[2.1rem] md:text-[14px]"} ${isTopThree ? "live-top3-rank" : ""} ${isQualifier ? "border-emerald-300/20 shadow-[0_0_0_1px_rgba(70,220,165,0.08),0_18px_32px_rgba(22,118,89,0.18)] text-emerald-100" : "text-arenaText"}`}>
           {act.rank || "-"}
         </div>
-        <div className="min-w-0 flex flex-1 items-center gap-2">
-          <div className="min-w-0 flex flex-1 items-center gap-1.5">
-            <div className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5">
+        <div className={`min-w-0 flex flex-1 ${isFinal ? "items-center gap-3" : "items-center gap-2"}`}>
+          <div className={`min-w-0 flex flex-1 ${isFinal ? "items-center gap-3" : "items-center gap-1.5"}`}>
+            <div className={`inline-flex min-w-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 ${isFinal ? "live-final-country shrink-0" : ""}`}>
               <img
                 src={flagUrl || undefined}
                 alt=""
-                className="h-4 w-4 shrink-0 rounded-full object-cover ring-1 ring-white/15"
+                className={`${isFinal ? "h-5 w-5" : "h-4 w-4"} shrink-0 rounded-full object-cover ring-1 ring-white/15`}
                 loading="lazy"
               />
-              <span className="truncate text-[12px] font-semibold text-white md:text-[13px]">{countryName}</span>
+              <span className={`truncate font-semibold text-white ${isFinal ? "text-[13px] md:text-[14px]" : "text-[12px] md:text-[13px]"}`}>{countryName}</span>
             </div>
-            <div className="min-w-0 flex items-center gap-1.5">
-              <span className="truncate text-[12px] font-medium text-white/92 md:text-[13px]">{act.artist}</span>
-              {act.song ? (
-                <span className="text-[11px] text-arenaMuted md:text-[12px]" aria-hidden="true">
-                  -
+            {isFinal ? (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[14px] font-semibold leading-5 text-white/95 md:text-[15px]">{act.artist}</p>
+                <p className="truncate text-[12px] leading-4 text-arenaMuted md:text-[13px]">{act.song}</p>
+              </div>
+            ) : (
+              <div className="min-w-0 flex items-center gap-1.5">
+                <span className="truncate text-[12px] font-medium text-white/92 md:text-[13px]">{act.artist}</span>
+                {act.song ? (
+                  <span className="text-[11px] text-arenaMuted md:text-[12px]" aria-hidden="true">
+                    -
+                  </span>
+                ) : null}
+                <span className="truncate text-[11px] text-arenaMuted md:text-[12px]">
+                  {act.song}
                 </span>
-              ) : null}
-              <span className="truncate text-[11px] text-arenaMuted md:text-[12px]">
-                {act.song}
-              </span>
-            </div>
+              </div>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             {isQualifier ? (
@@ -449,11 +460,11 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
           </div>
         </div>
         {!isSemi && act.totalPoints != null ? (
-          <div className={`ml-1.5 w-[3.2rem] shrink-0 text-right ${isMoving ? "live-final-points live-final-points-hot" : "live-final-points"}`}>
+          <div className={`ml-1.5 shrink-0 text-right ${isFinal ? "w-[4.1rem]" : "w-[3.2rem]"} ${isMoving ? "live-final-points live-final-points-hot" : "live-final-points"}`}>
             <p className="label-copy text-[8px] uppercase tracking-[0.18em] text-arenaMuted">
               {text.finalPoints}
             </p>
-            <p className="display-copy text-[14px] font-black text-white md:text-[16px]">{act.totalPoints}</p>
+            <p className={`display-copy font-black text-white ${isFinal ? "text-[18px] md:text-[20px]" : "text-[14px] md:text-[16px]"}`}>{act.totalPoints}</p>
           </div>
         ) : null}
       </motion.div>
@@ -652,7 +663,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
             </div>
           </section>
         ) : (
-          <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,2.15fr)_minmax(18rem,0.85fr)]">
+          <section className={`grid items-start gap-4 ${isFinal ? "xl:grid-cols-[minmax(0,2.75fr)_minmax(18rem,0.65fr)]" : "xl:grid-cols-[minmax(0,2.15fr)_minmax(18rem,0.85fr)]"}`}>
             <div className="show-card flex h-[calc(100vh-10.75rem)] flex-col p-3 md:p-4 xl:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -671,7 +682,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
                 </div>
               </div>
 
-              <div className={`show-scroll mt-3 grid flex-1 auto-rows-max content-start overflow-y-auto pr-1 ${isSemi ? "gap-1 xl:grid-cols-2" : "gap-0.75 xl:grid-cols-4"}`}>
+              <div className={`show-scroll mt-3 grid flex-1 auto-rows-max content-start overflow-y-auto pr-1 ${isSemi ? "gap-1 xl:grid-cols-2" : isFinal ? "gap-2 xl:grid-cols-2 2xl:grid-cols-3" : "gap-0.75 xl:grid-cols-4"}`}>
                 {stageRows.length ? stageRows.flatMap((act) => {
                   const row = renderStageDesktopRow(act);
                   if (!isSemi || qualificationCutoff == null || act.rank !== qualificationCutoff) {
