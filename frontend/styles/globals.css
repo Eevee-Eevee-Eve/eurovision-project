@@ -91,12 +91,18 @@ select {
 
 .achievement-card {
   position: relative;
-  min-height: 6.25rem;
+  min-height: 7rem;
+  align-self: start;
+}
+
+.achievement-card-content {
+  min-height: 7rem;
+  align-content: flex-start;
 }
 
 .achievement-card-shine {
   position: absolute;
-  inset: -35% auto auto -25%;
+  inset: -2rem auto auto -2rem;
   height: 7rem;
   width: 7rem;
   border-radius: 9999px;
@@ -107,8 +113,8 @@ select {
 
 .achievement-medal {
   display: inline-flex;
-  height: 2.85rem;
-  width: 2.85rem;
+  height: 3rem;
+  width: 3rem;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
