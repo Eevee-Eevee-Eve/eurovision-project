@@ -1,9 +1,9 @@
 'use client';
 
 import Link from "next/link";
-import { BarChart3, Home, Menu, UserRound, X } from "lucide-react";
+import { BarChart3, Home, Menu, Play, UserRound, X } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAccount } from "./AccountProvider";
 import { BrandLogo } from "./BrandLogo";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -19,8 +19,19 @@ const navItems = [
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [lastRoom, setLastRoom] = useState<{ slug: string; name: string; stage: string } | null>(null);
   const { account } = useAccount();
   const { getDisplayName, language } = useLanguage();
+
+  useEffect(() => {
+    const slug = window.localStorage.getItem("last_room_slug");
+    if (!slug) return;
+    setLastRoom({
+      slug,
+      name: window.localStorage.getItem("last_room_name") || slug,
+      stage: window.localStorage.getItem("last_room_stage") || "semi1",
+    });
+  }, [pathname]);
 
   return (
     <header className="site-header">
@@ -28,6 +39,12 @@ export function SiteHeader() {
         <BrandLogo variant="compact" />
 
         <nav className="site-nav-desktop" aria-label={language === "ru" ? "Навигация" : "Navigation"}>
+          {lastRoom ? (
+            <Link href={`/${lastRoom.slug}/vote/${lastRoom.stage}`} className="site-nav-link site-nav-link-return" title={lastRoom.name}>
+              <Play size={15} />
+              <span>{language === "ru" ? "Последняя" : "Last room"}</span>
+            </Link>
+          ) : null}
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -80,6 +97,17 @@ export function SiteHeader() {
           <div className="site-mobile-language">
             <LanguageSwitcher />
           </div>
+          {lastRoom ? (
+            <Link
+              href={`/${lastRoom.slug}/vote/${lastRoom.stage}`}
+              onClick={() => setOpen(false)}
+              className="site-mobile-link site-mobile-link-return"
+              title={lastRoom.name}
+            >
+              <Play size={17} />
+              <span>{language === "ru" ? "Последняя комната" : "Last room"}</span>
+            </Link>
+          ) : null}
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
