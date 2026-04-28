@@ -398,6 +398,13 @@ select {
   z-index: 1;
 }
 
+.room-lobby-title {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
 .room-lobby-action {
   position: relative;
   overflow: hidden;

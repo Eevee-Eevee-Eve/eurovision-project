@@ -25,7 +25,7 @@ const STAGES = Object.freeze({
     label: 'Grand Final',
     shortLabel: 'Final',
     description: 'The full arena show with every finalist.',
-    expectedEntries: 26,
+    expectedEntries: 25,
     qualificationCutoff: null,
   },
 });

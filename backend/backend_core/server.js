@@ -67,10 +67,11 @@ const SMTP_USER = String(process.env.SMTP_USER || '').trim();
 const SMTP_PASS = String(process.env.SMTP_PASS || '');
 const SMTP_FROM = String(process.env.SMTP_FROM || '').trim();
 const ROOM_ACCESS_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
-const TEMP_ROOM_IDLE_TTL_MS = 1000 * 60 * 60 * 4;
+const TEMP_ROOM_ARCHIVE_TTL_MS = 1000 * 60 * 60 * 4;
 const TEMP_ROOM_STAGE = DEFAULT_STAGE;
 const ROOM_ACCESS_COOKIE_PREFIX = 'esc_room_access_';
 const TEMP_ROOM_PREFIX = 'room';
+const MAX_TEMP_ROOMS_PER_ACCOUNT = 3;
 const STAGE_COUNTDOWN_DEFAULT_MINUTES = 5;
 const SUBMISSION_OVERRIDE_DEFAULT_MINUTES = 5;
 const MAX_STAGE_COUNTDOWN_MINUTES = 30;
@@ -363,7 +364,7 @@ function getSubmissionOverrideEndsAt(roomSlug, stageKey, accountId) {
 }
 
 function sanitizeRoomName(value) {
-  return sanitizeText(value, 48);
+  return sanitizeText(value, 64);
 }
 
 function normalizeRoomNameLookup(value) {
@@ -388,6 +389,7 @@ function buildTemporaryRoomSummary({
   passwordHash = null,
   passwordSalt = null,
   defaultStage = TEMP_ROOM_STAGE,
+  creatorAccountId = null,
 }) {
   const now = new Date().toISOString();
   const safeName = sanitizeRoomName(name) || 'Private Eurovision room';
@@ -405,6 +407,9 @@ function buildTemporaryRoomSummary({
     passwordRequired,
     passwordHash,
     passwordSalt,
+    creatorAccountId,
+    eventCompletedAt: null,
+    archiveEmailSentAt: null,
     createdAt: now,
     updatedAt: now,
     lastActiveAt: now,
@@ -433,6 +438,9 @@ function normalizeDynamicRoomShape(room) {
     passwordRequired: Boolean(room.passwordRequired && room.passwordHash && room.passwordSalt),
     passwordHash: room.passwordHash || null,
     passwordSalt: room.passwordSalt || null,
+    creatorAccountId: sanitizeText(room.creatorAccountId, 80) || null,
+    eventCompletedAt: room.eventCompletedAt || null,
+    archiveEmailSentAt: room.archiveEmailSentAt || null,
     createdAt: room.createdAt || new Date().toISOString(),
     updatedAt: room.updatedAt || room.createdAt || new Date().toISOString(),
     lastActiveAt: room.lastActiveAt || room.updatedAt || room.createdAt || new Date().toISOString(),
@@ -451,6 +459,7 @@ function toPublicRoomSummary(room) {
     defaultStage: room.defaultStage,
     isTemporary: Boolean(room.isTemporary),
     passwordRequired: Boolean(room.passwordRequired),
+    eventCompletedAt: room.eventCompletedAt || null,
   };
 }
 
@@ -481,6 +490,13 @@ function hasRoomNameConflict(roomName, excludeSlug = null) {
 
 function isTemporaryRoom(roomSlug) {
   return Boolean(state.dynamicRooms[roomSlug]);
+}
+
+function getActiveDynamicRoomsForAccount(accountId) {
+  if (!accountId) return [];
+  return Object.values(state.dynamicRooms)
+    .map((room) => normalizeDynamicRoomShape(room))
+    .filter((room) => room?.creatorAccountId === accountId && !room.archiveEmailSentAt);
 }
 
 function touchRoomActivity(roomSlug) {
@@ -595,17 +611,109 @@ function removeDynamicRoom(roomSlug) {
   });
 }
 
-function pruneInactiveDynamicRooms() {
+function csvCell(value) {
+  const text = String(value ?? '');
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+}
+
+function buildRoomArchiveCsv(roomSlug) {
+  const rows = buildInternalLeaderboardRows(roomSlug);
+  const header = [
+    'rank',
+    'name',
+    'total_points',
+    'exact_matches',
+    'close_matches',
+    ...STAGE_KEYS.flatMap((stage) => [`${stage}_points`, `${stage}_submitted`, `${stage}_locked`]),
+  ];
+  const lines = [header.map(csvCell).join(',')];
+
+  rows.forEach((row) => {
+    lines.push([
+      row.rank,
+      row.name,
+      row.points,
+      row.exactMatchCount,
+      row.closeMatchCount,
+      ...STAGE_KEYS.flatMap((stage) => [
+        row.stages[stage].points,
+        row.stages[stage].submitted ? 'yes' : 'no',
+        row.stages[stage].locked ? 'yes' : 'no',
+      ]),
+    ].map(csvCell).join(','));
+  });
+
+  return lines.join('\n');
+}
+
+async function sendRoomArchiveEmail(roomSlug) {
+  const room = normalizeDynamicRoomShape(state.dynamicRooms[roomSlug]);
+  if (!room || room.archiveEmailSentAt) {
+    return false;
+  }
+
+  const creator = room.creatorAccountId ? getAccountById(room.creatorAccountId) : null;
+  if (!creator?.email) {
+    room.archiveEmailSentAt = new Date().toISOString();
+    state.dynamicRooms[roomSlug] = room;
+    return false;
+  }
+
+  const transport = getPasswordResetTransport();
+  if (!transport) {
+    return false;
+  }
+
+  const csv = buildRoomArchiveCsv(roomSlug);
+  await transport.sendMail({
+    from: SMTP_FROM,
+    to: creator.email,
+    subject: `Morozov Euro Party results: ${room.name}`,
+    text: [
+      `Attached is the final participant table for "${room.name}".`,
+      '',
+      'The room will now be archived automatically.',
+    ].join('\n'),
+    attachments: [
+      {
+        filename: `${room.slug}-results.csv`,
+        content: Buffer.from(csv, 'utf8'),
+        contentType: 'text/csv; charset=utf-8',
+      },
+    ],
+    encoding: 'utf-8',
+    textEncoding: 'base64',
+  });
+
+  room.archiveEmailSentAt = new Date().toISOString();
+  state.dynamicRooms[roomSlug] = room;
+  return true;
+}
+
+async function pruneArchivedDynamicRooms() {
   const now = Date.now();
-  Object.values(state.dynamicRooms).forEach((rawRoom) => {
+  for (const rawRoom of Object.values(state.dynamicRooms)) {
     const room = normalizeDynamicRoomShape(rawRoom);
-    if (!room) return;
-    if (getRoomPresenceCount(room.slug) > 0) return;
-    const lastActiveAt = new Date(room.lastActiveAt || room.updatedAt || room.createdAt).getTime();
-    if (now - lastActiveAt >= TEMP_ROOM_IDLE_TTL_MS) {
+    if (!room) continue;
+    if (!room.eventCompletedAt) continue;
+    const completedAt = new Date(room.eventCompletedAt).getTime();
+    if (!Number.isFinite(completedAt) || now - completedAt < TEMP_ROOM_ARCHIVE_TTL_MS) continue;
+    if (getRoomPresenceCount(room.slug) > 0) continue;
+
+    try {
+      await sendRoomArchiveEmail(room.slug);
+    } catch (error) {
+      console.error(`Unable to send room archive email for ${room.slug}:`, error);
+      continue;
+    }
+
+    if (normalizeDynamicRoomShape(state.dynamicRooms[room.slug])?.archiveEmailSentAt) {
       removeDynamicRoom(room.slug);
     }
-  });
+  }
 }
 
 ROOMS.forEach((room) => {
@@ -661,14 +769,12 @@ function pruneExpiredAdminSessions() {
 pruneExpiredState(state);
 pruneExpiredAdminSessions();
 pruneExpiredSubmissionOverrides();
-pruneInactiveDynamicRooms();
 saveState(state);
 setInterval(() => {
   pruneExpiredState(state);
   pruneExpiredAdminSessions();
   pruneExpiredSubmissionOverrides();
-  pruneInactiveDynamicRooms();
-  saveState(state);
+  void pruneArchivedDynamicRooms().then(() => saveState(state));
 }, 60_000 * 5).unref();
 
 app.set('trust proxy', 1);
@@ -1964,7 +2070,7 @@ app.get('/api/rooms', (req, res) => {
   });
 });
 
-app.post('/api/rooms', (req, res) => {
+app.post('/api/rooms', requireAuth, (req, res) => {
   const name = sanitizeRoomName(req.body.name);
   const password = sanitizeRoomPassword(req.body.password);
   const defaultStage = normalizeStage(req.body.defaultStage) || TEMP_ROOM_STAGE;
@@ -1972,8 +2078,18 @@ app.post('/api/rooms', (req, res) => {
   if (!name) {
     return res.status(400).json({ error: 'Room name is required', code: 'ROOM_NAME_REQUIRED' });
   }
+  if (name.length > 64) {
+    return res.status(400).json({ error: 'Room name is too long', code: 'ROOM_NAME_TOO_LONG' });
+  }
   if (hasRoomNameConflict(name)) {
     return res.status(409).json({ error: 'A room with this name already exists', code: 'ROOM_NAME_TAKEN' });
+  }
+  if (getActiveDynamicRoomsForAccount(req.account.id).length >= MAX_TEMP_ROOMS_PER_ACCOUNT) {
+    return res.status(409).json({
+      error: 'You can create up to 3 rooms',
+      code: 'ROOM_LIMIT_REACHED',
+      limit: MAX_TEMP_ROOMS_PER_ACCOUNT,
+    });
   }
 
   const passwordData = password ? hashPassword(password) : null;
@@ -1982,6 +2098,7 @@ app.post('/api/rooms', (req, res) => {
     passwordHash: passwordData?.hash || null,
     passwordSalt: passwordData?.salt || null,
     defaultStage,
+    creatorAccountId: req.account.id,
   });
 
   state.dynamicRooms[room.slug] = room;
@@ -2290,6 +2407,15 @@ app.post('/api/results', requireAdmin, (req, res) => {
 
   room.results[stageKey] = validation.ranking;
   room.resultBreakdown[stageKey] = breakdownValidation.breakdown;
+  const roomMeta = getRoomBySlug(roomSlug);
+  if (
+    isTemporaryRoom(roomSlug)
+    && roomMeta?.defaultStage === stageKey
+    && validation.ranking.length >= ACTS_BY_STAGE[stageKey].length
+    && !state.dynamicRooms[roomSlug]?.eventCompletedAt
+  ) {
+    state.dynamicRooms[roomSlug].eventCompletedAt = new Date().toISOString();
+  }
   recomputeScores(roomSlug);
   persistState();
   emitLeaderboard(roomSlug);

@@ -27,6 +27,7 @@ export interface RoomSummary {
   defaultStage: StageKey;
   isTemporary?: boolean;
   passwordRequired?: boolean;
+  eventCompletedAt?: string | null;
 }
 
 export interface ShowState {
