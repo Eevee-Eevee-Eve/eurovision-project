@@ -38,6 +38,7 @@ export interface ShowState {
 }
 
 export interface RoomDetails extends RoomSummary {
+  canManage?: boolean;
   predictionWindows: Record<StageKey, boolean>;
   submissionCountdowns: Record<StageKey, SubmissionCountdown | null>;
   stages: StageKey[];

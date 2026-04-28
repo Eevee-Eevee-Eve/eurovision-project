@@ -499,6 +499,11 @@ function getActiveDynamicRoomsForAccount(accountId) {
     .filter((room) => room?.creatorAccountId === accountId && !room.archiveEmailSentAt);
 }
 
+function canManageDynamicRoom(roomSlug, account) {
+  const room = normalizeDynamicRoomShape(state.dynamicRooms[roomSlug]);
+  return Boolean(room?.creatorAccountId && account?.id && room.creatorAccountId === account.id);
+}
+
 function touchRoomActivity(roomSlug) {
   if (!isTemporaryRoom(roomSlug)) return;
   const room = state.dynamicRooms[roomSlug];
@@ -2159,6 +2164,20 @@ app.post('/api/rooms/:roomSlug/access', (req, res) => {
   return res.json({ ok: true, room: toPublicRoomSummary(room) });
 });
 
+app.delete('/api/rooms/:roomSlug', requireAuth, (req, res) => {
+  const roomSlug = normalizeRoomSlug(req.params.roomSlug);
+  if (!roomSlug || !isTemporaryRoom(roomSlug)) {
+    return res.status(404).json({ error: 'Unknown room' });
+  }
+  if (!canManageDynamicRoom(roomSlug, req.account)) {
+    return res.status(403).json({ error: 'Only the room creator can delete this room', code: 'ROOM_DELETE_FORBIDDEN' });
+  }
+
+  removeDynamicRoom(roomSlug);
+  persistState();
+  return res.json({ ok: true, roomSlug });
+});
+
 app.get('/api/room/:roomSlug', (req, res) => {
   const roomSlug = normalizeRoomSlug(req.params.roomSlug);
   if (!roomSlug) {
@@ -2170,9 +2189,11 @@ app.get('/api/room/:roomSlug', (req, res) => {
 
   const room = getRoomBySlug(roomSlug);
   const stateForRoom = getRoomState(roomSlug);
+  const authenticated = getAuthenticatedRequest(req);
 
   return res.json({
     ...toPublicRoomSummary(room),
+    canManage: canManageDynamicRoom(roomSlug, authenticated?.account),
     predictionWindows: getRoomPredictionWindows(stateForRoom),
     submissionCountdowns: getRoomSubmissionCountdowns(),
     showState: buildShowState(roomSlug),

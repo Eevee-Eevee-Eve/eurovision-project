@@ -1,21 +1,25 @@
 'use client';
 
 import Link from "next/link";
-import { ArrowRight, Copy, MonitorPlay, NotebookPen } from "lucide-react";
+import { ArrowRight, Copy, MonitorPlay, NotebookPen, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { fetchActs, fetchRoom } from "../lib/api";
+import { deleteTemporaryRoom, fetchActs, fetchRoom } from "../lib/api";
 import { useDeviceTier } from "../lib/device";
 import { resolveMediaUrl } from "../lib/media";
 import type { ActEntry, RoomDetails } from "../lib/types";
 import { useLanguage } from "./LanguageProvider";
 
 export function RoomLanding({ roomSlug }: { roomSlug: string }) {
+  const router = useRouter();
   const { language, getRoomName } = useLanguage();
   const { isPhone } = useDeviceTier();
   const [room, setRoom] = useState<RoomDetails | null>(null);
   const [stagePreviewActs, setStagePreviewActs] = useState<ActEntry[]>([]);
   const [error, setError] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+  const [deletePending, setDeletePending] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [roomUrl, setRoomUrl] = useState("");
 
   useEffect(() => {
@@ -141,6 +145,30 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
     }
   }
 
+  const deleteRoomText = language === "ru" ? "Удалить комнату" : "Delete room";
+  const deleteRoomConfirm = language === "ru"
+    ? "Удалить эту комнату? Данные голосования в ней тоже удалятся."
+    : "Delete this room? Its voting data will be removed too.";
+  const deleteRoomErrorText = language === "ru"
+    ? "Не удалось удалить комнату."
+    : "Unable to delete room.";
+
+  async function handleDeleteRoom() {
+    if (!room?.canManage || deletePending) return;
+    if (!window.confirm(deleteRoomConfirm)) return;
+
+    setDeletePending(true);
+    setDeleteError("");
+    try {
+      await deleteTemporaryRoom(roomSlug);
+      router.push("/");
+    } catch (deleteRoomError) {
+      console.error(deleteRoomError);
+      setDeleteError(deleteRoomErrorText);
+      setDeletePending(false);
+    }
+  }
+
   const invitePanel = (
     <div className="show-card room-lobby-invite p-5 md:p-6">
       <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
@@ -174,6 +202,20 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
             {text.privateRoom}
           </span>
           <p className="mt-4 text-sm leading-7 text-arenaMuted">{text.roomPrivateText}</p>
+        </div>
+      ) : null}
+      {room?.canManage ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+          {deleteError ? <p className="text-sm text-rose-100">{deleteError}</p> : <span />}
+          <button
+            type="button"
+            onClick={() => void handleDeleteRoom()}
+            disabled={deletePending}
+            className="arena-button-danger inline-flex h-11 items-center justify-center gap-2 px-4 text-sm"
+          >
+            <Trash2 size={16} />
+            {deletePending ? "..." : deleteRoomText}
+          </button>
         </div>
       ) : null}
     </div>

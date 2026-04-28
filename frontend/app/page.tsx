@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { ArrowRight, Lock, PlusCircle, Search } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Lock, PlusCircle, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAccount } from "../components/AccountProvider";
@@ -24,6 +24,7 @@ export default function Home() {
   const [roomSearch, setRoomSearch] = useState("");
   const [roomName, setRoomName] = useState("");
   const [roomPassword, setRoomPassword] = useState("");
+  const [showRoomPassword, setShowRoomPassword] = useState(false);
   const [roomStage, setRoomStage] = useState<RoomSummary["defaultStage"]>("semi1");
   const [createPending, setCreatePending] = useState(false);
   const [createError, setCreateError] = useState("");
@@ -389,6 +390,8 @@ export default function Home() {
                 <label className="grid gap-2 text-sm text-arenaMuted">
                   <span>{text.createNameLabel}</span>
                   <input
+                    name="room-title"
+                    autoComplete="off"
                     value={roomName}
                     onChange={(event) => setRoomName(event.target.value)}
                     maxLength={64}
@@ -407,9 +410,10 @@ export default function Home() {
                   <span>{createStageLabel}</span>
                   <span className="arena-select-shell">
                     <select
+                      name="room-event"
                       value={roomStage}
                       onChange={(event) => setRoomStage(event.target.value as RoomSummary["defaultStage"])}
-                      className="arena-select home-input-create"
+                      className="arena-input arena-select home-input-create"
                     >
                       <option value="semi1">{getStageLabel("semi1")}</option>
                       <option value="semi2">{getStageLabel("semi2")}</option>
@@ -419,13 +423,25 @@ export default function Home() {
                 </label>
                 <label className="grid gap-2 text-sm text-arenaMuted">
                   <span>{text.createPasswordLabel}</span>
-                  <input
-                    type="password"
-                    value={roomPassword}
-                    onChange={(event) => setRoomPassword(event.target.value)}
-                    placeholder={text.createPasswordPlaceholder}
-                    className="arena-input home-input-create"
-                  />
+                  <span className="relative block">
+                    <input
+                      name="room-access-code"
+                      autoComplete="new-password"
+                      type={showRoomPassword ? "text" : "password"}
+                      value={roomPassword}
+                      onChange={(event) => setRoomPassword(event.target.value)}
+                      placeholder={text.createPasswordPlaceholder}
+                      className="arena-input home-input-create pr-14"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRoomPassword((value) => !value)}
+                      className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-arenaMuted transition hover:bg-white/10 hover:text-white"
+                      aria-label={showRoomPassword ? "Hide room password" : "Show room password"}
+                    >
+                      {showRoomPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </span>
                 </label>
                 {createError ? (
                   <div className="rounded-[1.2rem] bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
