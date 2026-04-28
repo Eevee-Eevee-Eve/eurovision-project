@@ -1,0 +1,98 @@
+'use client';
+
+import Link from "next/link";
+import { BarChart3, Home, Menu, UserRound, X } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { useAccount } from "./AccountProvider";
+import { BrandLogo } from "./BrandLogo";
+import LanguageSwitcher from "./LanguageSwitcher";
+import { useLanguage } from "./LanguageProvider";
+import { UserAvatar } from "./UserAvatar";
+
+const navItems = [
+  { href: "/", labelRu: "Комнаты", labelEn: "Rooms", icon: Home },
+  { href: "/stats", labelRu: "Статистика", labelEn: "Stats", icon: BarChart3 },
+  { href: "/account", labelRu: "Профиль", labelEn: "Profile", icon: UserRound },
+] as const;
+
+export function SiteHeader() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const { account } = useAccount();
+  const { getDisplayName, language } = useLanguage();
+
+  return (
+    <header className="site-header">
+      <div className="site-header-inner">
+        <BrandLogo variant="compact" />
+
+        <nav className="site-nav-desktop" aria-label={language === "ru" ? "Навигация" : "Navigation"}>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+
+            return (
+              <Link key={item.href} href={item.href} className={`site-nav-link ${active ? "site-nav-link-active" : ""}`}>
+                <Icon size={15} />
+                <span>{language === "ru" ? item.labelRu : item.labelEn}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="site-header-actions">
+          <LanguageSwitcher />
+          <Link
+            href="/account"
+            className="site-account-button"
+            aria-label={language === "ru" ? "Профиль" : "Profile"}
+            title={language === "ru" ? "Профиль" : "Profile"}
+          >
+            {account ? (
+              <UserAvatar
+                name={getDisplayName(account.publicName)}
+                avatarUrl={account.avatarUrl}
+                avatarTheme={account.avatarTheme}
+                className="h-full w-full"
+                textClass="text-[0.9rem]"
+              />
+            ) : (
+              <UserRound size={18} />
+            )}
+          </Link>
+          <button
+            type="button"
+            className="site-menu-button"
+            onClick={() => setOpen((value) => !value)}
+            aria-label={open ? (language === "ru" ? "Закрыть меню" : "Close menu") : (language === "ru" ? "Открыть меню" : "Open menu")}
+            aria-expanded={open}
+          >
+            {open ? <X size={19} /> : <Menu size={19} />}
+          </button>
+        </div>
+      </div>
+
+      {open ? (
+        <div className="site-mobile-menu">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={`site-mobile-link ${active ? "site-mobile-link-active" : ""}`}
+              >
+                <Icon size={17} />
+                <span>{language === "ru" ? item.labelRu : item.labelEn}</span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
+    </header>
+  );
+}
