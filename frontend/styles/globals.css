@@ -431,6 +431,18 @@ select {
   hyphens: auto;
 }
 
+.room-context-merged {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+  .room-context-merged {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: end;
+  }
+}
+
 .room-lobby-action {
   position: relative;
   overflow: hidden;
