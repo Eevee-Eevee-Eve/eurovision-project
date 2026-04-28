@@ -42,7 +42,9 @@ export function SiteHeader() {
         </nav>
 
         <div className="site-header-actions">
-          <LanguageSwitcher />
+          <div className="site-language-inline">
+            <LanguageSwitcher />
+          </div>
           <Link
             href="/account"
             className="site-account-button"
@@ -75,6 +77,9 @@ export function SiteHeader() {
 
       {open ? (
         <div className="site-mobile-menu">
+          <div className="site-mobile-language">
+            <LanguageSwitcher />
+          </div>
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);

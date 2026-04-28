@@ -22,7 +22,7 @@ export function AdminDeviceGate() {
   if (tier === "phone") {
     return (
       <main className="min-h-screen bg-arena-grid px-4 pb-20 pt-6 text-arenaText md:px-8">
-        <div className="mx-auto grid max-w-3xl gap-5">
+        <div className="mx-auto grid max-w-[96rem] gap-5">
           <BrandLogo variant="header" />
           <section className="show-card p-6 md:p-8">
             <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">

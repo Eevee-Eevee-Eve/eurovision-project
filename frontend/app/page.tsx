@@ -237,7 +237,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-arena-grid px-4 pb-24 pt-4 text-arenaText md:px-8">
-      <div className="mx-auto grid max-w-6xl gap-5">
+      <div className="mx-auto grid max-w-[96rem] gap-5">
         <SiteHeader />
 
         <section className="glass-panel ghost-grid home-hero-compact rounded-shell border border-white/10">
