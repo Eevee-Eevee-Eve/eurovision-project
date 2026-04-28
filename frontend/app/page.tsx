@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAccount } from "../components/AccountProvider";
 import { AuthCard } from "../components/AuthCard";
-import { BrandLogo } from "../components/BrandLogo";
-import LanguageSwitcher from "../components/LanguageSwitcher";
+import { SiteHeader } from "../components/SiteHeader";
 import { ApiError, createTemporaryRoom, fetchRooms } from "../lib/api";
 import { FALLBACK_ROOM } from "../lib/rooms";
 import type { RoomSummary } from "../lib/types";
@@ -237,25 +236,25 @@ export default function Home() {
       : "Up to 64 characters.";
 
   return (
-    <main className="min-h-screen bg-arena-grid px-4 pb-24 pt-6 text-arenaText md:px-8">
-      <div className="mx-auto grid max-w-6xl gap-6">
-        <section className="glass-panel ghost-grid rounded-shell border border-white/10 p-6 md:p-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <BrandLogo variant="hero" />
-            <LanguageSwitcher />
-          </div>
+    <main className="min-h-screen bg-arena-grid px-4 pb-24 pt-4 text-arenaText md:px-8">
+      <div className="mx-auto grid max-w-6xl gap-5">
+        <SiteHeader />
 
-          <div className="mt-6 grid gap-6 xl:grid-cols-[1.05fr_0.95fr] xl:items-start">
-            <div className="max-w-4xl">
-              <h1 className="display-copy text-3xl font-black tracking-tight md:text-5xl">
+        <section className="glass-panel ghost-grid home-hero-compact rounded-shell border border-white/10">
+          <div className={`grid gap-5 ${showAuthFirst ? "xl:grid-cols-[0.95fr_0.8fr] xl:items-start" : ""}`}>
+            <div className="max-w-3xl">
+              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
+                {text.kicker}
+              </p>
+              <h1 className="display-copy mt-3 text-3xl font-black leading-[0.96] tracking-tight md:text-5xl">
                 {showAuthFirst ? text.titleLoggedOut : text.titleLoggedIn}
               </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-arenaMuted md:text-base">
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-arenaMuted">
                 {showAuthFirst ? text.introLoggedOut : text.introLoggedIn}
               </p>
             </div>
 
-            <div id={AUTH_CARD_ID}>
+            <div id={AUTH_CARD_ID} className={account ? "hidden" : ""}>
               {loading ? (
                 <section className="show-card p-5 md:p-6">
                   <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
@@ -265,27 +264,9 @@ export default function Home() {
                     {text.loadAccount}
                   </h3>
                 </section>
-              ) : account ? (
-                <section className="show-card p-5 md:p-6">
-                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
-                    {text.accountReady}
-                  </p>
-                  <h3 className="display-copy mt-2 text-2xl font-black md:text-4xl">
-                    {getDisplayName(account.publicName)}
-                  </h3>
-                  <p className="mt-3 text-sm text-arenaMuted">{text.accountReadyText}</p>
-                  <div className="mt-5 flex flex-wrap gap-3">
-                    <Link
-                      href="/account"
-                      className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm"
-                    >
-                      {text.manageAccount}
-                    </Link>
-                  </div>
-                </section>
-              ) : (
+              ) : !account ? (
                 <AuthCard initialMode="login" />
-              )}
+              ) : null}
             </div>
           </div>
         </section>

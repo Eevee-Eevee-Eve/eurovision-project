@@ -20,7 +20,7 @@ export function ArtistCountryBadge({
       } ${className}`}
     >
       <span
-        className={`shrink-0 overflow-hidden rounded-[0.45rem] border border-white/10 bg-white/10 ${
+        className={`shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/10 ${
           compact ? "h-4 w-4" : "h-5 w-5"
         }`}
       >
