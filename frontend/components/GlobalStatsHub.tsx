@@ -692,7 +692,7 @@ export function GlobalStatsHub() {
             {ALL_ACHIEVEMENTS.length}
           </span>
         </div>
-        <div className="achievement-vault show-scroll mt-5 grid gap-3 pr-1 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="achievement-vault mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {ALL_ACHIEVEMENTS.map((achievement) => (
             <AchievementBadgeCard key={achievement.key} achievement={achievement} language={language} />
           ))}
@@ -819,7 +819,7 @@ export function GlobalStatsHub() {
           </div>
           <span className="show-chip text-[11px] text-arenaMuted"><Flag size={13} />{countryStats.length}</span>
         </div>
-        <div className="stats-country-grid show-scroll mt-5 grid min-w-0 gap-3 pr-1 md:grid-cols-2 xl:grid-cols-3">
+        <div className="stats-country-grid mt-5 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filteredCountries.map((country) => (
             <CountryCard
               key={country.code}
