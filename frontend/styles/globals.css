@@ -154,9 +154,7 @@ select {
 }
 
 .stats-country-grid {
-  max-height: min(58rem, 78vh);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
 }
 
 .profile-achievement-scroll {
@@ -231,10 +229,6 @@ select {
     max-height: 28rem;
   }
 
-  .stats-country-grid {
-    max-height: 42rem;
-  }
-
   .profile-achievement-scroll {
     max-height: 18rem;
   }
@@ -261,9 +255,7 @@ select {
 }
 
 .achievement-vault {
-  max-height: 28rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
 }
 
 .steam-achievement {
