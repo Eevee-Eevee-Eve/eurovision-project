@@ -9,6 +9,7 @@ const outputPath = path.join(root, "frontend/lib/eurovision-country-stats.ts");
 const publicRoot = path.join(root, "frontend/public/stats-assets");
 const flagsDir = path.join(publicRoot, "flags");
 const highlightsDir = path.join(publicRoot, "highlights");
+const heroDir = path.join(publicRoot, "country-heroes");
 
 const COUNTRY_CODES = {
   Albania: "AL",
@@ -135,6 +136,58 @@ const MANUAL_FINALS = [
   ["IS", "Iceland", "VÆB", "RÓA", 2025, 26, "https://www.youtube.com/watch?v=GzE88IYzXLI"],
 ];
 
+const COUNTRY_HERO_PHOTOS = {
+  AT: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/250508_corinne-cumming_ebu_00932_kczubtejpg/250508_Corinne-Cumming_EBU_00932_KCzuBte-fill_size%3D2560x1600-focal_point%3D2927x3041-focal_size%3D1024x1290-fill_size%3D2560x1600-focal_point%3D2927x3041-focal_size%3D1024x1290.jpg",
+    credit: "Corinne Cumming / EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/basel-2025/all-participants/jj/",
+  },
+  CH: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/01-0524-corinne-cumming-ebu-8814jpg/01-05.24%20Corinne%20Cumming%20-%20EBU%208814-fill_size%3D2560x1600.jpg",
+    credit: "Corinne Cumming / EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/malmo-2024/all-participants/nemo/",
+  },
+  DK: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/deforest2_effected-cropped_t35d8jpjpg/deforest2_effected-cropped_t35D8jp-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/malmo-2013/all-participants/emmelie-de-forest-1/",
+  },
+  IL: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/sites/default/files/israeljpg/Israel-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/lisbon-2018/all-participants/netta-1/",
+  },
+  IT: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/gabriele-giussani02-pref_ccjtxnw-copyjpg/GABRIELE%20GIUSSANI%2802%29%20pref_ccJtXnW%20copy-fill_size%3D2560x1600-fill_size%3D2560x1600.jpg",
+    credit: "Gabriele Giussani / EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/rotterdam-2021/all-participants/maneskin-1/",
+  },
+  NL: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/duncan-laurence-participant-profile_pcdmdkppng/Duncan%20Laurence%20participant%20profile_PCdmdkP-fill_size%3D2560x1600.png",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/tel-aviv-2019/all-participants/duncan-laurence-1/",
+  },
+  PT: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/salvador_portugal_2017_ubllnuwjpg/salvador_portugal_2017_ubllnUW-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/kyiv-2017/all-participants/salvador-sobral-1/",
+  },
+  SE: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/2023_mtszxrc0503-corinne-cumming-ebu-2602jpg/2023_mTsZxrC.05.03%20Corinne%20Cumming%20-%20EBU-2602-fill_size%3D2560x1600.jpg",
+    credit: "Corinne Cumming / EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/liverpool-2023/all-participants/loreen/",
+  },
+  UA: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/kalush-orchestra-ukraine-wide_0_9uszmefjpg/Kalush%20Orchestra%20-%20Ukraine%20WIDE_0_9uSzMEF-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/turin-2022/all-participants/kalush-orchestra-1/",
+  },
+};
+
+function heroExtension(url) {
+  return url.split("?")[0].match(/\.(png|webp|jpe?g)(?:-|$|%)/i)?.[1]?.toLowerCase().replace("jpeg", "jpg") || "jpg";
+}
+
 function parseCsv(text) {
   const rows = [];
   let row = [];
@@ -200,6 +253,7 @@ async function download(url, destination, minBytes = 900) {
 async function ensureAssets(country) {
   await fsp.mkdir(flagsDir, { recursive: true });
   await fsp.mkdir(highlightsDir, { recursive: true });
+  await fsp.mkdir(heroDir, { recursive: true });
 
   const formerFlag = FORMER_FLAG_SVGS[country.code];
   const flagPath = path.join(flagsDir, `${country.code.toLowerCase()}.${formerFlag ? "svg" : "png"}`);
@@ -220,6 +274,16 @@ async function ensureAssets(country) {
       await fsp.access(imagePath);
     } catch {
       await download(`https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`, imagePath);
+    }
+  }
+
+  const hero = COUNTRY_HERO_PHOTOS[country.code];
+  if (hero?.url) {
+    const heroPath = path.join(heroDir, `${country.code.toLowerCase()}.${heroExtension(hero.url)}`);
+    try {
+      await fsp.access(heroPath);
+    } catch {
+      await download(hero.url, heroPath);
     }
   }
 }
@@ -295,6 +359,7 @@ function buildCountries() {
       const winYears = country.rows.filter((row) => row.rank === 1).map((row) => row.year).sort((left, right) => left - right);
       const code = country.code;
       const assetCode = code.toLowerCase();
+      const hero = COUNTRY_HERO_PHOTOS[code];
 
       return {
         code,
@@ -304,6 +369,9 @@ function buildCountries() {
         highlightArtist: best.artist,
         highlightSong: best.song,
         highlightPhoto: extractYoutubeId(best.videoUrl) ? `/stats-assets/highlights/${assetCode}.jpg` : undefined,
+        heroPhoto: hero ? `/stats-assets/country-heroes/${assetCode}.${heroExtension(hero.url)}` : undefined,
+        heroPhotoCredit: hero?.credit,
+        heroPhotoSource: hero?.source,
         highlightVideoUrl: best.videoUrl || undefined,
         highlightRank: best.rank,
         highlightYear: best.year,
@@ -347,6 +415,9 @@ export type EurovisionCountryStat = {
   highlightArtist?: string;
   highlightSong?: string;
   highlightPhoto?: string;
+  heroPhoto?: string;
+  heroPhotoCredit?: string;
+  heroPhotoSource?: string;
   highlightRank?: number;
   highlightYear?: number;
   firstYear: number;
