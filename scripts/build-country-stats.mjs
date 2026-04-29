@@ -137,15 +137,70 @@ const MANUAL_FINALS = [
 ];
 
 const COUNTRY_HERO_PHOTOS = {
+  AD: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/andorra3jpg/Andorra3-fill_size%3D2560x1600-focal_point%3D1620x555-focal_size%3D599x486-fill_size%3D2560x1600-focal_point%3D1620x555-focal_size%3D599x486.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/helsinki-2007/all-participants/anonymous/",
+  },
+  AL: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/rona_nishliu_5_tp0tuzkjpg/rona_nishliu_5_tP0tuzk-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/baku-2012/all-participants/rona-nishliu/",
+  },
+  AM: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/sites/default/files/img/upload/news/2014/Armenia/material/1jpg/1-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/copenhagen-2014/all-participants/aram-mp3-1/",
+  },
   AT: {
     url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/250508_corinne-cumming_ebu_00932_kczubtejpg/250508_Corinne-Cumming_EBU_00932_KCzuBte-fill_size%3D2560x1600-focal_point%3D2927x3041-focal_size%3D1024x1290-fill_size%3D2560x1600-focal_point%3D2927x3041-focal_size%3D1024x1290.jpg",
     credit: "Corinne Cumming / EBU",
     source: "https://www.eurovision.com/eurovision-song-contest/basel-2025/all-participants/jj/",
   },
+  AU: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/160302-sony-damiim_shot1_0075_treated_mjbtakfjpg/160302-sony-damiim_shot1_0075_treated_mJbTakf-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/stockholm-2016/all-participants/dami-im-1/",
+  },
+  AZ: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/img_9876_2_wmftk8qjpg/img_9876_2_wmftK8q-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/dusseldorf-2011/all-participants/ell-nikki/",
+  },
+  BA: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/bosniaherze2jpg/BosniaHerze2-fill_size%3D2560x1600-focal_point%3D2247x806-focal_size%3D589x794-fill_size%3D2560x1600-focal_point%3D2247x806-focal_size%3D589x794.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/athens-2006/all-participants/hari-mata-hari/",
+  },
+  BE: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/1986-belgium-sandra-kimjpg/1986%20Belgium%20-%20Sandra%20Kim-fill_size%3D2560x1600-focal_point%3D1923x670-focal_size%3D670x1048-fill_size%3D2560x1600-focal_point%3D1923x670-focal_size%3D670x1048.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/bergen-1986/all-participants/sandra-kim/",
+  },
+  BG: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/kristian_bulgaria_2017_lil5vsdjpg/kristian_bulgaria_2017_LIl5vSd-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/kyiv-2017/all-participants/kristian-kostov-1/",
+  },
+  BY: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/belarus-2jpg/Belarus%202-fill_size%3D2560x1600-focal_point%3D1782x1041-focal_size%3D1021x1145-fill_size%3D2560x1600-focal_point%3D1782x1041-focal_size%3D1021x1145.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/helsinki-2007/all-participants/dmitry-koldun/",
+  },
   CH: {
     url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/01-0524-corinne-cumming-ebu-8814jpg/01-05.24%20Corinne%20Cumming%20-%20EBU%208814-fill_size%3D2560x1600.jpg",
     credit: "Corinne Cumming / EBU",
     source: "https://www.eurovision.com/eurovision-song-contest/malmo-2024/all-participants/nemo/",
+  },
+  CY: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/sites/default/files/cyprusjpg/Cyprus-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/lisbon-2018/all-participants/eleni-foureira-1/",
+  },
+  CZ: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/czech-republic_5hg9hgpjpg/Czech%20Republic_5hg9hgP-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/lisbon-2018/all-participants/mikolas-josef-1/",
   },
   DK: {
     url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/deforest2_effected-cropped_t35d8jpjpg/deforest2_effected-cropped_t35D8jp-fill_size%3D2560x1600.jpg",
@@ -156,6 +211,11 @@ const COUNTRY_HERO_PHOTOS = {
     url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/schermafbeelding-2020-07-10-om-15_32hricx5625png/Schermafbeelding%202020-07-10%20om%2015_32hRIcx.56.25-fill_size%3D2560x1600.png",
     credit: "EBU",
     source: "https://www.eurovision.com/eurovision-song-contest/oslo-2010/all-participants/lena/",
+  },
+  EE: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/2001-estonia-tanel-padar-dave-benton-and-2xljpg/2001%20Estonia%20-%20Tanel%20Padar%20Dave%20Benton%20and%202XL-fill_size%3D2560x1600-focal_point%3D1504x447-focal_size%3D1696x443-fill_size%3D2560x1600-focal_point%3D1504x447-focal_size%3D1696x443.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/copenhagen-2001/all-participants/tanel-padar-dave-benton-2xl/",
   },
   FI: {
     url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/lordi-th14-155jpg/Lordi%20TH14-155-fill_size%3D2560x1600-focal_point%3D593x288-focal_size%3D145x177-fill_size%3D2560x1600-focal_point%3D593x288-focal_size%3D145x177.jpg",
@@ -172,10 +232,20 @@ const COUNTRY_HERO_PHOTOS = {
     credit: "EBU",
     source: "https://www.eurovision.com/eurovision-song-contest/dublin-1997/all-participants/katrina-and-the-waves/",
   },
+  GE: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/eldrine_portrets_2_zzpfvb9jpg/eldrine_portrets_2_ZzPFvb9-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/dusseldorf-2011/all-participants/eldrine/",
+  },
   GR: {
     url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/2005-greece-helena-paparizoujpg/2005%20Greece%20-%20Helena%20Paparizou-fill_size%3D2560x1600-fill_size%3D2560x1600.jpg",
     credit: "EBU",
     source: "https://www.eurovision.com/eurovision-song-contest/kyiv-2005/all-participants/helena-paparizou/",
+  },
+  HU: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/1994-hungary-friderikajpg/1994%20Hungary%20-%20Friderika-fill_size%3D2560x1600-focal_point%3D1763x617-focal_size%3D367x486-fill_size%3D2560x1600-focal_point%3D1763x617-focal_size%3D367x486.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/dublin-1994/all-participants/friderika-bayer/",
   },
   HR: {
     url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/01-0524-corinne-cumming-ebu-7966jpg/01-05.24%20Corinne%20Cumming%20-%20EBU%207966-fill_size%3D2560x1600-focal_point%3D3342x1125-focal_size%3D1183x1698-fill_size%3D2560x1600-focal_point%3D3342x1125-focal_size%3D1183x1698.jpg",
@@ -192,10 +262,60 @@ const COUNTRY_HERO_PHOTOS = {
     credit: "EBU",
     source: "https://www.eurovision.com/eurovision-song-contest/lisbon-2018/all-participants/netta-1/",
   },
+  IS: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/iceland4jpg/Iceland4-fill_size%3D2560x1600-focal_point%3D1774x693-focal_size%3D605x599-fill_size%3D2560x1600-focal_point%3D1774x693-focal_size%3D605x599.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/moscow-2009/all-participants/yohanna/",
+  },
   IT: {
     url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/gabriele-giussani02-pref_ccjtxnw-copyjpg/GABRIELE%20GIUSSANI%2802%29%20pref_ccJtXnW%20copy-fill_size%3D2560x1600-fill_size%3D2560x1600.jpg",
     credit: "Gabriele Giussani / EBU",
     source: "https://www.eurovision.com/eurovision-song-contest/rotterdam-2021/all-participants/maneskin-1/",
+  },
+  LT: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/lithuania9jpg/Lithuania9-fill_size%3D2560x1600-focal_point%3D1761x809-focal_size%3D718x907-fill_size%3D2560x1600-focal_point%3D1761x809-focal_size%3D718x907.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/athens-2006/all-participants/lt-united/",
+  },
+  LU: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/1983_03_58_34_22jpg/1983_03_58_34_22-fill_size%3D2560x1600-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/munich-1983/all-participants/corinne-hermes/",
+  },
+  LV: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/2002-latvia-marie-njpg/2002%20Latvia%20-%20Marie%20N-fill_size%3D2560x1600-focal_point%3D1853x1000-focal_size%3D718x902-fill_size%3D2560x1600-focal_point%3D1853x1000-focal_size%3D718x902.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/tallinn-2002/all-participants/marie-n/",
+  },
+  MA: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/1980-morocco-samira-bensaidjpg/1980%20Morocco%20-%20Samira%20Bensai%CC%88d-fill_size%3D2560x1600-focal_point%3D1928x481-focal_size%3D351x540-fill_size%3D2560x1600-focal_point%3D1928x481-focal_size%3D351x540.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/the-hague-1980/all-participants/samira-bensaid/",
+  },
+  MC: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/1971-monaco-severinejpg/1971%20Monaco%20-%20Se%CC%81verine-fill_size%3D2560x1600-focal_point%3D2190x972-focal_size%3D1717x1679-fill_size%3D2560x1600-focal_point%3D2190x972-focal_size%3D1717x1679.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/dublin-1971/all-participants/severine/",
+  },
+  MD: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/sunstroke_2017_moldova_drjrp5xjpg/sunstroke_2017_moldova_drjrp5X-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/kyiv-2017/all-participants/sunstroke-project-1/",
+  },
+  ME: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/copy_of_sar_1084_6fkdnlpjpg/Copy_of_SAR_1084_6FkDnLp-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/vienna-2015/all-participants/knez/",
+  },
+  MK: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/8d288b6b-8409-4ff3-bdf4-a203602ec611_wb2m9xojpg/8d288b6b-8409-4ff3-bdf4-a203602ec611_WB2M9Xo-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/tel-aviv-2019/all-participants/tamara-todevska-1/",
+  },
+  MT: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/2005-malta-chiarajpg/2005%20Malta%20-%20Chiara-fill_size%3D2560x1600-focal_point%3D1172x720-focal_size%3D405x491-fill_size%3D2560x1600-focal_point%3D1172x720-focal_size%3D405x491.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/kyiv-2005/all-participants/chiara/",
   },
   NL: {
     url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/duncan-laurence-participant-profile_pcdmdkppng/Duncan%20Laurence%20participant%20profile_PCdmdkP-fill_size%3D2560x1600.png",
@@ -207,20 +327,50 @@ const COUNTRY_HERO_PHOTOS = {
     credit: "EBU",
     source: "https://www.eurovision.com/eurovision-song-contest/moscow-2009/all-participants/alexander-rybak/",
   },
+  PL: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/1994-poland-edyta-gorniakjpg/1994%20Poland%20-%20Edyta%20G%C3%B3rniak-fill_size%3D2560x1600-focal_point%3D1963x654-focal_size%3D421x464-fill_size%3D2560x1600-focal_point%3D1963x654-focal_size%3D421x464.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/dublin-1994/all-participants/edyta-gorniak/",
+  },
   PT: {
     url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/salvador_portugal_2017_ubllnuwjpg/salvador_portugal_2017_ubllnUW-fill_size%3D2560x1600.jpg",
     credit: "EBU",
     source: "https://www.eurovision.com/eurovision-song-contest/kyiv-2017/all-participants/salvador-sobral-1/",
+  },
+  RO: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/ovi-si-paula_9ilihj1jpg/Ovi%20si%20Paula_9iliHj1-fill_size%3D2560x1600.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/oslo-2010/all-participants/paula-seling-ovi/",
   },
   RU: {
     url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/russia2jpg/Russia2-fill_size%3D2560x1600-focal_point%3D2058x527-focal_size%3D184x232-fill_size%3D2560x1600-focal_point%3D2058x527-focal_size%3D184x232.jpg",
     credit: "EBU",
     source: "https://www.eurovision.com/eurovision-song-contest/belgrade-2008/all-participants/dima-bilan/",
   },
+  RS: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/montenegro2jpg/Montenegro2-fill_size%3D2560x1600-focal_point%3D1677x1022-focal_size%3D799x1118-fill_size%3D2560x1600-focal_point%3D1677x1022-focal_size%3D799x1118.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/helsinki-2007/all-participants/marija-serifovic/",
+  },
   SE: {
     url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/2023_mtszxrc0503-corinne-cumming-ebu-2602jpg/2023_mTsZxrC.05.03%20Corinne%20Cumming%20-%20EBU-2602-fill_size%3D2560x1600.jpg",
     credit: "Corinne Cumming / EBU",
     source: "https://www.eurovision.com/eurovision-song-contest/liverpool-2023/all-participants/loreen/",
+  },
+  SI: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/2001-slovenia-nusa-derendajpg/2001%20Slovenia%20-%20Nu%C5%A1a%20Derenda-fill_size%3D2560x1600-focal_point%3D2009x639-focal_size%3D545x805-fill_size%3D2560x1600-focal_point%3D2009x639-focal_size%3D545x805.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/copenhagen-2001/all-participants/nusa-derenda/",
+  },
+  SK: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/cms/1996-slovakia-marcel-palonderjpg/1996%20Slovakia%20-%20Marcel%20Palonder-fill_size%3D2560x1600-focal_point%3D1699x1027-focal_size%3D1015x972-fill_size%3D2560x1600-focal_point%3D1699x1027-focal_size%3D1015x972.jpg",
+    credit: "EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/oslo-1996/all-participants/marcel-palonder/",
+  },
+  SM: {
+    url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/250507_corinne-cumming_ebu_00443_shxf8kojpg/250507_Corinne-Cumming_EBU_00443_shxF8KO-fill_size%3D2560x1600.jpg",
+    credit: "Corinne Cumming / EBU",
+    source: "https://www.eurovision.com/eurovision-song-contest/basel-2025/all-participants/gabry-ponte/",
   },
   UA: {
     url: "https://storage.googleapis.com/eurovision-com.appspot.com/renditions/public/core_data/kalush-orchestra-ukraine-wide_0_9uszmefjpg/Kalush%20Orchestra%20-%20Ukraine%20WIDE_0_9uSzMEF-fill_size%3D2560x1600.jpg",
@@ -397,6 +547,7 @@ function buildCountries() {
   );
 
   return [...countries.values()]
+    .filter((country) => !FORMER_COUNTRIES.has(country.code))
     .map((country) => {
       const best = [...country.rows].sort((left, right) => left.rank - right.rank || right.year - left.year)[0];
       const appearances = country.years.size;
