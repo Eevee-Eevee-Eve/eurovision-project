@@ -73,6 +73,9 @@ type HistoricalPlayer = {
 
 type CountryHistory = EurovisionCountryStat;
 
+type StatsTab = "players" | "countries" | "achievements";
+type AchievementFilter = "earned" | "locked" | "all";
+
 const ACHIEVEMENTS: Record<string, Achievement> = {
   champion: {
     key: "champion",
@@ -423,6 +426,9 @@ export function GlobalStatsHub() {
   const [currentPlayers, setCurrentPlayers] = useState<HistoricalPlayer[]>([]);
   const [currentActs, setCurrentActs] = useState<ActEntry[]>([]);
   const [query, setQuery] = useState("");
+  const [countryQuery, setCountryQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<StatsTab>("players");
+  const [achievementFilter, setAchievementFilter] = useState<AchievementFilter>("earned");
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -550,7 +556,9 @@ export function GlobalStatsHub() {
   }, [account, currentPlayers]);
 
   const selectedPlayer = players.find((player) => player.id === selectedPlayerId) || players[0];
-  const filteredPlayers = players.filter((player) => getDisplayName(player.name).toLowerCase().includes(query.trim().toLowerCase()));
+  const normalizedPlayerQuery = query.trim().toLowerCase();
+  const normalizedCountryQuery = countryQuery.trim().toLowerCase();
+  const filteredPlayers = players.filter((player) => getDisplayName(player.name).toLowerCase().includes(normalizedPlayerQuery));
   const playerTotals = selectedPlayer ? totals(selectedPlayer) : null;
 
   const countryStats = useMemo(() => {
@@ -581,6 +589,17 @@ export function GlobalStatsHub() {
     return Array.from(byCode.values()).sort((left, right) => right.wins - left.wins || right.top10 - left.top10);
   }, [currentActs]);
 
+  const filteredCountries = countryStats.filter((country) => {
+    const localName = getCountryName(country.code, country.name).toLowerCase();
+    return localName.includes(normalizedCountryQuery) || country.name.toLowerCase().includes(normalizedCountryQuery) || country.code.toLowerCase().includes(normalizedCountryQuery);
+  });
+  const selectedAchievementKeys = new Set(selectedPlayer?.achievements.map((achievement) => achievement.key) || []);
+  const visibleAchievements = ALL_ACHIEVEMENTS.filter((achievement) => {
+    if (achievementFilter === "earned") return selectedAchievementKeys.has(achievement.key);
+    if (achievementFilter === "locked") return !selectedAchievementKeys.has(achievement.key);
+    return true;
+  });
+
   const globalTotals = {
     players: players.length,
     seasons: Math.max(...players.map((player) => totals(player).seasons), 0),
@@ -589,24 +608,35 @@ export function GlobalStatsHub() {
   };
 
   return (
-    <div className="grid gap-5">
-      <section className="glass-panel ghost-grid home-hero-compact rounded-shell border border-white/10">
-        <div className="grid gap-5 xl:grid-cols-[1fr_0.68fr] xl:items-end">
+    <div className="stats-page-safe grid min-w-0 gap-5">
+      <section className="glass-panel ghost-grid home-hero-compact min-w-0 rounded-shell border border-white/10">
+        <div className="grid min-w-0 gap-5 xl:grid-cols-[1fr_0.68fr] xl:items-end">
           <div className="min-w-0">
             <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.kicker}</p>
             <h1 className="display-copy mt-3 max-w-5xl text-3xl font-black leading-[0.96] tracking-tight md:text-5xl">{copy.title}</h1>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-arenaMuted md:text-base">{copy.intro}</p>
           </div>
 
-          <div className="show-panel grid gap-3 p-4">
+          <div className="show-panel grid min-w-0 gap-3 p-4">
             <label className="grid gap-2 text-sm text-arenaMuted">
-              <span>{copy.search}</span>
+              <span>{activeTab === "countries" ? (language === "ru" ? "Поиск страны" : "Country search") : copy.search}</span>
               <div className="relative">
                 <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-arenaMuted" />
-                <input value={query} onChange={(event) => setQuery(event.target.value)} className="arena-input arena-search-input" placeholder={copy.search} />
+                <input
+                  value={activeTab === "countries" ? countryQuery : query}
+                  onChange={(event) => {
+                    if (activeTab === "countries") {
+                      setCountryQuery(event.target.value);
+                    } else {
+                      setQuery(event.target.value);
+                    }
+                  }}
+                  className="arena-input arena-search-input"
+                  placeholder={activeTab === "countries" ? (language === "ru" ? "Найти страну" : "Find country") : copy.search}
+                />
               </div>
             </label>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid min-w-0 gap-2 sm:grid-cols-2">
               {account ? (
                 <button type="button" className="arena-button-room inline-flex min-h-11 items-center justify-center gap-2 px-4 text-sm" onClick={() => setSelectedPlayerId(account.id)}>
                   <Users size={15} />
@@ -622,14 +652,36 @@ export function GlobalStatsHub() {
         </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard icon={Users} label={copy.players} value={String(globalTotals.players)} />
         <MetricCard icon={BarChart3} label={copy.seasons} value={String(globalTotals.seasons)} />
         <MetricCard icon={Target} label={copy.exact} value={String(globalTotals.exact)} />
         <MetricCard icon={Trophy} label={copy.winners} value={String(globalTotals.winners)} />
       </section>
 
-      <section className="show-card p-5 md:p-6">
+      <section className="stats-tabs show-panel min-w-0 p-2">
+        {[
+          { key: "players" as const, label: language === "ru" ? "Игроки" : "Players", icon: Users },
+          { key: "countries" as const, label: language === "ru" ? "Страны" : "Countries", icon: Flag },
+          { key: "achievements" as const, label: copy.achievements, icon: Medal },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`stats-tab-button ${activeTab === tab.key ? "stats-tab-button-active" : ""}`}
+            >
+              <Icon size={15} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </section>
+
+      {activeTab === "achievements" ? (
+      <section className="show-card min-w-0 p-5 md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">{copy.achievementsCatalog}</p>
@@ -646,9 +698,11 @@ export function GlobalStatsHub() {
           ))}
         </div>
       </section>
+      ) : null}
 
-      <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="show-card p-5 md:p-6">
+      {activeTab === "players" ? (
+      <section className="grid min-w-0 gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+        <div className="show-card min-w-0 p-5 md:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">{copy.playerRating}</p>
@@ -660,7 +714,7 @@ export function GlobalStatsHub() {
             </span>
           </div>
 
-          <div className="mt-5 grid gap-3">
+          <div className="stats-scroll-list show-scroll mt-5 grid min-w-0 gap-3 pr-1">
             {filteredPlayers.map((player) => {
               const stats = totals(player);
               const active = selectedPlayer?.id === player.id;
@@ -690,8 +744,8 @@ export function GlobalStatsHub() {
         </div>
 
         {selectedPlayer && playerTotals ? (
-          <div className="show-card overflow-hidden p-5 md:p-6">
-            <div className="grid gap-5 md:grid-cols-[auto_1fr]">
+          <div className="show-card min-w-0 overflow-hidden p-5 md:p-6">
+            <div className="grid min-w-0 gap-5 md:grid-cols-[auto_1fr]">
               <UserAvatar name={getDisplayName(selectedPlayer.name)} avatarUrl={selectedPlayer.avatarUrl} avatarTheme={selectedPlayer.avatarTheme} className="h-28 w-28 md:h-36 md:w-36" textClass="text-4xl" />
               <div className="min-w-0">
                 <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.profile}</p>
@@ -704,17 +758,44 @@ export function GlobalStatsHub() {
               </div>
             </div>
 
-            <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="show-panel p-4">
+            <div className="mt-6 grid min-w-0 gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="show-panel min-w-0 p-4">
                 <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{copy.years}</p>
                 <div className="mt-4 grid gap-3">
                   {selectedPlayer.records.map((record) => <YearBar key={record.year} record={record} maxPoints={Math.max(...selectedPlayer.records.map((item) => item.points), 1)} />)}
                 </div>
               </div>
-              <div className="show-panel p-4">
+              <div className="show-panel min-w-0 p-4">
                 <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaPulse">{copy.achievements}</p>
-                <div className="mt-4 grid gap-3">
-                  {selectedPlayer.achievements.length ? selectedPlayer.achievements.map((achievement) => <AchievementPill key={achievement.key} achievement={achievement} language={language} />) : <p className="text-sm leading-7 text-arenaMuted">{copy.noImported}</p>}
+                <div className="mt-3 grid grid-cols-3 gap-1 rounded-full border border-white/10 bg-white/[0.035] p-1">
+                  {[
+                    { key: "earned" as const, label: language === "ru" ? "Есть" : "Earned" },
+                    { key: "locked" as const, label: language === "ru" ? "Цели" : "Locked" },
+                    { key: "all" as const, label: language === "ru" ? "Все" : "All" },
+                  ].map((filter) => (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      onClick={() => setAchievementFilter(filter.key)}
+                      className={`rounded-full px-2 py-2 text-xs font-bold transition ${achievementFilter === filter.key ? "bg-white/12 text-white shadow-soft" : "text-arenaMuted hover:bg-white/[0.06] hover:text-white"}`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="profile-achievement-scroll show-scroll mt-4 grid gap-2 pr-1">
+                  {visibleAchievements.length ? (
+                    visibleAchievements.map((achievement) => (
+                      <ProfileAchievementRow
+                        key={achievement.key}
+                        achievement={achievement}
+                        language={language}
+                        unlocked={selectedAchievementKeys.has(achievement.key)}
+                      />
+                    ))
+                  ) : (
+                    <p className="text-sm leading-7 text-arenaMuted">{copy.noImported}</p>
+                  )}
                 </div>
                 <div className="mt-5 rounded-[1.2rem] border border-white/10 bg-white/[0.035] p-4">
                   <p className="label-copy text-[10px] uppercase tracking-[0.22em] text-arenaBeam">{copy.funStats}</p>
@@ -727,8 +808,10 @@ export function GlobalStatsHub() {
           </div>
         ) : null}
       </section>
+      ) : null}
 
-      <section className="show-card p-5 md:p-6">
+      {activeTab === "countries" ? (
+      <section className="show-card min-w-0 p-5 md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.countries}</p>
@@ -736,8 +819,8 @@ export function GlobalStatsHub() {
           </div>
           <span className="show-chip text-[11px] text-arenaMuted"><Flag size={13} />{countryStats.length}</span>
         </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {countryStats.map((country) => (
+        <div className="stats-country-grid show-scroll mt-5 grid min-w-0 gap-3 pr-1 md:grid-cols-2 xl:grid-cols-3">
+          {filteredCountries.map((country) => (
             <CountryCard
               key={country.code}
               country={country}
@@ -748,14 +831,15 @@ export function GlobalStatsHub() {
           ))}
         </div>
       </section>
+      ) : null}
 
-      <section className="grid gap-5 lg:grid-cols-2">
-        <div className="show-card p-5 md:p-6">
+      <section className="grid min-w-0 gap-5 lg:grid-cols-2">
+        <div className="show-card min-w-0 p-5 md:p-6">
           <Upload className="text-arenaBeam" size={25} />
           <h2 className="display-copy mt-4 text-2xl font-black text-white">{copy.import}</h2>
           <p className="mt-3 text-sm leading-7 text-arenaMuted">{copy.playerHint}</p>
         </div>
-        <div className="show-card p-5 md:p-6">
+        <div className="show-card min-w-0 p-5 md:p-6">
           <Users className="text-arenaPulse" size={25} />
           <h2 className="display-copy mt-4 text-2xl font-black text-white">{copy.currentSource}</h2>
           <p className="mt-3 text-sm leading-7 text-arenaMuted">{copy.currentSourceText}</p>
@@ -809,6 +893,24 @@ function AchievementPill({ achievement, language, compact = false }: { achieveme
       <Icon size={compact ? 12 : 15} />
       <span className="truncate font-semibold">{language === "ru" ? achievement.titleRu : achievement.titleEn}</span>
       {!compact ? <span className="hidden text-xs opacity-75 md:inline">{language === "ru" ? achievement.textRu : achievement.textEn}</span> : null}
+    </div>
+  );
+}
+
+function ProfileAchievementRow({ achievement, language, unlocked }: { achievement: Achievement; language: "ru" | "en"; unlocked: boolean }) {
+  const Icon = achievement.icon;
+  return (
+    <div className={`grid min-w-0 grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[0.9rem] border p-3 transition ${unlocked ? `border-white/10 bg-gradient-to-br ${achievement.tone}` : "border-white/[0.07] bg-white/[0.025] text-white/45"}`}>
+      <div className={`achievement-mini-medal ${unlocked ? "" : "achievement-mini-medal-locked"}`}>
+        <Icon size={18} />
+      </div>
+      <div className="min-w-0">
+        <p className={`truncate text-sm font-black ${unlocked ? "text-white" : "text-white/52"}`}>{language === "ru" ? achievement.titleRu : achievement.titleEn}</p>
+        <p className={`mt-0.5 line-clamp-2 text-xs leading-5 ${unlocked ? "text-white/72" : "text-white/38"}`}>{language === "ru" ? achievement.textRu : achievement.textEn}</p>
+      </div>
+      <span className={`achievement-status-pill ${unlocked ? "achievement-status-pill-earned" : ""}`}>
+        {unlocked ? (language === "ru" ? "есть" : "earned") : (language === "ru" ? "цель" : "goal")}
+      </span>
     </div>
   );
 }
