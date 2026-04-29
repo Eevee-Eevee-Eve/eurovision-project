@@ -847,6 +847,8 @@ function CountryCard({
   language: "ru" | "en";
 }) {
   const fallbackGradient = `linear-gradient(135deg, ${country.wins ? "rgba(255, 99, 194, 0.2)" : "rgba(129, 236, 255, 0.14)"}, rgba(36, 36, 58, 0.96))`;
+  const heroPhoto = country.heroPhoto || country.highlightPhoto;
+  const hasCuratedHero = Boolean(country.heroPhoto);
   const yearRange = country.firstYear === country.latestYear ? String(country.firstYear) : `${country.firstYear}—${country.latestYear}`;
   const winYears = country.winYears.length ? country.winYears.slice(-4).join(", ") : language === "ru" ? "пока без побед" : "no wins yet";
   const headline = !country.highlightRank
@@ -865,6 +867,17 @@ function CountryCard({
   return (
     <Link href={`/stats/countries/${country.code.toLowerCase()}`} className="country-history-card show-panel block min-w-0 overflow-hidden transition hover:-translate-y-0.5 hover:bg-white/[0.075]">
       <div className="country-history-media" style={{ background: fallbackGradient }}>
+        {heroPhoto ? (
+          <img
+            src={heroPhoto}
+            alt=""
+            className={`country-history-photo ${hasCuratedHero ? "country-history-photo-curated" : "country-history-photo-fallback"}`}
+            loading="lazy"
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
+        ) : null}
         <div className="country-history-overlay" />
         <span className="country-history-watermark">{country.code}</span>
         <span className="country-history-flag-fallback">{country.code}</span>
@@ -890,6 +903,7 @@ function CountryCard({
             <span className="country-best-badge">{headline}</span>
           </div>
         </div>
+        {country.heroPhotoCredit ? <span className="country-photo-credit">{country.heroPhotoCredit}</span> : null}
       </div>
       <div className="grid grid-cols-3 gap-2 p-4 text-center">
         <SmallStat label={labels.wins} value={String(country.wins)} />
