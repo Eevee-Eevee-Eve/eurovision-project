@@ -1577,19 +1577,19 @@ select {
 
 .live-final-readable-row {
   contain: layout paint;
+  height: clamp(2.35rem, calc((100vh - 23rem) / 10), 3.3rem);
+  min-height: 0;
 }
 
 .live-final-stage-columns {
   display: grid;
   align-items: start;
-  gap: 0.5rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.35rem, 0.8vh, 0.5rem);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-@media (min-width: 1536px) {
-  .live-final-stage-columns {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+.live-final-stage-column {
+  gap: clamp(0.35rem, 0.8vh, 0.5rem);
 }
 
 .live-final-country {
