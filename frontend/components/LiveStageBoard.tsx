@@ -437,7 +437,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     const flagUrl = resolveMediaUrl(act.flagUrl);
     const countryName = getCountryName(act.code, act.country);
     const desktopRowClass = isFinal
-      ? "live-final-readable-row flex h-[3.3rem] items-center gap-2 px-2.5 py-1.5 md:px-3"
+      ? "live-final-readable-row flex items-center gap-2 px-2.5 py-1.5 md:px-3"
       : "flex h-[3.05rem] items-center gap-1.5 px-2 py-[0.15rem] md:px-2 md:py-[0.2rem]";
 
     return (
@@ -725,11 +725,11 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
               </div>
 
               {isFinal ? (
-                <div className="show-scroll mt-3 flex-1 overflow-y-auto pr-1">
+                <div className="mt-3 min-h-0 flex-1 overflow-hidden pr-1">
                   {stageRows.length ? (
                     <div className="live-final-stage-columns">
                       {finalStageColumns.map((column, columnIndex) => (
-                        <div key={`final-column-${columnIndex}`} className="grid auto-rows-max content-start gap-2">
+                        <div key={`final-column-${columnIndex}`} className="live-final-stage-column grid auto-rows-max content-start">
                           {column.map((act) => renderStageDesktopRow(act))}
                         </div>
                       ))}
