@@ -1579,6 +1579,19 @@ select {
   contain: layout paint;
 }
 
+.live-final-stage-columns {
+  display: grid;
+  align-items: start;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 1536px) {
+  .live-final-stage-columns {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .live-final-country {
   width: min(100%, clamp(8.75rem, 14vw, 12rem));
   justify-content: flex-start;
