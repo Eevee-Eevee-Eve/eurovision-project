@@ -199,6 +199,118 @@ select {
   color: rgba(129, 236, 255, 0.95);
 }
 
+.stats-trend-chart {
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(129, 236, 255, 0.1), transparent 34%),
+    rgba(255, 255, 255, 0.035);
+  padding: 0.5rem;
+}
+
+.stats-trend-chart svg {
+  display: block;
+  width: 100%;
+  min-height: 10rem;
+}
+
+.stats-trend-grid,
+.stats-trend-axis {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.09);
+  stroke-width: 0.8;
+}
+
+.stats-trend-axis {
+  stroke: rgba(255, 255, 255, 0.16);
+}
+
+.stats-trend-bar {
+  fill: rgba(255, 255, 255, 0.08);
+}
+
+.stats-trend-line {
+  fill: none;
+  stroke: url("#playerTrendLine");
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3.2;
+  filter: drop-shadow(0 0 5px rgba(255, 99, 194, 0.32));
+}
+
+.stats-trend-dot {
+  fill: #f7f2ff;
+  stroke: #81ecff;
+  stroke-width: 1.5;
+}
+
+.stats-donut {
+  display: grid;
+  width: 9.25rem;
+  max-width: 100%;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 9999px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 18px 38px rgba(0, 0, 0, 0.24);
+}
+
+.stats-donut > div {
+  display: grid;
+  width: 66%;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 9999px;
+  background: rgba(18, 18, 34, 0.94);
+  text-align: center;
+}
+
+.stats-donut p {
+  color: #fff;
+  font-family: var(--font-display), sans-serif;
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.stats-donut span {
+  max-width: 5rem;
+  color: rgba(239, 237, 255, 0.58);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.stats-legend-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 0.55rem 0.7rem;
+  color: rgba(239, 237, 255, 0.78);
+  font-size: 0.82rem;
+}
+
+.stats-legend-row strong {
+  color: #fff;
+  font-weight: 900;
+}
+
+.stats-legend-dot {
+  height: 0.65rem;
+  width: 0.65rem;
+  border-radius: 9999px;
+  box-shadow: 0 0 12px currentColor;
+}
+
 @media (max-width: 640px) {
   .stats-page-safe {
     gap: 0.85rem;
@@ -240,6 +352,11 @@ select {
 
   .achievement-status-pill {
     display: none;
+  }
+
+  .stats-donut {
+    justify-self: center;
+    width: 8.2rem;
   }
 }
 

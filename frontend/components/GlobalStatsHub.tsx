@@ -27,7 +27,6 @@ import {
   Star,
   Target,
   Trophy,
-  Upload,
   Users,
   Zap,
 } from "lucide-react";
@@ -437,27 +436,27 @@ export function GlobalStatsHub() {
       language === "ru"
         ? {
             kicker: "История клуба",
-            title: "Статистика игроков и стран по годам",
-            intro: "Общий рейтинг всех зарегистрированных участников: финальные игры по годам, точные места, близкие места, победители сезонов и страновая история.",
+            title: "Статистика клуба",
+            intro: "Здесь собирается история финальных игр: личные рейтинги, точные прогнозы, ачивки, рекорды стран и любимые странности каждого сезона.",
             search: "Найти игрока",
             myStats: "Моя статистика",
-            import: "Импорт записей",
             players: "Игроков",
             seasons: "Сезонов",
             exact: "Точных мест",
             winners: "Угадано победителей",
             average: "Средние очки",
             close: "Близких мест",
+            points: "Очки",
             achievements: "Ачивки",
             achievementsCatalog: "Коллекция ачивок",
-            achievementsCatalogText: "Полный набор бейджей, которые будут выдаваться автоматически после импорта архивных финалов.",
+            achievementsCatalogText: "Бейджи за точность, смелые прогнозы и фирменные игровые привычки. Часть ачивок простая, часть придется выбивать годами.",
             playerRating: "Рейтинг игроков",
-            playerHint: "После импорта твоих записей эти карточки будут строиться по всем зарегистрированным аккаунтам.",
+            playerHint: "Выбери игрока, чтобы увидеть его сезоны, точность прогнозов, ачивки и персональные закономерности.",
             profile: "Профиль игрока",
             years: "Годы",
-            noImported: "История еще не импортирована",
+            noImported: "Пока нет сохраненных сезонов",
             countries: "Страны по годам",
-            countryHint: "Карточки стран будут расширяться в отдельные страницы: участия, победы, топ-10, последние места, 13-е место и средняя позиция.",
+            countryHint: "История стран: участия, победы, топ-10, последние места, 13-е место и средняя позиция. По карточке можно провалиться глубже.",
             appearances: "участий",
             wins: "побед",
             top10: "топ-10",
@@ -466,32 +465,38 @@ export function GlobalStatsHub() {
             avgRank: "ср. место",
             funStats: "Смешная статистика",
             funText: "Ачивки появляются только у тех, кто реально достиг условия: 13-е место, нижняя часть таблицы, победители, точные попадания.",
-            currentSource: "Свежие игроки",
-            currentSourceText: "Пока история не импортирована, зарегистрированные игроки подтягиваются из активных комнат и смогут быть сопоставлены с архивом.",
+            pointTrend: "Динамика очков",
+            pointTrendText: "Как менялся результат игрока по сезонам.",
+            accuracyProfile: "Профиль точности",
+            accuracyProfileText: "Из чего складывается игровой стиль.",
+            exactShort: "Точные",
+            closeShort: "Близкие",
+            winnersShort: "Победители",
+            bottomShort: "Нижняя таблица",
           }
         : {
             kicker: "Club history",
-            title: "Player and country stats across years",
-            intro: "A global ranking for registered players: final games by year, exact placements, close calls, season winners, and country history.",
+            title: "Club stats",
+            intro: "A living archive of final games: player ratings, exact predictions, achievements, country records, and the odd habits each season reveals.",
             search: "Find player",
             myStats: "My stats",
-            import: "Import records",
             players: "Players",
             seasons: "Seasons",
             exact: "Exact places",
             winners: "Winners guessed",
             average: "Average points",
             close: "Close calls",
+            points: "Points",
             achievements: "Achievements",
             achievementsCatalog: "Achievement collection",
-            achievementsCatalogText: "The full badge set that will be awarded automatically after importing archived finals.",
+            achievementsCatalogText: "Badges for accuracy, bold calls, and signature prediction habits. Some are easy sparks, some take years to earn.",
             playerRating: "Player ranking",
-            playerHint: "After importing your records, these cards will be built across all registered accounts.",
+            playerHint: "Pick a player to see seasons, prediction accuracy, achievements, and personal patterns.",
             profile: "Player profile",
             years: "Years",
-            noImported: "No imported history yet",
+            noImported: "No saved seasons yet",
             countries: "Countries by year",
-            countryHint: "Country cards will expand into pages with appearances, wins, top-10s, last places, 13th places, and average rank.",
+            countryHint: "Country history: appearances, wins, top-10s, last places, 13th places, and average rank. Open a card for the deeper view.",
             appearances: "apps",
             wins: "wins",
             top10: "top-10",
@@ -500,8 +505,14 @@ export function GlobalStatsHub() {
             avgRank: "avg rank",
             funStats: "Fun stats",
             funText: "Achievements appear only when a player truly earns them: 13th place, bottom-table reads, winners, exact hits.",
-            currentSource: "Fresh players",
-            currentSourceText: "Until history is imported, registered players are pulled from active rooms and can later be matched to the archive.",
+            pointTrend: "Points trend",
+            pointTrendText: "How this player moved across seasons.",
+            accuracyProfile: "Accuracy profile",
+            accuracyProfileText: "What the prediction style is made of.",
+            exactShort: "Exact",
+            closeShort: "Close",
+            winnersShort: "Winners",
+            bottomShort: "Bottom table",
           },
     [language],
   );
@@ -636,17 +647,13 @@ export function GlobalStatsHub() {
                 />
               </div>
             </label>
-            <div className="grid min-w-0 gap-2 sm:grid-cols-2">
+            <div className="grid min-w-0 gap-2">
               {account ? (
                 <button type="button" className="arena-button-room inline-flex min-h-11 items-center justify-center gap-2 px-4 text-sm" onClick={() => setSelectedPlayerId(account.id)}>
                   <Users size={15} />
                   {copy.myStats}
                 </button>
               ) : null}
-              <Link href="/admin" className="arena-button-secondary inline-flex min-h-11 items-center justify-center gap-2 px-4 text-sm">
-                <Upload size={15} />
-                {copy.import}
-              </Link>
             </div>
           </div>
         </div>
@@ -758,11 +765,33 @@ export function GlobalStatsHub() {
               </div>
             </div>
 
+            <div className="mt-6 grid min-w-0 gap-4 lg:grid-cols-[1fr_0.9fr]">
+              <PlayerTrendChart records={selectedPlayer.records} labels={{ title: copy.pointTrend, text: copy.pointTrendText, points: copy.points }} />
+              <PlayerAccuracyPanel
+                summary={playerTotals}
+                labels={{
+                  title: copy.accuracyProfile,
+                  text: copy.accuracyProfileText,
+                  exact: copy.exactShort,
+                  close: copy.closeShort,
+                  winners: copy.winnersShort,
+                  bottom: copy.bottomShort,
+                }}
+              />
+            </div>
+
             <div className="mt-6 grid min-w-0 gap-4 lg:grid-cols-[1.1fr_0.9fr]">
               <div className="show-panel min-w-0 p-4">
                 <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{copy.years}</p>
                 <div className="mt-4 grid gap-3">
-                  {selectedPlayer.records.map((record) => <YearBar key={record.year} record={record} maxPoints={Math.max(...selectedPlayer.records.map((item) => item.points), 1)} />)}
+                  {selectedPlayer.records.map((record) => (
+                    <YearBar
+                      key={record.year}
+                      record={record}
+                      maxPoints={Math.max(...selectedPlayer.records.map((item) => item.points), 1)}
+                      labels={{ exact: copy.exactShort, close: copy.closeShort, winners: copy.winnersShort, bottom: copy.bottomShort }}
+                    />
+                  ))}
                 </div>
               </div>
               <div className="show-panel min-w-0 p-4">
@@ -832,19 +861,6 @@ export function GlobalStatsHub() {
         </div>
       </section>
       ) : null}
-
-      <section className="grid min-w-0 gap-5 lg:grid-cols-2">
-        <div className="show-card min-w-0 p-5 md:p-6">
-          <Upload className="text-arenaBeam" size={25} />
-          <h2 className="display-copy mt-4 text-2xl font-black text-white">{copy.import}</h2>
-          <p className="mt-3 text-sm leading-7 text-arenaMuted">{copy.playerHint}</p>
-        </div>
-        <div className="show-card min-w-0 p-5 md:p-6">
-          <Users className="text-arenaPulse" size={25} />
-          <h2 className="display-copy mt-4 text-2xl font-black text-white">{copy.currentSource}</h2>
-          <p className="mt-3 text-sm leading-7 text-arenaMuted">{copy.currentSourceText}</p>
-        </div>
-      </section>
     </div>
   );
 }
@@ -870,7 +886,15 @@ function SmallStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function YearBar({ record, maxPoints }: { record: YearRecord; maxPoints: number }) {
+function YearBar({
+  record,
+  maxPoints,
+  labels,
+}: {
+  record: YearRecord;
+  maxPoints: number;
+  labels: { exact: string; close: string; winners: string; bottom: string };
+}) {
   const width = `${Math.max(6, Math.round((record.points / maxPoints) * 100))}%`;
   return (
     <div className="grid gap-2">
@@ -881,7 +905,119 @@ function YearBar({ record, maxPoints }: { record: YearRecord; maxPoints: number 
       <div className="h-3 overflow-hidden rounded-full bg-white/[0.06]">
         <div className="stats-bar h-full rounded-full" style={{ width }} />
       </div>
-      <p className="text-xs text-arenaMuted">exact {record.exact} · close {record.close} · winners {record.winners} · last {record.lastPlaces}</p>
+      <p className="text-xs text-arenaMuted">
+        {labels.exact} {record.exact} · {labels.close} {record.close} · {labels.winners} {record.winners} · {labels.bottom} {record.lastPlaces}
+      </p>
+    </div>
+  );
+}
+
+function PlayerTrendChart({ records, labels }: { records: YearRecord[]; labels: { title: string; text: string; points: string } }) {
+  const maxPoints = Math.max(...records.map((record) => record.points), 1);
+  const chartPoints = records.map((record, index) => {
+    const x = records.length === 1 ? 50 : 8 + (index / (records.length - 1)) * 84;
+    const y = 86 - (record.points / maxPoints) * 64;
+    return { ...record, x, y };
+  });
+  const line = chartPoints.map((point) => `${point.x},${point.y}`).join(" ");
+
+  return (
+    <div className="show-panel min-w-0 p-4">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{labels.title}</p>
+          <p className="mt-2 text-sm leading-6 text-arenaMuted">{labels.text}</p>
+        </div>
+        <Activity className="shrink-0 text-arenaBeam" size={20} />
+      </div>
+      <div className="stats-trend-chart mt-4">
+        <svg viewBox="0 0 100 100" role="img" aria-label={labels.title}>
+          <defs>
+            <linearGradient id="playerTrendLine" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%" stopColor="#81ecff" />
+              <stop offset="55%" stopColor="#ff63c2" />
+              <stop offset="100%" stopColor="#fcd34d" />
+            </linearGradient>
+          </defs>
+          <path d="M8 86 H92" className="stats-trend-axis" />
+          {[24, 48, 72].map((y) => <path key={y} d={`M8 ${y} H92`} className="stats-trend-grid" />)}
+          {chartPoints.map((point) => (
+            <rect
+              key={`bar-${point.year}`}
+              x={point.x - 3}
+              y={point.y}
+              width="6"
+              height={86 - point.y}
+              rx="3"
+              className="stats-trend-bar"
+            />
+          ))}
+          {chartPoints.length > 1 ? <polyline points={line} className="stats-trend-line" /> : null}
+          {chartPoints.map((point) => <circle key={`dot-${point.year}`} cx={point.x} cy={point.y} r="2.8" className="stats-trend-dot" />)}
+        </svg>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        {records.map((record) => (
+          <div key={record.year} className="rounded-[0.95rem] border border-white/10 bg-white/[0.035] px-3 py-2">
+            <p className="text-xs font-bold text-white">{record.year}</p>
+            <p className="text-xs text-arenaMuted">{record.points} {labels.points.toLowerCase()}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PlayerAccuracyPanel({
+  summary,
+  labels,
+}: {
+  summary: ReturnType<typeof totals>;
+  labels: { title: string; text: string; exact: string; close: string; winners: string; bottom: string };
+}) {
+  const segments = [
+    { label: labels.exact, value: summary.exact, color: "#81ecff" },
+    { label: labels.close, value: summary.close, color: "#ff63c2" },
+    { label: labels.winners, value: summary.winners, color: "#fcd34d" },
+    { label: labels.bottom, value: summary.lastPlaces, color: "#a78bfa" },
+  ];
+  const total = segments.reduce((sum, segment) => sum + segment.value, 0);
+  let cursor = 0;
+  const gradient = total
+    ? segments.map((segment) => {
+        const start = cursor;
+        const end = cursor + (segment.value / total) * 100;
+        cursor = end;
+        return `${segment.color} ${start}% ${end}%`;
+      }).join(", ")
+    : "rgba(255,255,255,0.08) 0% 100%";
+
+  return (
+    <div className="show-panel min-w-0 p-4">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaPulse">{labels.title}</p>
+          <p className="mt-2 text-sm leading-6 text-arenaMuted">{labels.text}</p>
+        </div>
+        <Gauge className="shrink-0 text-arenaPulse" size={20} />
+      </div>
+      <div className="mt-5 grid min-w-0 gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
+        <div className="stats-donut" style={{ background: `conic-gradient(${gradient})` }}>
+          <div>
+            <p>{total}</p>
+            <span>{labels.title}</span>
+          </div>
+        </div>
+        <div className="grid min-w-0 gap-2">
+          {segments.map((segment) => (
+            <div key={segment.label} className="stats-legend-row">
+              <span className="stats-legend-dot" style={{ background: segment.color }} />
+              <span className="min-w-0 truncate">{segment.label}</span>
+              <strong>{segment.value}</strong>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -954,7 +1090,7 @@ function CountryCard({
   const yearRange = country.firstYear === country.latestYear ? String(country.firstYear) : `${country.firstYear}—${country.latestYear}`;
   const winYears = country.winYears.length ? country.winYears.slice(-4).join(", ") : language === "ru" ? "пока без побед" : "no wins yet";
   const headline = !country.highlightRank
-    ? language === "ru" ? "архив пополняется" : "archive pending"
+    ? language === "ru" ? `${country.appearances} участий` : `${country.appearances} appearances`
     : country.highlightRank === 1
     ? language === "ru" ? `Победа ${country.highlightYear}` : `${country.highlightYear} winner`
     : language === "ru" ? `Лучшее место: #${country.highlightRank}` : `Best rank: #${country.highlightRank}`;
