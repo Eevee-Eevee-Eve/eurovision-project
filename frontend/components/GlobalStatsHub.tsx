@@ -1,5 +1,6 @@
 'use client';
 
+import Link from "next/link";
 import {
   Activity,
   Award,
@@ -32,13 +33,14 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { fetchRooms, fetchSeasonStats } from "../lib/api";
+import { EUROVISION_COUNTRY_STATS, type EurovisionCountryStat } from "../lib/eurovision-country-stats";
 import { FALLBACK_ROOM } from "../lib/rooms";
 import type { AccountProfile, AvatarTheme, PlayerSeasonStats, RoomSummary } from "../lib/types";
 import { useAccount } from "./AccountProvider";
 import { useLanguage } from "./LanguageProvider";
 import { UserAvatar } from "./UserAvatar";
 
-type StatsTab = "players" | "achievements";
+type StatsTab = "players" | "countries" | "achievements";
 
 type Achievement = {
   key: string;
@@ -58,6 +60,8 @@ type RegisteredPlayer = {
   rooms: string[];
   submittedStages: number;
 };
+
+type CountryHistory = EurovisionCountryStat;
 
 const ACHIEVEMENTS: Achievement[] = [
   {
@@ -333,10 +337,11 @@ function normalizePlayerName(name: string, getDisplayName: (value: string) => st
 
 export function GlobalStatsHub() {
   const { account } = useAccount();
-  const { language, getDisplayName } = useLanguage();
+  const { language, getCountryName, getDisplayName } = useLanguage();
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [players, setPlayers] = useState<RegisteredPlayer[]>([]);
   const [query, setQuery] = useState("");
+  const [countryQuery, setCountryQuery] = useState("");
   const [activeTab, setActiveTab] = useState<StatsTab>("players");
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -371,6 +376,15 @@ export function GlobalStatsHub() {
             achievementText:
               "Это витрина того, что можно заработать в сезоне. Сейчас все бейджи закрыты, а выдача включится после импорта или расчета финальных результатов.",
             locked: "Пока закрыто",
+            countries: "Страны",
+            countrySearch: "Найти страну",
+            countryHint: "История стран у нас отдельная и нормальная: участия, победы, топ-10, последние места, 13-е место и средняя позиция. Здесь ее оставляем.",
+            appearances: "участий",
+            wins: "побед",
+            top10: "топ-10",
+            lastPlaces: "последних",
+            thirteenth: "13-х",
+            avgRank: "ср. место",
           }
         : {
             kicker: "Club stats",
@@ -399,6 +413,15 @@ export function GlobalStatsHub() {
             achievementText:
               "A preview of what players can earn this season. Badges are locked for now and will unlock after final results are imported or calculated.",
             locked: "Locked for now",
+            countries: "Countries",
+            countrySearch: "Find country",
+            countryHint: "Country history is separate and solid: appearances, wins, top-10s, last places, 13th places, and average rank. This section stays.",
+            appearances: "apps",
+            wins: "wins",
+            top10: "top-10",
+            lastPlaces: "last",
+            thirteenth: "13th",
+            avgRank: "avg rank",
           },
     [language],
   );
@@ -454,6 +477,7 @@ export function GlobalStatsHub() {
   }, [account, getDisplayName, language]);
 
   const normalizedQuery = query.trim().toLowerCase();
+  const normalizedCountryQuery = countryQuery.trim().toLowerCase();
   const filteredPlayers = players.filter((player) => getDisplayName(player.name).toLowerCase().includes(normalizedQuery));
   const accountNameKey = account ? normalizePlayerName(account.publicName, getDisplayName) : "";
   const selectedPlayer = players.find((player) => player.id === selectedPlayerId)
@@ -463,6 +487,16 @@ export function GlobalStatsHub() {
     || (accountNameKey ? players.find((player) => normalizePlayerName(player.name, getDisplayName) === accountNameKey) : null)
     || players[0]
     || null;
+  const countryStats = useMemo(
+    () => [...EUROVISION_COUNTRY_STATS].sort((left, right) => right.wins - left.wins || right.top10 - left.top10),
+    [],
+  );
+  const filteredCountries = countryStats.filter((country) => {
+    const localName = getCountryName(country.code, country.name).toLowerCase();
+    return localName.includes(normalizedCountryQuery)
+      || country.name.toLowerCase().includes(normalizedCountryQuery)
+      || country.code.toLowerCase().includes(normalizedCountryQuery);
+  });
 
   return (
     <div className="stats-page-safe grid min-w-0 gap-5">
@@ -476,14 +510,20 @@ export function GlobalStatsHub() {
 
           <div className="show-panel grid min-w-0 gap-3 p-4">
             <label className="grid gap-2 text-sm text-arenaMuted">
-              <span>{copy.search}</span>
+              <span>{activeTab === "countries" ? copy.countrySearch : copy.search}</span>
               <div className="relative">
                 <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-arenaMuted" />
                 <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  value={activeTab === "countries" ? countryQuery : query}
+                  onChange={(event) => {
+                    if (activeTab === "countries") {
+                      setCountryQuery(event.target.value);
+                    } else {
+                      setQuery(event.target.value);
+                    }
+                  }}
                   className="arena-input arena-search-input"
-                  placeholder={copy.search}
+                  placeholder={activeTab === "countries" ? copy.countrySearch : copy.search}
                 />
               </div>
             </label>
@@ -510,6 +550,7 @@ export function GlobalStatsHub() {
       <section className="stats-tabs show-panel min-w-0 p-2">
         {[
           { key: "players" as const, label: copy.players, icon: Users },
+          { key: "countries" as const, label: copy.countries, icon: Flag },
           { key: "achievements" as const, label: copy.achievements, icon: Medal },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -603,6 +644,39 @@ export function GlobalStatsHub() {
         </section>
       ) : null}
 
+      {activeTab === "countries" ? (
+        <section className="show-card min-w-0 p-5 md:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.countries}</p>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-arenaMuted">{copy.countryHint}</p>
+            </div>
+            <span className="show-chip text-[11px] text-arenaMuted">
+              <Flag size={13} />
+              {countryStats.length}
+            </span>
+          </div>
+          <div className="stats-country-grid mt-5 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {filteredCountries.map((country) => (
+              <CountryCard
+                key={country.code}
+                country={country}
+                countryName={getCountryName(country.code, country.name)}
+                language={language}
+                labels={{
+                  appearances: copy.appearances,
+                  wins: copy.wins,
+                  top10: copy.top10,
+                  lastPlaces: copy.lastPlaces,
+                  thirteenth: copy.thirteenth,
+                  avgRank: copy.avgRank,
+                }}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {activeTab === "achievements" ? (
         <section className="show-card min-w-0 p-5 md:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -644,6 +718,94 @@ function SmallStat({ label, value }: { label: string; value: string }) {
       <p className="label-copy text-[10px] uppercase tracking-[0.2em] text-arenaMuted">{label}</p>
       <p className="mt-3 text-2xl font-black text-white">{value}</p>
     </div>
+  );
+}
+
+function CountryCard({
+  country,
+  labels,
+  countryName,
+  language,
+}: {
+  country: CountryHistory;
+  labels: Record<"appearances" | "wins" | "top10" | "lastPlaces" | "thirteenth" | "avgRank", string>;
+  countryName: string;
+  language: "ru" | "en";
+}) {
+  const fallbackGradient = `linear-gradient(135deg, ${country.wins ? "rgba(255, 99, 194, 0.2)" : "rgba(129, 236, 255, 0.14)"}, rgba(36, 36, 58, 0.96))`;
+  const heroPhoto = country.heroPhoto || country.highlightPhoto;
+  const hasCuratedHero = Boolean(country.heroPhoto);
+  const yearRange = country.firstYear === country.latestYear ? String(country.firstYear) : `${country.firstYear}-${country.latestYear}`;
+  const winYears = country.winYears.length ? country.winYears.slice(-4).join(", ") : language === "ru" ? "пока без побед" : "no wins yet";
+  const headline = !country.highlightRank
+    ? language === "ru" ? `${country.appearances} участий` : `${country.appearances} appearances`
+    : country.highlightRank === 1
+      ? language === "ru" ? `Победа ${country.highlightYear}` : `${country.highlightYear} winner`
+      : language === "ru" ? `Лучшее место: #${country.highlightRank}` : `Best rank: #${country.highlightRank}`;
+  const funLine = country.lastPlaces >= 5
+    ? language === "ru" ? "Драматичная история с последними местами." : "A dramatic record at the bottom."
+    : country.top10Rate >= 55
+      ? language === "ru" ? "Частый гость верхней десятки." : "A frequent top-10 guest."
+      : country.thirteenthPlaces >= 4
+        ? language === "ru" ? "Подозрительно часто рядом с 13-м местом." : "Suspiciously close to 13th place."
+        : language === "ru" ? "История ровнее, чем кажется с первого взгляда." : "A steadier record than it first looks.";
+
+  return (
+    <Link href={`/stats/countries/${country.code.toLowerCase()}`} className="country-history-card show-panel block min-w-0 overflow-hidden transition hover:-translate-y-0.5 hover:bg-white/[0.075]">
+      <div className="country-history-media" style={{ background: fallbackGradient }}>
+        {heroPhoto ? (
+          <img
+            src={heroPhoto}
+            alt=""
+            className={`country-history-photo ${hasCuratedHero ? "country-history-photo-curated" : "country-history-photo-fallback"}`}
+            loading="lazy"
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
+        ) : null}
+        <div className="country-history-overlay" />
+        <span className="country-history-watermark">{country.code}</span>
+        <span className="country-history-flag-fallback">{country.code}</span>
+        <img
+          src={country.flagUrl}
+          alt=""
+          className="country-history-flag"
+          loading="lazy"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+        />
+        <div className="absolute bottom-4 left-4 right-4 min-w-0">
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-2xl font-black text-white">{countryName}</p>
+              <p className="mt-1 truncate text-sm text-white/72">
+                {country.highlightArtist
+                  ? `${country.highlightArtist}${country.highlightSong ? ` · ${country.highlightSong}` : ""}`
+                  : `${country.appearances} ${labels.appearances}`}
+              </p>
+            </div>
+            <span className="country-best-badge">{headline}</span>
+          </div>
+        </div>
+        {country.heroPhotoCredit ? <span className="country-photo-credit">{country.heroPhotoCredit}</span> : null}
+      </div>
+      <div className="grid grid-cols-3 gap-2 p-4 text-center">
+        <SmallStat label={labels.wins} value={String(country.wins)} />
+        <SmallStat label={labels.top10} value={String(country.top10)} />
+        <SmallStat label={labels.avgRank} value={country.averageRank ? country.averageRank.toFixed(1) : "-"} />
+      </div>
+      <div className="grid gap-2 px-4 pb-4 text-xs text-arenaMuted">
+        <div className="grid grid-cols-2 gap-2">
+          <span className="show-chip">{country.appearances} {labels.appearances}</span>
+          <span className="show-chip">{yearRange}</span>
+          <span className="show-chip">{country.top10Rate}% top-10</span>
+          <span className="show-chip">{labels.wins}: {winYears}</span>
+        </div>
+        <p className="rounded-[1rem] border border-white/8 bg-white/[0.035] px-3 py-2 leading-5 text-white/68">{funLine}</p>
+      </div>
+    </Link>
   );
 }
 
