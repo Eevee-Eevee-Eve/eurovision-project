@@ -227,6 +227,7 @@ if (!state.dynamicRooms || typeof state.dynamicRooms !== 'object') {
 if (!state.roomAccessSessions || typeof state.roomAccessSessions !== 'object') {
   state.roomAccessSessions = {};
 }
+state.contestCompletedAt = state.contestCompletedAt || null;
 const roomPresence = new Map();
 const stageCountdownTimers = new Map();
 
@@ -502,6 +503,11 @@ function getActiveDynamicRoomsForAccount(accountId) {
 function canManageDynamicRoom(roomSlug, account) {
   const room = normalizeDynamicRoomShape(state.dynamicRooms[roomSlug]);
   return Boolean(room?.creatorAccountId && account?.id && room.creatorAccountId === account.id);
+}
+
+function getManagedRoomsForAccount(account) {
+  if (!account?.id) return [];
+  return getAllRooms().filter((room) => room.isTemporary && canManageDynamicRoom(room.slug, account));
 }
 
 function touchRoomActivity(roomSlug) {
@@ -880,9 +886,10 @@ function hashAdminToken(token) {
   return crypto.createHash('sha256').update(String(token || '')).digest('hex');
 }
 
-function createAdminSession() {
+function createAdminSession(role = 'main') {
   const rawToken = crypto.randomBytes(32).toString('base64url');
   state.adminSessions[hashAdminToken(rawToken)] = {
+    role,
     createdAt: new Date().toISOString(),
     expiresAt: new Date(Date.now() + ADMIN_SESSION_TTL_MS).toISOString(),
   };
@@ -1669,6 +1676,12 @@ function buildSeasonStats(roomSlug) {
         averageDistance: rowComparedEntries ? Number((leaderboardRow.totalDistance / rowComparedEntries).toFixed(2)) : null,
       };
     }), achievementContext);
+    const visibleAchievementProgress = state.contestCompletedAt
+      ? achievementProgress
+      : achievementProgress.map((achievement) => ({
+        ...achievement,
+        unlocked: false,
+      }));
 
     return {
       id: buildPublicLeaderboardId(roomSlug, row.id),
@@ -1685,8 +1698,8 @@ function buildSeasonStats(roomSlug) {
       lockedStages,
       bestStage,
       stages,
-      achievements: achievementProgress.filter((achievement) => achievement.unlocked).map((achievement) => achievement.key),
-      achievementProgress,
+      achievements: visibleAchievementProgress.filter((achievement) => achievement.unlocked).map((achievement) => achievement.key),
+      achievementProgress: visibleAchievementProgress,
     };
   });
 
@@ -1696,6 +1709,7 @@ function buildSeasonStats(roomSlug) {
     seasonYear: roomMeta?.seasonYear || null,
     seasonLabel: roomMeta?.seasonLabel || (roomMeta?.seasonYear ? `Season ${roomMeta.seasonYear}` : 'Current season'),
     scoringProfile: getScoringProfile(room.scoringProfile).key,
+    contestCompletedAt: state.contestCompletedAt,
     overview: {
       participants: players.length,
       completedStages: completedStages.length,
@@ -1837,6 +1851,7 @@ function requireAuth(req, res, next) {
 function requireAdmin(req, res, next) {
   if (ADMIN_KEY && req.headers['x-admin'] === ADMIN_KEY) {
     req.adminAuthenticated = true;
+    req.adminRole = 'main';
     return next();
   }
 
@@ -1846,7 +1861,69 @@ function requireAdmin(req, res, next) {
   }
 
   req.adminAuthenticated = true;
+  req.adminRole = adminSession.role || 'main';
   req.adminSession = adminSession;
+  return next();
+}
+
+function requireMainAdmin(req, res, next) {
+  if (ADMIN_KEY && req.headers['x-admin'] === ADMIN_KEY) {
+    req.adminAuthenticated = true;
+    req.adminRole = 'main';
+    return next();
+  }
+
+  const adminSession = getAdminSessionFromRequest(req);
+  if (!adminSession || (adminSession.role && adminSession.role !== 'main')) {
+    return res.status(401).json({ error: 'Main admin authentication required' });
+  }
+
+  req.adminAuthenticated = true;
+  req.adminRole = 'main';
+  req.adminSession = adminSession;
+  return next();
+}
+
+function getRoomSlugFromAdminRequest(req) {
+  return normalizeRoomSlug(
+    req.body?.roomSlug
+    || req.query?.room
+    || req.params?.roomSlug
+    || req.body?.room
+    || req.query?.roomSlug,
+  );
+}
+
+function requireRoomAdmin(req, res, next) {
+  if (ADMIN_KEY && req.headers['x-admin'] === ADMIN_KEY) {
+    req.adminAuthenticated = true;
+    req.adminRole = 'main';
+    return next();
+  }
+
+  const adminSession = getAdminSessionFromRequest(req);
+  if (adminSession && (!adminSession.role || adminSession.role === 'main')) {
+    req.adminAuthenticated = true;
+    req.adminRole = 'main';
+    req.adminSession = adminSession;
+    return next();
+  }
+
+  const roomSlug = getRoomSlugFromAdminRequest(req);
+  if (!roomSlug || !isTemporaryRoom(roomSlug)) {
+    return res.status(403).json({ error: 'Room admin access is available only for managed temporary rooms' });
+  }
+
+  const auth = getAuthenticatedRequest(req);
+  if (!auth || !canManageDynamicRoom(roomSlug, auth.account)) {
+    return res.status(403).json({ error: 'Only the room creator can manage this room' });
+  }
+
+  req.adminAuthenticated = true;
+  req.adminRole = 'room';
+  req.account = auth.account;
+  req.session = auth.session;
+  req.managedRoomSlug = roomSlug;
   return next();
 }
 
@@ -1913,9 +1990,24 @@ app.get('/api/auth/session', (req, res) => {
 
 app.get('/api/admin/session', (req, res) => {
   const adminSession = getAdminSessionFromRequest(req);
+  if (adminSession && (!adminSession.role || adminSession.role === 'main')) {
+    return res.json({
+      authenticated: true,
+      role: 'main',
+      rooms: getAllRooms().map(toPublicRoomSummary),
+      contestCompletedAt: state.contestCompletedAt,
+      authMethods: getAdminAuthMethods(),
+      scoringProfiles: getScoringProfilePayload(),
+    });
+  }
+
+  const auth = getAuthenticatedRequest(req);
+  const managedRooms = auth ? getManagedRoomsForAccount(auth.account) : [];
   return res.json({
-    authenticated: Boolean(adminSession),
-    rooms: getAllRooms().map(toPublicRoomSummary),
+    authenticated: managedRooms.length > 0,
+    role: managedRooms.length ? 'room' : null,
+    rooms: managedRooms.map(toPublicRoomSummary),
+    contestCompletedAt: state.contestCompletedAt,
     authMethods: getAdminAuthMethods(),
     scoringProfiles: getScoringProfilePayload(),
   });
@@ -1939,7 +2031,9 @@ app.post('/api/admin/session', (req, res) => {
 
   return res.json({
     authenticated: true,
+    role: 'main',
     rooms: getAllRooms().map(toPublicRoomSummary),
+    contestCompletedAt: state.contestCompletedAt,
     authMethods: getAdminAuthMethods(),
     scoringProfiles: getScoringProfilePayload(),
   });
@@ -2617,7 +2711,7 @@ app.post('/api/predictions', (req, res) => {
   });
 });
 
-app.post('/api/results', requireAdmin, (req, res) => {
+app.post('/api/results', requireMainAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.body.roomSlug);
   const stageKey = normalizeStage(req.body.stage);
 
@@ -2628,8 +2722,6 @@ app.post('/api/results', requireAdmin, (req, res) => {
     return res.status(400).json({ error: 'Unknown stage' });
   }
 
-  const room = getRoomState(roomSlug);
-  touchRoomActivity(roomSlug);
   const validation = validateRanking(stageKey, req.body.ranking || [], { allowPartial: true });
   if (!validation.ok) {
     return res.status(400).json({ error: validation.error });
@@ -2639,31 +2731,39 @@ app.post('/api/results', requireAdmin, (req, res) => {
     return res.status(400).json({ error: breakdownValidation.error });
   }
 
-  room.results[stageKey] = validation.ranking;
-  room.resultBreakdown[stageKey] = breakdownValidation.breakdown;
-  const roomMeta = getRoomBySlug(roomSlug);
-  if (
-    isTemporaryRoom(roomSlug)
-    && roomMeta?.defaultStage === stageKey
-    && validation.ranking.length >= ACTS_BY_STAGE[stageKey].length
-    && !state.dynamicRooms[roomSlug]?.eventCompletedAt
-  ) {
-    state.dynamicRooms[roomSlug].eventCompletedAt = new Date().toISOString();
-  }
-  recomputeScores(roomSlug);
+  const updatedRooms = [];
+  getAllRooms().forEach((roomMeta) => {
+    const targetRoom = getRoomState(roomMeta.slug);
+    touchRoomActivity(roomMeta.slug);
+    targetRoom.results[stageKey] = validation.ranking;
+    targetRoom.resultBreakdown[stageKey] = breakdownValidation.breakdown;
+    if (
+      isTemporaryRoom(roomMeta.slug)
+      && roomMeta.defaultStage === stageKey
+      && validation.ranking.length >= ACTS_BY_STAGE[stageKey].length
+      && !state.dynamicRooms[roomMeta.slug]?.eventCompletedAt
+    ) {
+      state.dynamicRooms[roomMeta.slug].eventCompletedAt = new Date().toISOString();
+    }
+    recomputeScores(roomMeta.slug);
+    updatedRooms.push(roomMeta.slug);
+  });
   persistState();
-  emitLeaderboard(roomSlug);
-  emitResults(roomSlug, stageKey);
+  updatedRooms.forEach((updatedRoomSlug) => {
+    emitLeaderboard(updatedRoomSlug);
+    emitResults(updatedRoomSlug, stageKey);
+  });
 
   return res.json({
     ok: true,
     roomSlug,
     stage: stageKey,
-    updated: room.results[stageKey].length,
+    updated: validation.ranking.length,
+    updatedRooms,
   });
 });
 
-app.post('/api/toggle', requireAdmin, (req, res) => {
+app.post('/api/toggle', requireMainAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.body.roomSlug || req.query.room);
   const stageKey = normalizeStage(req.body.stage || req.query.stage);
   if (!stageKey) {
@@ -2689,7 +2789,7 @@ app.post('/api/toggle', requireAdmin, (req, res) => {
   });
 });
 
-app.post('/api/admin/stage-countdown', requireAdmin, (req, res) => {
+app.post('/api/admin/stage-countdown', requireMainAdmin, (req, res) => {
   const stageKey = normalizeStage(req.body.stage || req.query.stage);
   const action = sanitizeText(req.body.action, 16).toLowerCase();
   if (!stageKey) {
@@ -2736,7 +2836,38 @@ app.post('/api/admin/stage-countdown', requireAdmin, (req, res) => {
   });
 });
 
-app.post('/api/users/:id/submit-override', requireAdmin, (req, res) => {
+app.post('/api/admin/contest/complete', requireMainAdmin, (req, res) => {
+  const finalRoom = getRoomState(DEFAULT_ROOM_SLUG);
+  const finalReady = finalRoom.results.final.length >= ACTS_BY_STAGE.final.length;
+  if (!finalReady) {
+    return res.status(409).json({ error: 'Publish the full final ranking before completing the contest' });
+  }
+
+  state.contestCompletedAt = new Date().toISOString();
+  persistState();
+  getAllRooms().forEach((room) => emitLeaderboard(room.slug));
+
+  return res.json({
+    ok: true,
+    contestCompletedAt: state.contestCompletedAt,
+  });
+});
+
+app.delete('/api/admin/rooms/:roomSlug', requireRoomAdmin, (req, res) => {
+  const roomSlug = normalizeRoomSlug(req.params.roomSlug);
+  if (!roomSlug || !isTemporaryRoom(roomSlug)) {
+    return res.status(404).json({ error: 'Unknown temporary room' });
+  }
+  if (req.adminRole !== 'main' && !canManageDynamicRoom(roomSlug, req.account)) {
+    return res.status(403).json({ error: 'Only the room creator can close this room' });
+  }
+
+  removeDynamicRoom(roomSlug);
+  persistState();
+  return res.json({ ok: true, roomSlug });
+});
+
+app.post('/api/users/:id/submit-override', requireRoomAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.query.room);
   const stageKey = normalizeStage(req.body.stage || req.query.stage);
   if (!roomSlug) {
@@ -2771,7 +2902,7 @@ app.post('/api/users/:id/submit-override', requireAdmin, (req, res) => {
   });
 });
 
-app.delete('/api/users/:id/submit-override', requireAdmin, (req, res) => {
+app.delete('/api/users/:id/submit-override', requireRoomAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.query.room);
   const stageKey = normalizeStage(req.query.stage);
   if (!roomSlug) {
@@ -2796,7 +2927,7 @@ app.delete('/api/users/:id/submit-override', requireAdmin, (req, res) => {
   });
 });
 
-app.post('/api/reset', requireAdmin, (req, res) => {
+app.post('/api/reset', requireMainAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.body.roomSlug || req.query.room);
   if (!roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });
@@ -2811,7 +2942,7 @@ app.post('/api/reset', requireAdmin, (req, res) => {
   return res.json({ ok: true, roomSlug });
 });
 
-app.post('/api/admin/show-state', requireAdmin, (req, res) => {
+app.post('/api/admin/show-state', requireRoomAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.body.roomSlug || req.query.room);
   const stageKey = normalizeStage(req.body.stageKey || req.body.stage || req.query.stage);
 
@@ -2841,7 +2972,7 @@ app.post('/api/admin/show-state', requireAdmin, (req, res) => {
   });
 });
 
-app.get('/api/admin/room-state', requireAdmin, (req, res) => {
+app.get('/api/admin/room-state', requireRoomAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.query.room);
   if (!roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });
@@ -2851,7 +2982,7 @@ app.get('/api/admin/room-state', requireAdmin, (req, res) => {
   return res.json(buildAdminRoomSnapshot(roomSlug));
 });
 
-app.post('/api/admin/scoring', requireAdmin, (req, res) => {
+app.post('/api/admin/scoring', requireMainAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.body.roomSlug || req.query.room);
   const scoringProfile = getScoringProfile(req.body.scoringProfile).key;
 
@@ -2873,7 +3004,7 @@ app.post('/api/admin/scoring', requireAdmin, (req, res) => {
   });
 });
 
-app.get('/api/users', requireAdmin, (req, res) => {
+app.get('/api/users', requireRoomAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.query.room);
   if (!roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });
@@ -2883,7 +3014,7 @@ app.get('/api/users', requireAdmin, (req, res) => {
   return res.json(buildAdminUserList(roomSlug));
 });
 
-app.post('/api/users/:id/reset', requireAdmin, (req, res) => {
+app.post('/api/users/:id/reset', requireRoomAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.query.room);
   const stageKey = req.body.stage ? normalizeStage(req.body.stage) : null;
   if (!roomSlug) {
@@ -2904,7 +3035,7 @@ app.post('/api/users/:id/reset', requireAdmin, (req, res) => {
   });
 });
 
-app.post('/api/users/:id/restore', requireAdmin, (req, res) => {
+app.post('/api/users/:id/restore', requireRoomAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.query.room);
   if (!roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });
@@ -2916,7 +3047,7 @@ app.post('/api/users/:id/restore', requireAdmin, (req, res) => {
   return res.json({ restored: req.params.id, roomSlug });
 });
 
-app.delete('/api/users/:id', requireAdmin, (req, res) => {
+app.delete('/api/users/:id', requireRoomAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.query.room);
   if (!roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });

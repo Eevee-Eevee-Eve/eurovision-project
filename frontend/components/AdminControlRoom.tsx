@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Activity, Clock3, KeyRound, Lock, LogOut, MonitorPlay, RefreshCw, RotateCcw, Settings2, ShieldCheck, Trophy, Unlock, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  closeAdminRoom,
+  completeContest,
   createRoomSocket,
   fetchActs,
   fetchAdminRoomState,
@@ -197,6 +199,7 @@ export function AdminControlRoom() {
   const { language, getDisplayName, getRoomName, getStageLabel } = useLanguage();
   const [booting, setBooting] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [adminRole, setAdminRole] = useState<AdminSessionPayload["role"]>(null);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [scoringProfiles, setScoringProfiles] = useState<AdminSessionPayload["scoringProfiles"]>([]);
   const [selectedRoom, setSelectedRoom] = useState("");
@@ -214,6 +217,7 @@ export function AdminControlRoom() {
   const [showHighlightMode, setShowHighlightMode] = useState<ShowHighlightMode | "">("");
   const [statusText, setStatusText] = useState("");
   const [error, setError] = useState("");
+  const [contestCompletedAt, setContestCompletedAt] = useState<string | null>(null);
   const [countdownConfirmOpen, setCountdownConfirmOpen] = useState(false);
   const [countdownChecks, setCountdownChecks] = useState({
     scope: false,
@@ -235,6 +239,8 @@ export function AdminControlRoom() {
           roomsLabel: "Комната",
           stageLabel: "Этап",
           scoringLabel: "Профиль очков",
+          mainAdmin: "Главный админ",
+          roomAdmin: "Админ комнаты",
           refreshButton: "Обновить",
           logoutButton: "Выйти",
           openStage: "Открыть этап",
@@ -289,6 +295,15 @@ export function AdminControlRoom() {
           hardReset: "Полный сброс комнаты",
           hardResetText: "Очищает все бюллетени, опубликованные итоги и статусы этапов в выбранной комнате.",
           resetRoomButton: "Сбросить комнату",
+          closeRoom: "Закрыть комнату",
+          closeRoomText: "Удаляет временную комнату для всех участников. Доступ и данные комнаты будут закрыты.",
+          closeRoomConfirm: "Закрыть и удалить эту комнату? Это действие нельзя отменить.",
+          closeRoomDone: "Комната закрыта.",
+          completeContest: "Завершить конкурс",
+          completeContestText: "После полного финала фиксирует сезон и открывает рассчитанные ачивки игрокам.",
+          completeContestConfirm: "Завершить конкурс и открыть ачивки? Перед этим финальная таблица должна быть опубликована полностью.",
+          completeContestDone: "Конкурс завершён, ачивки рассчитаны.",
+          contestCompleted: "Конкурс завершён",
           projector: "Проектор",
           playersBoard: "Таблица игроков",
           seasonStats: "Сезонная статистика",
@@ -322,6 +337,8 @@ export function AdminControlRoom() {
           roomsLabel: "Room",
           stageLabel: "Stage",
           scoringLabel: "Scoring profile",
+          mainAdmin: "Main admin",
+          roomAdmin: "Room admin",
           refreshButton: "Refresh",
           logoutButton: "Log out",
           openStage: "Open stage",
@@ -376,6 +393,15 @@ export function AdminControlRoom() {
           hardReset: "Full room reset",
           hardResetText: "Clears all ballots, published results, and stage statuses for the selected room.",
           resetRoomButton: "Reset room",
+          closeRoom: "Close room",
+          closeRoomText: "Deletes this temporary room for all participants. Room access and data will be closed.",
+          closeRoomConfirm: "Close and delete this room? This cannot be undone.",
+          closeRoomDone: "Room closed.",
+          completeContest: "Complete contest",
+          completeContestText: "After the full final is published, locks the season and unlocks calculated achievements.",
+          completeContestConfirm: "Complete the contest and unlock achievements? The full final ranking must already be published.",
+          completeContestDone: "Contest completed, achievements calculated.",
+          contestCompleted: "Contest completed",
           projector: "Projector",
           playersBoard: "Players board",
           seasonStats: "Season stats",
@@ -401,6 +427,8 @@ export function AdminControlRoom() {
   ), [getStageLabel, language]);
 
   const selectedRoomMeta = rooms.find((room) => room.slug === selectedRoom) || null;
+  const isMainAdmin = adminRole === "main";
+  const canCloseSelectedRoom = Boolean(selectedRoomMeta?.isTemporary);
   const selectedStageOverview = snapshot?.stageOverview[selectedStage];
   const selectedStageCountdown = snapshot?.submissionCountdowns?.[selectedStage] || null;
   const isSemiStage = isSemiStageValue(selectedStage);
@@ -507,8 +535,10 @@ export function AdminControlRoom() {
         const payload = await fetchAdminSession();
         if (!active) return;
         setAuthenticated(payload.authenticated);
+        setAdminRole(payload.role || null);
         setRooms(payload.rooms);
         setScoringProfiles(payload.scoringProfiles);
+        setContestCompletedAt(payload.contestCompletedAt || null);
 
         const roomFromQuery = searchParams.get("room");
         const roomFromStorage = typeof window !== "undefined" ? window.localStorage.getItem("admin_room_slug") : null;
@@ -671,8 +701,10 @@ export function AdminControlRoom() {
         password: password || undefined,
       });
       setAuthenticated(true);
+      setAdminRole(payload.role || "main");
       setRooms(payload.rooms);
       setScoringProfiles(payload.scoringProfiles);
+      setContestCompletedAt(payload.contestCompletedAt || null);
       setSelectedRoom((current) => current || payload.rooms[0]?.slug || "");
       setAdminKey("");
       setAdminEmail("");
@@ -690,6 +722,7 @@ export function AdminControlRoom() {
     try {
       await logoutAdminSession();
       setAuthenticated(false);
+      setAdminRole(null);
       setSnapshot(null);
       setUsers([]);
       setRows([]);
@@ -922,6 +955,57 @@ export function AdminControlRoom() {
     clearDraft(selectedRoom, selectedStage);
   }
 
+  async function handleCompleteContest() {
+    if (!isMainAdmin) return;
+    if (!window.confirm(copy.completeContestConfirm)) {
+      return;
+    }
+
+    setPendingAction("contest-complete");
+    setError("");
+    setStatusText("");
+    try {
+      const payload = await completeContest();
+      setContestCompletedAt(payload.contestCompletedAt);
+      setStatusText(copy.completeContestDone);
+    } catch (completeError) {
+      console.error(completeError);
+      setError(completeError instanceof Error ? completeError.message : copy.reloadFailed);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function handleCloseRoom() {
+    if (!selectedRoom || !canCloseSelectedRoom) return;
+    if (!window.confirm(copy.closeRoomConfirm)) {
+      return;
+    }
+
+    setPendingAction("room-close");
+    setError("");
+    setStatusText("");
+    try {
+      await closeAdminRoom(selectedRoom);
+      const nextRooms = rooms.filter((room) => room.slug !== selectedRoom);
+      setRooms(nextRooms);
+      setSelectedRoom(nextRooms[0]?.slug || "");
+      setSnapshot(null);
+      setUsers([]);
+      setRows([]);
+      if (!nextRooms.length) {
+        setAuthenticated(false);
+        setAdminRole(null);
+      }
+      setStatusText(copy.closeRoomDone);
+    } catch (closeError) {
+      console.error(closeError);
+      setError(closeError instanceof Error ? closeError.message : copy.reloadFailed);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
   if (booting) {
     return <div className="show-card p-6 text-sm text-arenaMuted">Загружаю пульт...</div>;
   }
@@ -1016,6 +1100,10 @@ export function AdminControlRoom() {
                   <Activity size={14} />
                   {selectedRoom ? copy.socketLive : copy.socketIdle}
                 </span>
+                <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+                  <ShieldCheck size={14} />
+                  {isMainAdmin ? copy.mainAdmin : copy.roomAdmin}
+                </span>
                 <LanguageSwitcher />
                 <button type="button" className="arena-button-secondary px-5 py-3 text-sm" onClick={handleLogout}>
                   <LogOut size={16} />
@@ -1054,21 +1142,23 @@ export function AdminControlRoom() {
                 </div>
               </div>
 
-              <label className="show-panel p-4 xl:col-span-2">
-                <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{copy.scoringLabel}</p>
-                <select
-                  className="arena-input mt-3"
-                  value={snapshot?.scoringProfile || scoringProfiles[0]?.key || ""}
-                  onChange={(event) => void handleScoringProfileChange(event.target.value)}
-                >
-                  {scoringProfiles.map((profile) => (
-                    <option key={profile.key} value={profile.key}>{profile.label}</option>
-                  ))}
-                </select>
-                <p className="mt-3 text-xs text-arenaMuted">
-                  {scoringProfiles.find((profile) => profile.key === (snapshot?.scoringProfile || scoringProfiles[0]?.key))?.description}
-                </p>
-              </label>
+              {isMainAdmin ? (
+                <label className="show-panel p-4 xl:col-span-2">
+                  <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{copy.scoringLabel}</p>
+                  <select
+                    className="arena-input mt-3"
+                    value={snapshot?.scoringProfile || scoringProfiles[0]?.key || ""}
+                    onChange={(event) => void handleScoringProfileChange(event.target.value)}
+                  >
+                    {scoringProfiles.map((profile) => (
+                      <option key={profile.key} value={profile.key}>{profile.label}</option>
+                    ))}
+                  </select>
+                  <p className="mt-3 text-xs text-arenaMuted">
+                    {scoringProfiles.find((profile) => profile.key === (snapshot?.scoringProfile || scoringProfiles[0]?.key))?.description}
+                  </p>
+                </label>
+              ) : null}
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -1110,18 +1200,21 @@ export function AdminControlRoom() {
                     {snapshot?.predictionWindows[selectedStage] ? copy.stageWindowOpen : copy.stageWindowClosed}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  <button type="button" className="arena-button-primary h-12 px-5 text-sm" onClick={() => void handleStageToggle(true)}>
-                    <Lock size={16} />
-                    {copy.openStage}
-                  </button>
-                  <button type="button" className="arena-button-secondary px-5 py-3 text-sm" onClick={() => void handleStageToggle(false)}>
-                    <Lock size={16} />
-                    {copy.closeStage}
-                  </button>
-                </div>
+                {isMainAdmin ? (
+                  <div className="flex flex-wrap gap-3">
+                    <button type="button" className="arena-button-primary h-12 px-5 text-sm" onClick={() => void handleStageToggle(true)}>
+                      <Lock size={16} />
+                      {copy.openStage}
+                    </button>
+                    <button type="button" className="arena-button-secondary px-5 py-3 text-sm" onClick={() => void handleStageToggle(false)}>
+                      <Lock size={16} />
+                      {copy.closeStage}
+                    </button>
+                  </div>
+                ) : null}
               </div>
 
+              {isMainAdmin ? (
               <div className="mt-5 show-panel p-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
@@ -1203,6 +1296,7 @@ export function AdminControlRoom() {
                   </div>
                 ) : null}
               </div>
+              ) : null}
 
               <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {[
@@ -1296,6 +1390,7 @@ export function AdminControlRoom() {
               </div>
             </div>
 
+            {isMainAdmin ? (
             <div className="show-card p-5 md:p-6">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
@@ -1384,6 +1479,7 @@ export function AdminControlRoom() {
                 ))}
               </div>
             </div>
+            ) : null}
           </div>
 
           <div className="grid gap-4">
@@ -1480,7 +1576,12 @@ export function AdminControlRoom() {
                         type="button"
                         className="rounded-full bg-rose-500/15 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/25 md:col-span-2"
                         disabled={Boolean(pendingAction)}
-                        onClick={() => void handleParticipantAction(`remove-${user.id}`, () => removeParticipant(selectedRoom, user.id), copy.participantRemoved)}
+                        onClick={() => {
+                          const confirmed = window.confirm(language === "ru" ? "Удалить участника из комнаты?" : "Remove this participant from the room?");
+                          if (confirmed) {
+                            void handleParticipantAction(`remove-${user.id}`, () => removeParticipant(selectedRoom, user.id), copy.participantRemoved);
+                          }
+                        }}
                       >
                         {copy.removeUser}
                       </button>
@@ -1490,18 +1591,57 @@ export function AdminControlRoom() {
               ))}
             </div>
 
-            <div className="show-card p-5 md:p-6">
-              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.hardReset}</p>
-              <p className="mt-3 text-sm text-arenaMuted">{copy.hardResetText}</p>
-              <button
-                type="button"
-                className="mt-5 rounded-full bg-rose-500/15 px-5 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/25"
-                disabled={pendingAction === "room-reset"}
-                onClick={() => void handleRoomReset()}
-              >
-                {copy.resetRoomButton}
-              </button>
-            </div>
+            {canCloseSelectedRoom ? (
+              <div className="show-card p-5 md:p-6">
+                <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.closeRoom}</p>
+                <p className="mt-3 text-sm text-arenaMuted">{copy.closeRoomText}</p>
+                <button
+                  type="button"
+                  className="mt-5 rounded-full bg-rose-500/15 px-5 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/25"
+                  disabled={pendingAction === "room-close"}
+                  onClick={() => void handleCloseRoom()}
+                >
+                  {copy.closeRoom}
+                </button>
+              </div>
+            ) : null}
+
+            {isMainAdmin ? (
+              <>
+                <div className="show-card p-5 md:p-6">
+                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">{copy.completeContest}</p>
+                  <p className="mt-3 text-sm text-arenaMuted">{copy.completeContestText}</p>
+                  {contestCompletedAt ? (
+                    <span className="mt-5 inline-flex rounded-full border border-emerald-300/20 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-100">
+                      {copy.contestCompleted}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="mt-5 arena-button-primary h-12 px-5 text-sm"
+                      disabled={pendingAction === "contest-complete"}
+                      onClick={() => void handleCompleteContest()}
+                    >
+                      <Trophy size={16} />
+                      {copy.completeContest}
+                    </button>
+                  )}
+                </div>
+
+                <div className="show-card p-5 md:p-6">
+                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.hardReset}</p>
+                  <p className="mt-3 text-sm text-arenaMuted">{copy.hardResetText}</p>
+                  <button
+                    type="button"
+                    className="mt-5 rounded-full bg-rose-500/15 px-5 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/25"
+                    disabled={pendingAction === "room-reset"}
+                    onClick={() => void handleRoomReset()}
+                  >
+                    {copy.resetRoomButton}
+                  </button>
+                </div>
+              </>
+            ) : null}
           </div>
         </section>
       </div>
