@@ -35,7 +35,7 @@ import { useEffect, useMemo, useState } from "react";
 import { fetchRooms, fetchSeasonStats } from "../lib/api";
 import { EUROVISION_COUNTRY_STATS, type EurovisionCountryStat } from "../lib/eurovision-country-stats";
 import { FALLBACK_ROOM } from "../lib/rooms";
-import type { AccountProfile, AvatarTheme, PlayerSeasonStats, RoomSummary } from "../lib/types";
+import type { AccountProfile, AchievementProgress, AvatarTheme, PlayerSeasonStats, RoomSummary } from "../lib/types";
 import { useAccount } from "./AccountProvider";
 import { useLanguage } from "./LanguageProvider";
 import { UserAvatar } from "./UserAvatar";
@@ -59,6 +59,12 @@ type RegisteredPlayer = {
   avatarTheme?: AvatarTheme | null;
   rooms: string[];
   submittedStages: number;
+  totalPoints: number;
+  exactMatchCount: number;
+  closeMatchCount: number;
+  averageDistance: number | null;
+  achievements: string[];
+  achievementProgress: AchievementProgress[];
 };
 
 type CountryHistory = EurovisionCountryStat;
@@ -317,6 +323,12 @@ function playerFromSeason(player: PlayerSeasonStats, roomName: string): Register
     avatarTheme: player.avatarTheme,
     rooms: [roomName],
     submittedStages: player.submittedStages,
+    totalPoints: player.totalPoints,
+    exactMatchCount: player.exactMatchCount,
+    closeMatchCount: player.closeMatchCount,
+    averageDistance: player.averageDistance,
+    achievements: player.achievements || [],
+    achievementProgress: player.achievementProgress || [],
   };
 }
 
@@ -328,11 +340,28 @@ function playerFromAccount(account: AccountProfile): RegisteredPlayer {
     avatarTheme: account.avatarTheme,
     rooms: [],
     submittedStages: 0,
+    totalPoints: 0,
+    exactMatchCount: 0,
+    closeMatchCount: 0,
+    averageDistance: null,
+    achievements: [],
+    achievementProgress: [],
   };
 }
 
 function normalizePlayerName(name: string, getDisplayName: (value: string) => string) {
   return getDisplayName(name).trim().toLocaleLowerCase();
+}
+
+function mergeAchievementProgress(left: AchievementProgress[], right: AchievementProgress[]) {
+  const byKey = new Map<string, AchievementProgress>();
+  [...left, ...right].forEach((achievement) => {
+    const existing = byKey.get(achievement.key);
+    if (!existing || achievement.unlocked || achievement.progress > existing.progress) {
+      byKey.set(achievement.key, achievement);
+    }
+  });
+  return Array.from(byKey.values());
 }
 
 export function GlobalStatsHub() {
@@ -446,6 +475,16 @@ export function GlobalStatsHub() {
             if (existing) {
               existing.rooms = Array.from(new Set([...existing.rooms, roomName]));
               existing.submittedStages = Math.max(existing.submittedStages, player.submittedStages);
+              existing.totalPoints += player.totalPoints;
+              existing.exactMatchCount += player.exactMatchCount;
+              existing.closeMatchCount += player.closeMatchCount;
+              existing.averageDistance = existing.averageDistance == null
+                ? player.averageDistance
+                : player.averageDistance == null
+                  ? existing.averageDistance
+                  : Number(((existing.averageDistance + player.averageDistance) / 2).toFixed(2));
+              existing.achievements = Array.from(new Set([...existing.achievements, ...(player.achievements || [])]));
+              existing.achievementProgress = mergeAchievementProgress(existing.achievementProgress, player.achievementProgress || []);
               return;
             }
             byId.set(key, playerFromSeason(player, roomName));
@@ -497,6 +536,15 @@ export function GlobalStatsHub() {
       || country.name.toLowerCase().includes(normalizedCountryQuery)
       || country.code.toLowerCase().includes(normalizedCountryQuery);
   });
+  const selectedAchievementByKey = new Map((selectedPlayer?.achievementProgress || []).map((achievement) => [achievement.key, achievement]));
+  const selectedAchievementPreview = ACHIEVEMENTS
+    .map((achievement) => ({
+      achievement,
+      progress: selectedAchievementByKey.get(achievement.key),
+    }))
+    .sort((left, right) => Number(Boolean(right.progress?.unlocked)) - Number(Boolean(left.progress?.unlocked))
+      || (right.progress?.progress || 0) - (left.progress?.progress || 0))
+    .slice(0, 6);
 
   return (
     <div className="stats-page-safe grid min-w-0 gap-5">
@@ -621,7 +669,10 @@ export function GlobalStatsHub() {
                     <div className="mt-4 grid gap-2 sm:grid-cols-3">
                       <SmallStat label={copy.submittedStages} value={String(selectedPlayer.submittedStages)} />
                       <SmallStat label={copy.joinedRooms} value={String(selectedPlayer.rooms.length)} />
-                      <SmallStat label={copy.achievements} value="0" />
+                      <SmallStat label={copy.achievements} value={String(selectedPlayer.achievements.length)} />
+                      <SmallStat label={language === "ru" ? "Очки" : "Points"} value={String(selectedPlayer.totalPoints)} />
+                      <SmallStat label={language === "ru" ? "Точные" : "Exact"} value={String(selectedPlayer.exactMatchCount)} />
+                      <SmallStat label={language === "ru" ? "Близкие" : "Close"} value={String(selectedPlayer.closeMatchCount)} />
                     </div>
                   </div>
                 </div>
@@ -632,8 +683,8 @@ export function GlobalStatsHub() {
                 </div>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {ACHIEVEMENTS.slice(0, 6).map((achievement) => (
-                    <AchievementBadgeCard key={achievement.key} achievement={achievement} language={language} compact />
+                  {selectedAchievementPreview.map(({ achievement, progress }) => (
+                    <AchievementBadgeCard key={achievement.key} achievement={achievement} language={language} progress={progress} compact />
                   ))}
                 </div>
               </>
@@ -691,7 +742,12 @@ export function GlobalStatsHub() {
           </div>
           <div className="achievement-vault mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {ACHIEVEMENTS.map((achievement) => (
-              <AchievementBadgeCard key={achievement.key} achievement={achievement} language={language} />
+              <AchievementBadgeCard
+                key={achievement.key}
+                achievement={achievement}
+                language={language}
+                progress={selectedAchievementByKey.get(achievement.key)}
+              />
             ))}
           </div>
         </section>
@@ -809,10 +865,22 @@ function CountryCard({
   );
 }
 
-function AchievementBadgeCard({ achievement, language, compact = false }: { achievement: Achievement; language: string; compact?: boolean }) {
+function AchievementBadgeCard({
+  achievement,
+  language,
+  progress,
+  compact = false,
+}: {
+  achievement: Achievement;
+  language: string;
+  progress?: AchievementProgress;
+  compact?: boolean;
+}) {
   const Icon = achievement.icon;
+  const percent = Math.round((progress?.progress || 0) * 100);
+  const unlocked = Boolean(progress?.unlocked);
   return (
-    <div className={`show-panel achievement-card min-w-0 ${compact ? "p-3" : "p-4"}`}>
+    <div className={`show-panel achievement-card min-w-0 ${compact ? "p-3" : "p-4"} ${unlocked ? "ring-1 ring-arenaBeam/35" : "opacity-75"}`}>
       <div className="flex min-w-0 items-center gap-3">
         <div className={`achievement-icon bg-gradient-to-br ${achievement.tone}`}>
           <Icon size={compact ? 17 : 20} />
@@ -822,8 +890,15 @@ function AchievementBadgeCard({ achievement, language, compact = false }: { achi
           <p className="mt-1 line-clamp-2 text-xs leading-5 text-arenaMuted">{language === "ru" ? achievement.textRu : achievement.textEn}</p>
         </div>
       </div>
-      <div className="mt-3 h-1.5 rounded-full bg-white/[0.06]">
-        <div className="h-full w-0 rounded-full bg-gradient-to-r from-arenaPulse to-arenaBeam" />
+      <div className="mt-3 flex items-center justify-between gap-3 text-[10px] font-black uppercase tracking-[0.18em] text-arenaMuted">
+        <span>{unlocked ? (language === "ru" ? "Получено" : "Unlocked") : (language === "ru" ? "Закрыто" : "Locked")}</span>
+        <span>{percent}%</span>
+      </div>
+      <div className="mt-2 h-1.5 rounded-full bg-white/[0.06]">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-arenaPulse to-arenaBeam transition-[width] duration-500"
+          style={{ width: `${percent}%` }}
+        />
       </div>
     </div>
   );
