@@ -1429,11 +1429,211 @@ function buildLeaderboard(roomSlug, stageKey = null) {
   }));
 }
 
+const ACHIEVEMENT_KEYS = [
+  'champion',
+  'oracle',
+  'sniper',
+  'basement',
+  'thirteen',
+  'obvious',
+  'almostVanga',
+  'topTenKing',
+  'podiumSense',
+  'madmanRight',
+  'millimeter',
+  'closeCall',
+  'dryMath',
+  'noPanic',
+  'bottomWhisperer',
+  'lastRomantic',
+  'antiHype',
+  'warnedYou',
+  'secondCurse',
+  'almostChampion',
+  'chaosDiploma',
+  'heartVote',
+  'comeback',
+  'veteran',
+  'streak',
+  'countryFan',
+  'bigFive',
+];
+
+function intersectionCount(left = [], right = []) {
+  const rightSet = new Set(right);
+  return left.reduce((sum, item) => sum + (rightSet.has(item) ? 1 : 0), 0);
+}
+
+function getPosition(list, code) {
+  const index = list.indexOf(code);
+  return index === -1 ? null : index + 1;
+}
+
+function getPredictedWinnerCounts(room) {
+  const counts = {};
+  Object.values(room.predictions.final || {}).forEach((ranking) => {
+    const winnerCode = Array.isArray(ranking) ? ranking[0] : null;
+    if (winnerCode) {
+      counts[winnerCode] = (counts[winnerCode] || 0) + 1;
+    }
+  });
+  return counts;
+}
+
+function getMostPickedWinner(counts) {
+  return Object.entries(counts).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))[0]?.[0] || null;
+}
+
+function getStageRankMaps(leaderboard) {
+  return STAGE_KEYS.reduce((acc, stage) => {
+    const ranked = [...leaderboard]
+      .sort((left, right) =>
+        right.stageBreakdowns[stage].points - left.stageBreakdowns[stage].points
+        || right.stageBreakdowns[stage].exactMatches.length - left.stageBreakdowns[stage].exactMatches.length
+        || right.stageBreakdowns[stage].closeMatches - left.stageBreakdowns[stage].closeMatches
+        || left.stageBreakdowns[stage].totalDistance - right.stageBreakdowns[stage].totalDistance
+        || left.name.localeCompare(right.name, 'ru'),
+      );
+    acc[stage] = ranked.reduce((map, row, index) => {
+      map[row.id] = index + 1;
+      return map;
+    }, {});
+    return acc;
+  }, {});
+}
+
+function countOneOffMatches(prediction, result) {
+  const resultIndexMap = result.reduce((acc, code, index) => {
+    acc[code] = index;
+    return acc;
+  }, {});
+  return prediction.reduce((sum, code, index) => {
+    const resultIndex = resultIndexMap[code];
+    return sum + (typeof resultIndex === 'number' && Math.abs(resultIndex - index) === 1 ? 1 : 0);
+  }, 0);
+}
+
+function getAutoFinalistCodes() {
+  const semiCodes = new Set([
+    ...ACTS_BY_STAGE.semi1.map((act) => act.code),
+    ...ACTS_BY_STAGE.semi2.map((act) => act.code),
+  ]);
+  return ACTS_BY_STAGE.final
+    .map((act) => act.code)
+    .filter((code) => !semiCodes.has(code));
+}
+
+function buildAchievementProgress(key, unlocked, current = unlocked ? 1 : 0, target = 1) {
+  const safeTarget = Math.max(1, target);
+  const safeCurrent = unlocked ? safeTarget : Math.max(0, Math.min(current, safeTarget));
+  return {
+    key,
+    unlocked: Boolean(unlocked),
+    current: safeCurrent,
+    target: safeTarget,
+    progress: Number((safeCurrent / safeTarget).toFixed(3)),
+  };
+}
+
+function buildPlayerAchievements(roomSlug, row, leaderboard, context) {
+  const room = getRoomState(roomSlug);
+  const finalPrediction = room.predictions.final[row.id] || [];
+  const finalResults = room.results.final || [];
+  const finalComplete = finalResults.length >= ACTS_BY_STAGE.final.length;
+  const finalCompared = row.stageBreakdowns.final.comparedEntries;
+  const officialWinner = finalResults[0] || null;
+  const predictedWinner = finalPrediction[0] || null;
+  const submittedFinalCount = Object.keys(room.predictions.final || {}).length;
+  const winnerPickCount = officialWinner ? context.predictedWinnerCounts[officialWinner] || 0 : 0;
+  const winnerPickShare = submittedFinalCount ? winnerPickCount / submittedFinalCount : 0;
+  const groupFavorite = context.groupFavorite;
+  const groupFavoritePlace = groupFavorite ? getPosition(finalResults, groupFavorite) : null;
+  const topPlayerCount = Math.max(1, Math.ceil(leaderboard.length * 0.25));
+  const medianPoints = leaderboard.length
+    ? [...leaderboard].sort((a, b) => a.points - b.points)[Math.floor((leaderboard.length - 1) / 2)].points
+    : 0;
+  const completedStages = STAGE_KEYS.filter((stage) => room.results[stage].length >= ACTS_BY_STAGE[stage].length);
+  const stagePoints = completedStages.map((stage) => row.stageBreakdowns[stage].points);
+  const stageRanks = completedStages.map((stage) => context.stageRankMaps[stage]?.[row.id] || leaderboard.length);
+  const finalTop10Matches = finalComplete ? intersectionCount(finalPrediction.slice(0, 10), finalResults.slice(0, 10)) : 0;
+  const finalTop3Matches = finalComplete ? intersectionCount(finalPrediction.slice(0, 3), finalResults.slice(0, 3)) : 0;
+  const bottom5Matches = finalComplete ? intersectionCount(finalPrediction.slice(-5), finalResults.slice(-5)) : 0;
+  const oneOffMatches = STAGE_KEYS.reduce((sum, stage) => sum + countOneOffMatches(room.predictions[stage][row.id] || [], room.results[stage] || []), 0);
+  const autoFinalists = context.autoFinalists;
+  const autoCompared = finalComplete
+    ? autoFinalists.filter((code) => {
+      const predicted = getPosition(finalPrediction, code);
+      const actual = getPosition(finalResults, code);
+      return predicted && actual && Math.abs(predicted - actual) <= 3;
+    }).length
+    : 0;
+  const countryFanCodes = finalPrediction.slice(0, 5).filter((code) => {
+    const semiStage = ACTS_BY_STAGE.semi1.some((act) => act.code === code) ? 'semi1'
+      : ACTS_BY_STAGE.semi2.some((act) => act.code === code) ? 'semi2'
+        : null;
+    if (!semiStage) return false;
+    const semiPrediction = room.predictions[semiStage][row.id] || [];
+    const finalPlace = getPosition(finalResults, code);
+    return semiPrediction.slice(0, 5).includes(code) && finalPlace != null && finalPlace <= 10;
+  });
+  const overbackedCountry = groupFavorite && groupFavoritePlace != null && groupFavoritePlace > 10;
+  const groupFavoritePredictedPlace = groupFavorite ? getPosition(finalPrediction, groupFavorite) : null;
+  const bestComeback = stagePoints.reduce((best, points, index) => {
+    if (index === 0) return best;
+    return Math.max(best, points - stagePoints[index - 1]);
+  }, 0);
+
+  const rules = {
+    champion: buildAchievementProgress('champion', finalComplete && row.rank === 1 && row.points > 0),
+    oracle: buildAchievementProgress('oracle', finalComplete && predictedWinner === officialWinner),
+    sniper: buildAchievementProgress('sniper', row.exactMatchCount >= 5, row.exactMatchCount, 5),
+    basement: buildAchievementProgress('basement', finalComplete && bottom5Matches >= 3, bottom5Matches, 3),
+    thirteen: buildAchievementProgress('thirteen', finalComplete && finalPrediction[12] === finalResults[12]),
+    obvious: buildAchievementProgress('obvious', finalComplete && predictedWinner === officialWinner && winnerPickShare >= 0.4, Math.round(winnerPickShare * 100), 40),
+    almostVanga: buildAchievementProgress('almostVanga', finalComplete && officialWinner && finalPrediction.slice(0, 3).includes(officialWinner), officialWinner && finalPrediction.slice(0, 3).includes(officialWinner) ? 1 : 0, 1),
+    topTenKing: buildAchievementProgress('topTenKing', finalComplete && finalTop10Matches >= 7, finalTop10Matches, 7),
+    podiumSense: buildAchievementProgress('podiumSense', finalComplete && finalTop3Matches >= 2, finalTop3Matches, 2),
+    madmanRight: buildAchievementProgress('madmanRight', finalComplete && submittedFinalCount >= 5 && predictedWinner === officialWinner && winnerPickShare <= 0.15, winnerPickShare ? Math.max(0, 15 - Math.round(winnerPickShare * 100)) : 0, 15),
+    millimeter: buildAchievementProgress('millimeter', finalCompared > 0 && context.bestAverageDistance != null && row.averageDistance === context.bestAverageDistance),
+    closeCall: buildAchievementProgress('closeCall', oneOffMatches >= 8, oneOffMatches, 8),
+    dryMath: buildAchievementProgress('dryMath', row.rank <= topPlayerCount && row.averageDistance != null && row.averageDistance <= 5, row.averageDistance == null ? 0 : Math.max(0, 5 - row.averageDistance), 5),
+    noPanic: buildAchievementProgress('noPanic', completedStages.length >= 2 && stageRanks.every((rank) => rank <= Math.ceil(leaderboard.length / 2)), stageRanks.filter((rank) => rank <= Math.ceil(leaderboard.length / 2)).length, Math.max(2, completedStages.length)),
+    bottomWhisperer: buildAchievementProgress('bottomWhisperer', finalComplete && bottom5Matches >= 4, bottom5Matches, 4),
+    lastRomantic: buildAchievementProgress('lastRomantic', finalComplete && finalPrediction[finalPrediction.length - 1] === finalResults[finalResults.length - 1]),
+    antiHype: buildAchievementProgress('antiHype', finalComplete && overbackedCountry && groupFavoritePredictedPlace != null && groupFavoritePredictedPlace > 10, groupFavoritePredictedPlace || 0, 11),
+    warnedYou: buildAchievementProgress('warnedYou', finalComplete && overbackedCountry && groupFavoritePredictedPlace != null && groupFavoritePredictedPlace >= groupFavoritePlace - 2, groupFavoritePredictedPlace || 0, Math.max(1, groupFavoritePlace || 1)),
+    secondCurse: buildAchievementProgress('secondCurse', finalComplete && row.rank === 2),
+    almostChampion: buildAchievementProgress('almostChampion', finalComplete && leaderboard[1]?.id === row.id && leaderboard[0] && leaderboard[0].points - row.points <= 5, leaderboard[0] ? Math.max(0, 5 - (leaderboard[0].points - row.points)) : 0, 5),
+    chaosDiploma: buildAchievementProgress('chaosDiploma', finalCompared > 0 && row.averageDistance != null && row.averageDistance >= 8 && row.points >= medianPoints, row.points, Math.max(1, medianPoints)),
+    heartVote: buildAchievementProgress('heartVote', finalComplete && countryFanCodes.length > 0),
+    comeback: buildAchievementProgress('comeback', completedStages.length >= 2 && bestComeback >= 15, bestComeback, 15),
+    veteran: buildAchievementProgress('veteran', STAGE_KEYS.filter((stage) => Boolean(room.predictions[stage][row.id])).length >= 3, STAGE_KEYS.filter((stage) => Boolean(room.predictions[stage][row.id])).length, 3),
+    streak: buildAchievementProgress('streak', completedStages.length >= 2 && stageRanks.every((rank) => rank <= topPlayerCount), stageRanks.filter((rank) => rank <= topPlayerCount).length, Math.max(2, completedStages.length)),
+    countryFan: buildAchievementProgress('countryFan', finalComplete && countryFanCodes.length > 0),
+    bigFive: buildAchievementProgress('bigFive', finalComplete && autoCompared >= Math.min(3, autoFinalists.length), autoCompared, Math.min(3, autoFinalists.length || 3)),
+  };
+
+  return ACHIEVEMENT_KEYS.map((key) => rules[key] || buildAchievementProgress(key, false));
+}
+
 function buildSeasonStats(roomSlug) {
   const roomMeta = getRoomBySlug(roomSlug);
   const room = getRoomState(roomSlug);
   const leaderboard = buildInternalLeaderboardRows(roomSlug);
   const completedStages = STAGE_KEYS.filter((stage) => room.results[stage].length > 0);
+  const averageDistances = leaderboard
+    .map((row) => {
+      const comparedEntries = STAGE_KEYS.reduce((sum, stage) => sum + row.stageBreakdowns[stage].comparedEntries, 0);
+      return comparedEntries ? Number((row.totalDistance / comparedEntries).toFixed(2)) : null;
+    })
+    .filter((value) => value != null);
+  const achievementContext = {
+    autoFinalists: getAutoFinalistCodes(),
+    bestAverageDistance: averageDistances.length ? Math.min(...averageDistances) : null,
+    groupFavorite: getMostPickedWinner(getPredictedWinnerCounts(room)),
+    predictedWinnerCounts: getPredictedWinnerCounts(room),
+    stageRankMaps: getStageRankMaps(leaderboard),
+  };
 
   const players = leaderboard.map((row) => {
     const stages = STAGE_KEYS.reduce((acc, stage) => {
@@ -1456,8 +1656,19 @@ function buildSeasonStats(roomSlug) {
     const submittedStages = STAGE_KEYS.filter((stage) => stages[stage].submitted).length;
     const lockedStages = STAGE_KEYS.filter((stage) => stages[stage].locked).length;
     const comparedEntries = STAGE_KEYS.reduce((sum, stage) => sum + stages[stage].comparedEntries, 0);
+    const averageDistance = comparedEntries ? Number((row.totalDistance / comparedEntries).toFixed(2)) : null;
     const bestStage = [...STAGE_KEYS]
       .sort((a, b) => stages[b].points - stages[a].points || stages[b].exactMatchCount - stages[a].exactMatchCount)[0] || null;
+    const achievementProgress = buildPlayerAchievements(roomSlug, {
+      ...row,
+      averageDistance,
+    }, leaderboard.map((leaderboardRow) => {
+      const rowComparedEntries = STAGE_KEYS.reduce((sum, stage) => sum + leaderboardRow.stageBreakdowns[stage].comparedEntries, 0);
+      return {
+        ...leaderboardRow,
+        averageDistance: rowComparedEntries ? Number((leaderboardRow.totalDistance / rowComparedEntries).toFixed(2)) : null,
+      };
+    }), achievementContext);
 
     return {
       id: buildPublicLeaderboardId(roomSlug, row.id),
@@ -1469,11 +1680,13 @@ function buildSeasonStats(roomSlug) {
       totalPoints: row.points,
       exactMatchCount: row.exactMatchCount,
       closeMatchCount: row.closeMatchCount,
-      averageDistance: comparedEntries ? Number((row.totalDistance / comparedEntries).toFixed(2)) : null,
+      averageDistance,
       submittedStages,
       lockedStages,
       bestStage,
       stages,
+      achievements: achievementProgress.filter((achievement) => achievement.unlocked).map((achievement) => achievement.key),
+      achievementProgress,
     };
   });
 

@@ -176,6 +176,14 @@ export interface SeasonStageStats {
   qualificationCutoff?: number | null;
 }
 
+export interface AchievementProgress {
+  key: string;
+  unlocked: boolean;
+  current: number;
+  target: number;
+  progress: number;
+}
+
 export interface PlayerSeasonStats {
   id: string;
   rank: number;
@@ -191,6 +199,8 @@ export interface PlayerSeasonStats {
   lockedStages: number;
   bestStage: StageKey | null;
   stages: Record<StageKey, SeasonStageStats>;
+  achievements: string[];
+  achievementProgress: AchievementProgress[];
 }
 
 export interface SeasonStatsPayload {
