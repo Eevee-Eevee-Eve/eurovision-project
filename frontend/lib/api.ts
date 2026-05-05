@@ -235,10 +235,22 @@ export async function publishStageResults(payload: {
   ranking: string[];
   breakdown: Array<{ code: string; jury: number; tele: number; total: number }>;
 }) {
-  return sendJson<{ ok: true; roomSlug: string; stage: StageKey; updated: number }>("/api/results", {
+  return sendJson<{ ok: true; roomSlug: string; stage: StageKey; updated: number; updatedRooms?: string[] }>("/api/results", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  });
+}
+
+export async function completeContest() {
+  return sendJson<{ ok: true; contestCompletedAt: string }>("/api/admin/contest/complete", {
+    method: "POST",
+  });
+}
+
+export async function closeAdminRoom(roomSlug: string) {
+  return sendJson<{ ok: true; roomSlug: string }>(`/api/admin/rooms/${roomSlug}`, {
+    method: "DELETE",
   });
 }
 

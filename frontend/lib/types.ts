@@ -209,6 +209,7 @@ export interface SeasonStatsPayload {
   seasonYear: number | null;
   seasonLabel: string;
   scoringProfile: string;
+  contestCompletedAt?: string | null;
   overview: {
     participants: number;
     completedStages: number;
@@ -221,7 +222,9 @@ export interface SeasonStatsPayload {
 
 export interface AdminSessionPayload {
   authenticated: boolean;
+  role?: "main" | "room" | null;
   rooms: RoomSummary[];
+  contestCompletedAt?: string | null;
   authMethods?: {
     key: boolean;
     emailPassword: boolean;

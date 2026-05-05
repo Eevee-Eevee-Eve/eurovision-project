@@ -33,6 +33,7 @@ function createEmptyState(createRoomState, rooms) {
     passwordResets: {},
     dynamicRooms: {},
     roomAccessSessions: {},
+    contestCompletedAt: null,
     globalPredictionWindows: null,
     globalStageCountdowns: {},
     roomStates: rooms.reduce((acc, room) => {
@@ -69,6 +70,7 @@ function loadState(createRoomState, rooms) {
       passwordResets: raw.passwordResets || {},
       dynamicRooms,
       roomAccessSessions: raw.roomAccessSessions || {},
+      contestCompletedAt: raw.contestCompletedAt || null,
       globalPredictionWindows: raw.globalPredictionWindows || null,
       globalStageCountdowns: raw.globalStageCountdowns || {},
       roomStates,
