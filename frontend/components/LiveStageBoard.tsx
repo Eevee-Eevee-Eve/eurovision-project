@@ -11,6 +11,7 @@ import { useAccount } from "./AccountProvider";
 import { MovementPill } from "./MovementPill";
 import { UserAvatar } from "./UserAvatar";
 import { useLanguage } from "./LanguageProvider";
+import { ArtistProfileModal } from "./ArtistProfileModal";
 
 const rowTransition = {
   type: "spring",
@@ -38,6 +39,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   const [mobilePlayersMode, setMobilePlayersMode] = useState<"focus" | "all">("focus");
   const [desktopBoardMode, setDesktopBoardMode] = useState<"split" | "players">("split");
   const [fullscreenActive, setFullscreenActive] = useState(false);
+  const [selectedActCode, setSelectedActCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const previousRanks = useRef<Record<string, number>>({});
@@ -239,12 +241,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     [qualificationCutoff, sortedResults]
   );
 
-  const stageRows = useMemo(() => {
-    const source = isSemi && !isDesktop ? qualifierRows : sortedResults;
-    if (isDesktop) return source;
-    const limit = isTablet ? 8 : 7;
-    return source.slice(0, limit);
-  }, [isDesktop, isSemi, isTablet, qualifierRows, sortedResults]);
+  const stageRows = useMemo(() => sortedResults, [sortedResults]);
 
   const finalStageColumns = useMemo(() => {
     if (!isDesktop || !isFinal) return [];
@@ -255,6 +252,10 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     if (isDesktop) return leaders;
     return leaders.slice(0, isTablet ? 6 : 8);
   }, [isDesktop, isTablet, leaders]);
+  const selectedAct = useMemo(
+    () => results.find((act) => act.code === selectedActCode) || null,
+    [results, selectedActCode],
+  );
   const currentUserIndex = useMemo(() => {
     if (!account) return -1;
     return leaders.findIndex((row) => row.id === account.id);
@@ -441,11 +442,13 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
       : "flex h-[3.05rem] items-center gap-1.5 px-2 py-[0.15rem] md:px-2 md:py-[0.2rem]";
 
     return (
-      <motion.div
+      <motion.button
         key={act.code}
+        type="button"
+        onClick={() => setSelectedActCode(act.code)}
         layout="position"
         transition={rowTransition}
-        className={`show-panel live-results-row ${desktopRowClass} ${isMoving ? "live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${isCutoffRow ? "live-cutoff-row" : ""} ${isBelowCutoffRow ? "live-cutoff-below-row" : ""} ${!isSemi && act.revealed ? "live-final-row" : ""} ${!isSemi && isMoving ? "live-final-row-moving" : ""} ${
+        className={`show-panel live-results-row ${desktopRowClass} text-left transition hover:border-cyan-200/18 focus:outline-none focus:ring-2 focus:ring-arenaBeam/35 ${isMoving ? "live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${isCutoffRow ? "live-cutoff-row" : ""} ${isBelowCutoffRow ? "live-cutoff-below-row" : ""} ${!isSemi && act.revealed ? "live-final-row" : ""} ${!isSemi && isMoving ? "live-final-row-moving" : ""} ${
           isQualifier
             ? "border-emerald-300/12 bg-[radial-gradient(circle_at_top_left,rgba(70,220,165,0.12),transparent_46%),rgba(255,255,255,0.03)]"
             : ""
@@ -460,8 +463,11 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
               <img
                 src={flagUrl || undefined}
                 alt=""
+                width={20}
+                height={20}
                 className={`${isFinal ? "h-[1.15rem] w-[1.15rem]" : "h-4 w-4"} shrink-0 rounded-full object-cover ring-1 ring-white/15`}
                 loading="lazy"
+                decoding="async"
               />
               <span className={`truncate font-semibold text-white ${isFinal ? "text-[13px] md:text-[14px]" : "text-[12px] md:text-[13px]"}`}>{countryName}</span>
             </div>
@@ -499,7 +505,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
             <p className={`display-copy font-black text-white ${isFinal ? "text-[15px] md:text-[16px]" : "text-[14px] md:text-[16px]"}`}>{act.totalPoints}</p>
           </div>
         ) : null}
-      </motion.div>
+      </motion.button>
     );
   };
 
@@ -507,11 +513,13 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     const isQualifier = typeof act.rank === "number" && act.rank > 0 && (!qualificationCutoff || act.rank <= qualificationCutoff);
 
     return (
-      <motion.div
+      <motion.button
         key={`compact-${act.code}`}
+        type="button"
+        onClick={() => setSelectedActCode(act.code)}
         layout="position"
         transition={rowTransition}
-        className={`show-panel-muted flex items-center gap-3 px-3 py-2.5 ${
+        className={`show-panel-muted flex min-w-0 items-center gap-3 px-3 py-2.5 text-left transition hover:border-cyan-200/18 focus:outline-none focus:ring-2 focus:ring-arenaBeam/35 ${
           isSemi && isQualifier
             ? "border-emerald-300/12 bg-[radial-gradient(circle_at_top_left,rgba(70,220,165,0.12),transparent_46%),rgba(255,255,255,0.03)]"
             : ""
@@ -522,7 +530,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2">
-            <p className="truncate text-sm font-medium text-white">{getCountryName(act.code, act.country)}</p>
+            <p className="min-w-0 break-words text-sm font-medium leading-5 text-white">{getCountryName(act.code, act.country)}</p>
             {isSemi && isQualifier ? (
               <span className="show-chip px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-100">
                 <Sparkles size={10} />
@@ -530,7 +538,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
               </span>
             ) : null}
           </div>
-          <p className="truncate text-xs text-arenaMuted">
+          <p className="min-w-0 break-words text-xs leading-5 text-arenaMuted">
             {act.artist}{act.song ? ` - ${act.song}` : ""}
           </p>
         </div>
@@ -542,7 +550,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
             <MovementPill delta={movement[act.code] ?? null} compact />
           </div>
         )}
-      </motion.div>
+      </motion.button>
     );
   };
 
@@ -862,6 +870,12 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
           </div>
         </section>
       )}
+
+      <ArtistProfileModal
+        act={selectedAct}
+        open={Boolean(selectedAct)}
+        onClose={() => setSelectedActCode(null)}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import type { ActEntry } from "../lib/types";
-import { resolveMediaUrl } from "../lib/media";
+import { resolveActImageUrls, resolveMediaUrl } from "../lib/media";
 import { useLanguage } from "./LanguageProvider";
 
 type ActPosterMode = "compact" | "card" | "hero" | "row";
@@ -11,11 +11,17 @@ export function ActPoster({
   compact = false,
   mode,
   contentDensity = "default",
+  imageSource = "thumbnail",
+  priority = false,
+  onPhotoOpen,
 }: {
   act: ActEntry;
   compact?: boolean;
   mode?: ActPosterMode;
   contentDensity?: "default" | "compact";
+  imageSource?: "thumbnail" | "full";
+  priority?: boolean;
+  onPhotoOpen?: () => void;
 }) {
   const { getCountryName } = useLanguage();
   const resolvedMode = mode || (compact ? "compact" : "card");
@@ -36,14 +42,26 @@ export function ActPoster({
   const flagSize = isCompact ? "h-6 w-6" : isHero ? "h-12 w-12" : isRow ? "h-8 w-8" : "h-9 w-9";
   const showRunningOrder = typeof act.runningOrder === "number";
   const runningBadge = showRunningOrder ? `#${act.runningOrder}` : null;
-  const resolvedPhotoUrl = resolveMediaUrl(act.photoUrl);
+  const imageUrls = resolveActImageUrls(act.photoUrl);
+  const resolvedPhotoUrl = imageSource === "full" ? imageUrls.full : imageUrls.thumbnail;
   const resolvedFlagUrl = resolveMediaUrl(act.flagUrl);
   const hasPhoto = Boolean(resolvedPhotoUrl);
   const countryName = getCountryName(act.code, act.country);
+  const imageDimensions = isCompact
+    ? { width: 96, height: 96, sizes: "56px" }
+    : isRow
+      ? { width: 144, height: 144, sizes: "(max-width: 768px) 72px, 78px" }
+      : isHero
+        ? { width: 720, height: 572, sizes: "(max-width: 768px) 92vw, 720px" }
+        : { width: 192, height: 224, sizes: "96px" };
+  const Frame = onPhotoOpen ? "button" : "div";
 
   return (
-    <div
-      className={`${frameClass} relative isolate shrink-0 overflow-hidden p-[1px] shadow-glow`}
+    <Frame
+      type={onPhotoOpen ? "button" : undefined}
+      onClick={onPhotoOpen}
+      aria-label={onPhotoOpen ? `${act.artist} photo` : undefined}
+      className={`${frameClass} relative isolate shrink-0 overflow-hidden p-[1px] shadow-glow ${onPhotoOpen ? "cursor-zoom-in text-left transition hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-arenaBeam/45" : ""}`}
       style={{
         backgroundImage: `linear-gradient(135deg, ${act.portrait.primary}, ${act.portrait.secondary})`,
       }}
@@ -57,9 +75,18 @@ export function ActPoster({
           <img
             src={resolvedPhotoUrl || undefined}
             alt={`${act.artist} portrait`}
+            width={imageDimensions.width}
+            height={imageDimensions.height}
+            sizes={imageDimensions.sizes}
             className="absolute inset-0 h-full w-full object-cover"
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
             referrerPolicy="no-referrer"
+            onError={(event) => {
+              if (imageUrls.full && event.currentTarget.src !== imageUrls.full) {
+                event.currentTarget.src = imageUrls.full;
+              }
+            }}
           />
         ) : null}
         <div
@@ -90,8 +117,11 @@ export function ActPoster({
                   <img
                     src={resolvedFlagUrl || undefined}
                     alt={countryName}
+                    width={48}
+                    height={48}
                     className="h-full w-full object-cover"
                     loading="lazy"
+                    decoding="async"
                     referrerPolicy="no-referrer"
                   />
                 </div>
@@ -106,8 +136,11 @@ export function ActPoster({
                     <img
                       src={resolvedFlagUrl || undefined}
                       alt={countryName}
+                      width={36}
+                      height={36}
                       className="h-full w-full object-cover"
                       loading="lazy"
+                      decoding="async"
                       referrerPolicy="no-referrer"
                     />
                   </div>
@@ -124,8 +157,11 @@ export function ActPoster({
                   <img
                     src={resolvedFlagUrl || undefined}
                     alt={countryName}
+                    width={36}
+                    height={36}
                     className="h-full w-full object-cover"
                     loading="lazy"
+                    decoding="async"
                     referrerPolicy="no-referrer"
                   />
                 </div>
@@ -180,6 +216,6 @@ export function ActPoster({
           ) : null}
         </div>
       </div>
-    </div>
+    </Frame>
   );
 }

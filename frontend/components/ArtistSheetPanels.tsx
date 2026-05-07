@@ -1,5 +1,5 @@
 import { PlayCircle } from "lucide-react";
-import { resolveMediaUrl } from "../lib/media";
+import { resolveActImageUrls, resolveMediaUrl } from "../lib/media";
 import type { ActEntry } from "../lib/types";
 
 export function ArtistCountryBadge({
@@ -13,6 +13,8 @@ export function ArtistCountryBadge({
   compact?: boolean;
   className?: string;
 }) {
+  const resolvedFlagUrl = resolveMediaUrl(flagUrl);
+
   return (
     <span
       className={`inline-flex min-w-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] font-medium text-white/92 ${
@@ -25,10 +27,13 @@ export function ArtistCountryBadge({
         }`}
       >
         <img
-          src={flagUrl || undefined}
+          src={resolvedFlagUrl || undefined}
           alt={countryName}
+          width={compact ? 16 : 20}
+          height={compact ? 16 : 20}
           className="h-full w-full object-cover"
           loading="lazy"
+          decoding="async"
           referrerPolicy="no-referrer"
         />
       </span>
@@ -75,7 +80,8 @@ export function ArtistAboutPanel({
   facts: string[];
   fallbackBlurb: string;
 }) {
-  const resolvedPhotoUrl = resolveMediaUrl(act.photoUrl);
+  const imageUrls = resolveActImageUrls(act.photoUrl);
+  const resolvedPhotoUrl = imageUrls.thumbnail;
   const aboutRows = (facts.length ? facts : [fallbackBlurb]).map((row) =>
     row
       .replace(/\s*[—–]\s*/g, " - ")
@@ -91,9 +97,18 @@ export function ArtistAboutPanel({
             <img
               src={resolvedPhotoUrl || undefined}
               alt={act.artist}
+              width={640}
+              height={516}
+              sizes="(max-width: 768px) 92vw, 272px"
               className="absolute inset-0 h-full w-full object-cover"
               loading="lazy"
+              decoding="async"
               referrerPolicy="no-referrer"
+              onError={(event) => {
+                if (imageUrls.full && event.currentTarget.src !== imageUrls.full) {
+                  event.currentTarget.src = imageUrls.full;
+                }
+              }}
             />
           ) : null}
 
