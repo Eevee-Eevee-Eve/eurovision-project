@@ -14,7 +14,7 @@ import {
   submitMyPrediction,
 } from "../lib/api";
 import { useDeviceTier } from "../lib/device";
-import { resolveMediaUrl } from "../lib/media";
+import { resolveActImageUrls, resolveMediaUrl } from "../lib/media";
 import { clearRanking, loadNotes, loadRanking, saveNotes, saveRanking } from "../lib/storage";
 import type { ActEntry, ActNote, NoteTone, RoomDetails, StageKey } from "../lib/types";
 import {
@@ -31,6 +31,7 @@ import { useAccount } from "./AccountProvider";
 import { ActPoster } from "./ActPoster";
 import { ArtistAboutPanel, ArtistCountryBadge, ArtistVideoPanel } from "./ArtistSheetPanels";
 import { BottomSheet } from "./BottomSheet";
+import { ImageLightbox } from "./ImageLightbox";
 import { useLanguage } from "./LanguageProvider";
 
 function arraysEqual(left: string[], right: string[]) {
@@ -211,6 +212,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   const [submissionOpen, setSubmissionOpen] = useState(false);
   const [submissionOverrideEndsAt, setSubmissionOverrideEndsAt] = useState<string | null>(null);
   const [selectedActCode, setSelectedActCode] = useState<string | null>(null);
+  const [lightboxActCode, setLightboxActCode] = useState<string | null>(null);
   const [placePickerOpen, setPlacePickerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
@@ -386,6 +388,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   const currentStageOpen = account ? submissionOpen : globalStageOpen;
   const stageCountdown = room?.submissionCountdowns?.[stageKey] || null;
   const selectedAct = acts.find((act) => act.code === selectedActCode) || null;
+  const lightboxAct = acts.find((act) => act.code === lightboxActCode) || null;
   const selectedActLinks = useMemo(() => getActLinks(selectedAct), [selectedAct]);
   const defaultRanking = useMemo(() => createDefaultRanking(acts), [acts]);
   const actsByCode = useMemo(
@@ -1028,6 +1031,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         open={Boolean(selectedAct)}
         onClose={() => {
           setSelectedActCode(null);
+          setLightboxActCode(null);
           setPlacePickerOpen(false);
         }}
       >
@@ -1035,7 +1039,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           <div className="grid gap-4 md:gap-5">
             <div className="grid grid-cols-[4.25rem_minmax(0,1fr)] items-start gap-3 md:grid-cols-[6rem_minmax(0,1fr)] md:gap-5">
               <div className="mx-auto w-full max-w-[4.5rem] md:max-w-[6rem]">
-                <ActPoster act={selectedAct} mode="row" />
+                <ActPoster act={selectedAct} mode="row" onPhotoOpen={() => setLightboxActCode(selectedAct.code)} />
               </div>
 
               <div className="min-w-0">
@@ -1242,6 +1246,12 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           </div>
         ) : null}
       </BottomSheet>
+
+      <ImageLightbox
+        src={lightboxAct ? resolveActImageUrls(lightboxAct.photoUrl).full : null}
+        alt={lightboxAct ? `${lightboxAct.artist} photo` : ""}
+        onClose={() => setLightboxActCode(null)}
+      />
 
       <BottomSheet open={confirmResetOpen} onClose={() => setConfirmResetOpen(false)}>
         <div className="grid gap-5">

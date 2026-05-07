@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { deleteTemporaryRoom, fetchActs, fetchRoom } from "../lib/api";
 import { useDeviceTier } from "../lib/device";
-import { resolveMediaUrl } from "../lib/media";
+import { resolveActImageUrls, resolveMediaUrl } from "../lib/media";
 import type { ActEntry, RoomDetails } from "../lib/types";
 import { useLanguage } from "./LanguageProvider";
 
@@ -285,7 +285,8 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
             {previewActs.length ? (
               <div className="mt-5 grid grid-cols-2 gap-2">
                 {previewActs.map((act) => {
-                  const photoUrl = resolveMediaUrl(act.photoUrl);
+                  const imageUrls = resolveActImageUrls(act.photoUrl);
+                  const photoUrl = imageUrls.thumbnail;
                   const flagUrl = resolveMediaUrl(act.flagUrl);
                   if (!photoUrl) return null;
 
@@ -294,8 +295,16 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
                       <img
                         src={photoUrl}
                         alt={`${act.artist} — ${act.song}`}
+                        width={420}
+                        height={320}
                         className="h-full w-full object-cover"
                         loading="lazy"
+                        decoding="async"
+                        onError={(event) => {
+                          if (imageUrls.full && event.currentTarget.src !== imageUrls.full) {
+                            event.currentTarget.src = imageUrls.full;
+                          }
+                        }}
                       />
                       <div className="room-lobby-stage-overlay">
                         <div className="flex items-center gap-2">
@@ -303,8 +312,11 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
                             <img
                               src={flagUrl || undefined}
                               alt={act.country}
+                              width={20}
+                              height={20}
                               className="h-full w-full object-cover"
                               loading="lazy"
+                              decoding="async"
                             />
                           </div>
                           <p className="text-xs font-semibold text-white">{act.country}</p>
@@ -346,7 +358,8 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
               <div className="room-lobby-stage-grid room-lobby-stage-grid-desktop">
                 {previewActs.length ? (
                   previewActs.map((act, index) => {
-                    const photoUrl = resolveMediaUrl(act.photoUrl);
+                    const imageUrls = resolveActImageUrls(act.photoUrl);
+                    const photoUrl = imageUrls.thumbnail;
                     const flagUrl = resolveMediaUrl(act.flagUrl);
                     if (!photoUrl) return null;
 
@@ -358,8 +371,16 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
                         <img
                           src={photoUrl}
                           alt={`${act.artist} — ${act.song}`}
+                          width={640}
+                          height={420}
                           className="h-full w-full object-cover"
                           loading="lazy"
+                          decoding="async"
+                          onError={(event) => {
+                            if (imageUrls.full && event.currentTarget.src !== imageUrls.full) {
+                              event.currentTarget.src = imageUrls.full;
+                            }
+                          }}
                         />
                         <div className="room-lobby-stage-overlay">
                           <div className="flex items-center gap-2">
@@ -367,8 +388,11 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
                               <img
                                 src={flagUrl || undefined}
                                 alt={act.country}
+                                width={24}
+                                height={24}
                                 className="h-full w-full object-cover"
                                 loading="lazy"
+                                decoding="async"
                               />
                             </div>
                             <p className="text-sm font-semibold text-white">{act.country}</p>

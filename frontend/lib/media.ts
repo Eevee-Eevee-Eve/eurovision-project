@@ -20,3 +20,27 @@ export function resolveMediaUrl(value?: string | null) {
 
   return value;
 }
+
+function deriveActThumbnailUrl(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const cleanValue = value.split(/[?#]/)[0];
+  const match = cleanValue.match(/^(\/media\/acts\/2026\/)([^/]+)\.(?:jpe?g|png|webp)$/i);
+  if (!match) {
+    return null;
+  }
+
+  return `${match[1]}thumbs/${match[2]}.jpg`;
+}
+
+export function resolveActImageUrls(value?: string | null) {
+  const full = resolveMediaUrl(value);
+  const thumbnail = resolveMediaUrl(deriveActThumbnailUrl(value)) || full;
+
+  return {
+    full,
+    thumbnail,
+  };
+}

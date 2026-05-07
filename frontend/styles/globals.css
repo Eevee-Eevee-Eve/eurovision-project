@@ -321,20 +321,31 @@ select {
   }
 
   .stats-tabs {
-    gap: 0.25rem;
-    padding: 0.3rem;
+    display: flex;
+    gap: 0.45rem;
+    overflow-x: auto;
+    padding: 0.35rem;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .stats-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .stats-tab-button {
-    min-height: 2.45rem;
-    gap: 0.28rem;
-    font-size: 0.63rem;
-    letter-spacing: 0.02em;
+    min-height: 2.75rem;
+    flex: 0 0 auto;
+    gap: 0.4rem;
+    padding: 0 0.9rem;
+    scroll-snap-align: start;
+    font-size: 0.875rem;
+    letter-spacing: 0;
   }
 
   .stats-tab-button svg {
-    width: 0.85rem;
-    height: 0.85rem;
+    width: 1rem;
+    height: 1rem;
   }
 
   .stats-scroll-list {
@@ -1661,4 +1672,48 @@ select {
   height: 1px;
   width: 100%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+}
+
+@media (max-width: 768px) {
+  body::before,
+  body::after {
+    animation: none;
+    filter: blur(58px);
+    opacity: 0.22;
+  }
+
+  .stats-bar,
+  .arena-button-room,
+  .show-card::after,
+  .show-panel::before,
+  .show-panel-muted::before,
+  .live-results-row-moving::after,
+  .live-final-points-hot {
+    animation: none !important;
+  }
+
+  .show-panel::before,
+  .show-panel-muted::before,
+  .live-results-row::after {
+    opacity: 0.08;
+    transform: none;
+  }
+
+  .shadow-glow,
+  .live-top3-row,
+  .live-top3-rank,
+  .show-rank,
+  .show-avatar,
+  .stats-donut {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      0 10px 22px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .live-final-row-moving,
+  .live-cutoff-row {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      0 10px 22px rgba(0, 0, 0, 0.18) !important;
+  }
 }
