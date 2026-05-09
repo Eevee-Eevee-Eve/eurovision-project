@@ -21,9 +21,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(199, 153, 255, 0.14), transparent 30%),
-    linear-gradient(140deg, rgba(255, 99, 194, 0.08), transparent 30%),
-    #0d0d1c;
+    linear-gradient(180deg, #0d0d1c 0%, #111122 52%, #0b0b18 100%);
   color: #e9e6fc;
   font-family: var(--font-body), "Segoe UI", sans-serif;
   overflow-x: hidden;
@@ -36,26 +34,6 @@ body {
 body::before,
 body::after {
   content: none;
-}
-
-body::before {
-  top: -6rem;
-  left: -7rem;
-  width: 28rem;
-  height: 28rem;
-  background:
-    radial-gradient(circle, rgba(255, 99, 194, 0.28) 0%, rgba(199, 153, 255, 0.16) 42%, transparent 74%);
-  animation: ambient-blob-drift 22s ease-in-out infinite alternate;
-}
-
-body::after {
-  right: -9rem;
-  top: 20vh;
-  width: 30rem;
-  height: 30rem;
-  background:
-    radial-gradient(circle, rgba(129, 236, 255, 0.24) 0%, rgba(87, 122, 255, 0.14) 44%, transparent 76%);
-  animation: ambient-blob-drift 28s ease-in-out infinite alternate-reverse;
 }
 
 a {
@@ -197,7 +175,7 @@ select {
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
-    radial-gradient(circle at top right, rgba(129, 236, 255, 0.1), transparent 34%),
+    linear-gradient(135deg, rgba(129, 236, 255, 0.045), transparent 42%),
     rgba(255, 255, 255, 0.035);
   padding: 0.5rem;
 }
@@ -471,9 +449,7 @@ select {
   inset: 0;
   background:
     linear-gradient(90deg, rgba(13, 13, 28, 0.64), rgba(13, 13, 28, 0.28) 46%, rgba(13, 13, 28, 0.72)),
-    linear-gradient(180deg, rgba(13, 13, 28, 0.08), rgba(13, 13, 28, 0.9)),
-    radial-gradient(circle at top right, rgba(129, 236, 255, 0.22), transparent 38%),
-    radial-gradient(circle at top left, rgba(255, 99, 194, 0.2), transparent 42%);
+    linear-gradient(180deg, rgba(13, 13, 28, 0.08), rgba(13, 13, 28, 0.9));
 }
 
 .country-history-flag {
@@ -1037,22 +1013,12 @@ select {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at top right, rgba(129, 236, 255, 0.08), transparent 28%),
-    linear-gradient(130deg, rgba(255, 99, 194, 0.08), transparent 38%);
+    linear-gradient(130deg, rgba(255, 255, 255, 0.035), transparent 44%);
   pointer-events: none;
 }
 
 .show-card::after {
-  content: "";
-  position: absolute;
-  inset: -35%;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(118deg, transparent 32%, rgba(255, 255, 255, 0.025) 43%, rgba(129, 236, 255, 0.08) 50%, rgba(255, 99, 194, 0.06) 56%, transparent 67%);
-  opacity: 0.55;
-  transform: translate3d(-18%, 0, 0) rotate(6deg);
-  animation: ambient-card-sheen 18s ease-in-out infinite;
+  content: none;
 }
 
 .home-flow-create {
@@ -1065,8 +1031,7 @@ select {
 
 .home-flow-create::before {
   background:
-    radial-gradient(circle at top left, rgba(255, 99, 194, 0.16), transparent 26%),
-    linear-gradient(145deg, rgba(199, 153, 255, 0.12), transparent 42%);
+    linear-gradient(145deg, rgba(255, 99, 194, 0.095), transparent 42%);
 }
 
 .home-flow-join {
@@ -1079,8 +1044,7 @@ select {
 
 .home-flow-join::before {
   background:
-    radial-gradient(circle at top right, rgba(129, 236, 255, 0.18), transparent 28%),
-    linear-gradient(145deg, rgba(87, 122, 255, 0.12), transparent 44%);
+    linear-gradient(145deg, rgba(129, 236, 255, 0.095), transparent 44%);
 }
 
 .room-lobby-hero {
@@ -1094,9 +1058,7 @@ select {
 
 .room-lobby-hero::before {
   background:
-    radial-gradient(circle at top right, rgba(129, 236, 255, 0.14), transparent 24%),
-    radial-gradient(circle at bottom left, rgba(255, 99, 194, 0.12), transparent 28%),
-    linear-gradient(145deg, rgba(87, 122, 255, 0.08), transparent 46%);
+    linear-gradient(145deg, rgba(129, 236, 255, 0.075), rgba(255, 99, 194, 0.045) 38%, transparent 62%);
 }
 
 .room-lobby-hero::after {
@@ -1142,14 +1104,12 @@ select {
 
 .room-lobby-vote::before {
   background:
-    radial-gradient(circle at top left, rgba(255, 99, 194, 0.14), transparent 30%),
-    linear-gradient(145deg, rgba(199, 153, 255, 0.08), transparent 42%);
+    linear-gradient(145deg, rgba(255, 99, 194, 0.085), transparent 42%);
 }
 
 .room-lobby-results::before {
   background:
-    radial-gradient(circle at top right, rgba(129, 236, 255, 0.16), transparent 30%),
-    linear-gradient(145deg, rgba(87, 122, 255, 0.08), transparent 42%);
+    linear-gradient(145deg, rgba(129, 236, 255, 0.085), transparent 42%);
 }
 
 .room-lobby-invite {
@@ -1158,8 +1118,7 @@ select {
 
 .room-lobby-invite::before {
   background:
-    radial-gradient(circle at top left, rgba(255, 99, 194, 0.12), transparent 25%),
-    linear-gradient(145deg, rgba(199, 153, 255, 0.08), transparent 44%);
+    linear-gradient(145deg, rgba(255, 99, 194, 0.075), transparent 44%);
 }
 
 .room-lobby-page {
@@ -1170,26 +1129,6 @@ select {
 .room-lobby-page::before,
 .room-lobby-page::after {
   content: none;
-}
-
-.room-lobby-page::before {
-  top: 1rem;
-  left: -5rem;
-  width: 24rem;
-  height: 24rem;
-  background:
-    radial-gradient(circle, rgba(255, 99, 194, 0.34) 0%, rgba(199, 153, 255, 0.18) 44%, transparent 74%);
-  animation: room-lobby-drift 16s ease-in-out infinite alternate;
-}
-
-.room-lobby-page::after {
-  right: -6rem;
-  top: 6rem;
-  width: 26rem;
-  height: 26rem;
-  background:
-    radial-gradient(circle, rgba(129, 236, 255, 0.28) 0%, rgba(87, 122, 255, 0.16) 46%, transparent 76%);
-  animation: room-lobby-drift 22s ease-in-out infinite alternate-reverse;
 }
 
 .room-lobby-stage-grid {
@@ -1213,7 +1152,7 @@ select {
   border-radius: 1.35rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
-    radial-gradient(circle at top, rgba(129, 236, 255, 0.12), transparent 55%),
+    linear-gradient(145deg, rgba(129, 236, 255, 0.055), transparent 58%),
     rgba(255, 255, 255, 0.04);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
@@ -1261,22 +1200,13 @@ select {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at top right, rgba(129, 236, 255, 0.18), transparent 35%),
-    linear-gradient(145deg, rgba(255, 99, 194, 0.12), transparent 44%);
+    linear-gradient(145deg, rgba(129, 236, 255, 0.075), rgba(255, 99, 194, 0.055) 38%, transparent 60%);
 }
 
 @media (max-width: 768px) {
   .ghost-grid-room::before {
     opacity: 0.35;
     background-size: 44px 44px;
-  }
-
-  .room-lobby-page::before,
-  .room-lobby-page::after,
-  .room-lobby-hero::after {
-    animation: none;
-    filter: blur(72px);
-    opacity: 0.2;
   }
 
   .room-lobby-stage-grid {
@@ -1295,24 +1225,6 @@ select {
   }
 }
 
-@keyframes room-lobby-drift {
-  0% {
-    transform: translate3d(-3%, -2%, 0) scale(1);
-  }
-  100% {
-    transform: translate3d(3%, 4%, 0) scale(1.12);
-  }
-}
-
-@keyframes ambient-blob-drift {
-  0% {
-    transform: translate3d(-4%, -2%, 0) scale(1);
-  }
-  100% {
-    transform: translate3d(4%, 5%, 0) scale(1.14);
-  }
-}
-
 @keyframes stats-bar-flow {
   0%,
   100% {
@@ -1321,30 +1233,6 @@ select {
 
   50% {
     background-position: 100% 50%;
-  }
-}
-
-@keyframes ambient-card-sheen {
-  0%,
-  100% {
-    transform: translate3d(-20%, 0, 0) rotate(6deg);
-    opacity: 0.42;
-  }
-  50% {
-    transform: translate3d(18%, -2%, 0) rotate(6deg);
-    opacity: 0.68;
-  }
-}
-
-@keyframes ambient-panel-sheen {
-  0%,
-  100% {
-    transform: translate3d(-24%, 0, 0) rotate(5deg);
-    opacity: 0.2;
-  }
-  50% {
-    transform: translate3d(14%, -1%, 0) rotate(5deg);
-    opacity: 0.4;
   }
 }
 
@@ -1414,16 +1302,7 @@ select {
 }
 
 .show-panel::before {
-  content: "";
-  position: absolute;
-  inset: -40%;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(120deg, transparent 38%, rgba(129, 236, 255, 0.055) 50%, rgba(255, 255, 255, 0.02) 56%, transparent 68%);
-  opacity: 0.32;
-  transform: translate3d(-22%, 0, 0) rotate(5deg);
-  animation: ambient-panel-sheen 22s ease-in-out infinite;
+  content: none;
 }
 
 .show-panel-muted {
@@ -1437,16 +1316,7 @@ select {
 }
 
 .show-panel-muted::before {
-  content: "";
-  position: absolute;
-  inset: -40%;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(122deg, transparent 40%, rgba(199, 153, 255, 0.035) 52%, rgba(129, 236, 255, 0.03) 58%, transparent 70%);
-  opacity: 0.26;
-  transform: translate3d(-20%, 0, 0) rotate(4deg);
-  animation: ambient-panel-sheen 26s ease-in-out infinite reverse;
+  content: none;
 }
 
 .show-card > *,
@@ -1509,22 +1379,19 @@ select {
 
 .live-podium-1 {
   background:
-    radial-gradient(circle at top left, rgba(255, 214, 102, 0.18), transparent 42%),
-    radial-gradient(circle at bottom right, rgba(255, 99, 194, 0.08), transparent 38%),
+    linear-gradient(135deg, rgba(255, 214, 102, 0.12), rgba(255, 99, 194, 0.035) 48%, transparent 70%),
     rgba(255, 255, 255, 0.04);
 }
 
 .live-podium-2 {
   background:
-    radial-gradient(circle at top left, rgba(205, 224, 255, 0.14), transparent 42%),
-    radial-gradient(circle at bottom right, rgba(129, 236, 255, 0.08), transparent 38%),
+    linear-gradient(135deg, rgba(205, 224, 255, 0.095), rgba(129, 236, 255, 0.035) 48%, transparent 70%),
     rgba(255, 255, 255, 0.04);
 }
 
 .live-podium-3 {
   background:
-    radial-gradient(circle at top left, rgba(255, 173, 102, 0.16), transparent 42%),
-    radial-gradient(circle at bottom right, rgba(255, 99, 194, 0.08), transparent 38%),
+    linear-gradient(135deg, rgba(255, 173, 102, 0.11), rgba(255, 99, 194, 0.035) 48%, transparent 70%),
     rgba(255, 255, 255, 0.04);
 }
 
@@ -1545,7 +1412,7 @@ select {
 .live-cutoff-below-row {
   border-color: rgba(255, 255, 255, 0.05);
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.03), transparent 46%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.025), transparent 46%),
     rgba(255, 255, 255, 0.028);
 }
 
@@ -1633,7 +1500,6 @@ select {
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
-    radial-gradient(circle at top, rgba(129, 236, 255, 0.12), transparent 55%),
     linear-gradient(160deg, rgba(255, 99, 194, 0.1), rgba(255, 255, 255, 0.02)),
     rgba(36, 36, 58, 0.92);
   box-shadow:
@@ -1650,9 +1516,7 @@ select {
 @media (max-width: 768px) {
   body::before,
   body::after {
-    animation: none;
-    filter: blur(58px);
-    opacity: 0.22;
+    content: none;
   }
 
   .stats-bar,

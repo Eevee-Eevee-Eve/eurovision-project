@@ -392,7 +392,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         layout="position"
         className={`show-panel live-results-row live-room-player-row ${isMoving ? "live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${dense ? "h-[3.1rem] px-2 py-[0.15rem]" : compact ? "px-3 py-2" : "p-3 md:p-4"} flex items-center ${dense ? "gap-1.5" : "gap-3 md:gap-4"} ${
           isCurrentUser
-            ? "border-cyan-300/20 bg-[radial-gradient(circle_at_top_left,rgba(129,236,255,0.16),transparent_52%),rgba(255,255,255,0.04)] shadow-[0_0_0_1px_rgba(129,236,255,0.08),0_24px_40px_rgba(44,86,120,0.2)]"
+            ? "border-cyan-300/20 bg-[linear-gradient(135deg,rgba(129,236,255,0.075),transparent_56%),rgba(255,255,255,0.04)] shadow-[0_0_0_1px_rgba(129,236,255,0.08),0_24px_40px_rgba(44,86,120,0.2)]"
             : ""
         }`}
         animate={isCurrentUser ? {
@@ -450,7 +450,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         transition={rowTransition}
         className={`show-panel live-results-row ${desktopRowClass} text-left transition hover:border-cyan-200/18 focus:outline-none focus:ring-2 focus:ring-arenaBeam/35 ${isMoving ? "live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${isCutoffRow ? "live-cutoff-row" : ""} ${isBelowCutoffRow ? "live-cutoff-below-row" : ""} ${!isSemi && act.revealed ? "live-final-row" : ""} ${!isSemi && isMoving ? "live-final-row-moving" : ""} ${
           isQualifier
-            ? "border-emerald-300/12 bg-[radial-gradient(circle_at_top_left,rgba(70,220,165,0.12),transparent_46%),rgba(255,255,255,0.03)]"
+            ? "border-emerald-300/12 bg-[linear-gradient(135deg,rgba(70,220,165,0.065),transparent_52%),rgba(255,255,255,0.03)]"
             : ""
         } ${act.revealed ? "" : "opacity-80"}`}
       >
@@ -521,7 +521,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         transition={rowTransition}
         className={`show-panel-muted flex min-w-0 items-center gap-3 px-3 py-2.5 text-left transition hover:border-cyan-200/18 focus:outline-none focus:ring-2 focus:ring-arenaBeam/35 ${
           isSemi && isQualifier
-            ? "border-emerald-300/12 bg-[radial-gradient(circle_at_top_left,rgba(70,220,165,0.12),transparent_46%),rgba(255,255,255,0.03)]"
+            ? "border-emerald-300/12 bg-[linear-gradient(135deg,rgba(70,220,165,0.065),transparent_52%),rgba(255,255,255,0.03)]"
             : ""
         }`}
       >

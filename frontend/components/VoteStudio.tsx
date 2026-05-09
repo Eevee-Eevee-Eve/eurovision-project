@@ -150,7 +150,7 @@ function SortableOrderRow({
       }}
       className={`show-card transform-gpu p-2.5 will-change-transform transition-shadow duration-200 md:p-3 ${
         isQualifier
-          ? "border-emerald-300/12 bg-[radial-gradient(circle_at_top_left,rgba(70,220,165,0.12),transparent_48%),rgba(255,255,255,0.03)]"
+          ? "border-emerald-300/12 bg-[linear-gradient(135deg,rgba(70,220,165,0.065),transparent_54%),rgba(255,255,255,0.03)]"
           : ""
       } ${isDragging ? "scale-[0.995] shadow-[0_28px_80px_rgba(0,0,0,0.34)]" : ""}`}
     >

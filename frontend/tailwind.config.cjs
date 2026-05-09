@@ -31,7 +31,7 @@ module.exports = {
       },
       backgroundImage: {
         "arena-grid":
-          "radial-gradient(circle at top, rgba(199,153,255,0.14), transparent 38%), linear-gradient(120deg, rgba(255,99,194,0.08), transparent 34%), linear-gradient(180deg, #0d0d1c 0%, #111122 48%, #0d0d1c 100%)",
+          "linear-gradient(180deg, #0d0d1c 0%, #111122 48%, #0d0d1c 100%)",
       },
     },
   },

@@ -146,7 +146,7 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
   return (
     <div className="grid gap-5">
       <section className="show-card overflow-hidden p-5 md:p-6 xl:p-7">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(129,236,255,0.12),transparent_26%),radial-gradient(circle_at_top_right,rgba(255,99,194,0.1),transparent_28%),linear-gradient(140deg,rgba(255,255,255,0.04),transparent_40%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(140deg,rgba(129,236,255,0.055),rgba(255,99,194,0.035)_38%,transparent_62%)]" />
         <div className="relative z-10 grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>
             <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.players.kicker}</p>
