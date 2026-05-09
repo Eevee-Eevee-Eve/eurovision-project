@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Activity, Clock3, KeyRound, Lock, LogOut, MonitorPlay, RefreshCw, RotateCcw, Settings2, ShieldCheck, Trophy, Unlock, Users } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   closeAdminRoom,
   completeContest,
@@ -30,7 +30,6 @@ import {
 } from "../lib/api";
 import { STAGE_OPTIONS } from "../lib/rooms";
 import type { ActEntry, AdminRoomSnapshot, AdminSessionPayload, AdminUserEntry, RoomSummary, ShowHighlightMode, StageKey } from "../lib/types";
-import { ActPoster } from "./ActPoster";
 import { BrandLogo } from "./BrandLogo";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useLanguage } from "./LanguageProvider";
@@ -225,6 +224,10 @@ export function AdminControlRoom() {
     manualRescue: false,
   });
   const [timeNow, setTimeNow] = useState(Date.now());
+  const [autoPublish, setAutoPublish] = useState(true);
+  const [draftDirty, setDraftDirty] = useState(false);
+  const suppressResultsRefreshCountRef = useRef(0);
+  const draftVersionRef = useRef(0);
 
   const copy = useMemo(() => (
     language === "ru"
@@ -426,6 +429,66 @@ export function AdminControlRoom() {
         }
   ), [getStageLabel, language]);
 
+  const adminUx = useMemo(() => (
+    language === "ru"
+      ? {
+          stageTabsHint: "Выбери этап, который сейчас ведёшь: данные и публикация переключаются вместе с вкладкой.",
+          scoringUnifiedTitle: "Единая система очков",
+          scoringUnifiedHint: "Этот профиль применяется ко всем комнатам, чтобы статистика сезона считалась одинаково.",
+          scoringRecommended: "Рекомендую Balanced: 10 очков за точное место, 7 за промах на одну позицию, 5 за две, 3 за три, 2 за четыре, 1 за пять.",
+          scoringProfiles: {
+            balanced: "Balanced: универсальный режим для вечеринки, меньше ничьих и понятная награда за близкие места.",
+            classic: "Classic 3-2-1: самый простой режим, но при большом числе игроков чаще получаются ничьи.",
+            precision: "Precision: более жёсткий режим, сильно награждает точные попадания.",
+          } as Record<string, string>,
+          scoringLabels: {
+            balanced: "Стандартный",
+            classic: "Простой 3-2-1",
+            precision: "Точный",
+          } as Record<string, string>,
+          autoPublish: "Публиковать автоматически",
+          autoPublishOn: "Автопубликация включена",
+          autoPublishOff: "Черновик публикуется только кнопкой",
+          autoPublishHintFinal: "В финале каждое введённое значение сразу уходит на экран результатов.",
+          autoPublishHintSemi: "В полуфинале экран обновится сразу, когда заполнены все места без дублей.",
+          autoPublished: "Изменения опубликованы на экране.",
+          draftSaved: "Черновик сохранён. До публикации зрители его не видят.",
+          semiWaiting: "Полуфинал пока в черновике: заполни места всем странам без дублей.",
+          countryColumn: "Страна",
+          publishedColumn: "На экране",
+          roomToolsTitle: "Комната и участники",
+          roomToolsText: "Здесь можно кикнуть участника, вернуть доступ, сбросить ответы, закрыть временную комнату или полностью очистить её данные.",
+        }
+      : {
+          stageTabsHint: "Choose the stage you are running now: data and publishing follow the selected tab.",
+          scoringUnifiedTitle: "Unified scoring",
+          scoringUnifiedHint: "This profile is applied to every room so season stats are counted consistently.",
+          scoringRecommended: "Recommended: Balanced. Exact place gives 10, then 7, 5, 3, 2, and 1 point within five positions.",
+          scoringProfiles: {
+            balanced: "Balanced: best for a party, fewer ties, clear reward for close calls.",
+            classic: "Classic 3-2-1: easiest to explain, but creates more ties in bigger rooms.",
+            precision: "Precision: stricter mode that rewards exact hits heavily.",
+          } as Record<string, string>,
+          scoringLabels: {
+            balanced: "Standard",
+            classic: "Simple 3-2-1",
+            precision: "Precision",
+          } as Record<string, string>,
+          autoPublish: "Publish automatically",
+          autoPublishOn: "Auto-publish is on",
+          autoPublishOff: "Draft publishes only by button",
+          autoPublishHintFinal: "In the final, every entered value is pushed to the results screen immediately.",
+          autoPublishHintSemi: "In semi-finals, the screen updates as soon as every place is filled without duplicates.",
+          autoPublished: "Changes published to the screen.",
+          draftSaved: "Draft saved. Viewers do not see it until publishing.",
+          semiWaiting: "Semi-final is still a draft: fill every place without duplicates.",
+          countryColumn: "Country",
+          publishedColumn: "On screen",
+          roomToolsTitle: "Room and participants",
+          roomToolsText: "Kick or restore participants, reset ballots, close a temporary room, or clear its data.",
+        }
+  ), [language]);
+
   const selectedRoomMeta = rooms.find((room) => room.slug === selectedRoom) || null;
   const isMainAdmin = adminRole === "main";
   const canCloseSelectedRoom = Boolean(selectedRoomMeta?.isTemporary);
@@ -443,6 +506,48 @@ export function AdminControlRoom() {
       return acc;
     }, {});
   }, [isSemiStage, rankedRows]);
+  function buildPublishPayload(options: { quiet?: boolean } = {}) {
+    const activeRows = rankedRows.filter((row) => hasRowData(row));
+    if (!activeRows.length) {
+      return { ok: false as const, wait: false, message: copy.noData };
+    }
+
+    if (isSemiStage) {
+      const placedRows = activeRows.filter((row) => hasPlacement(row));
+      if (placedRows.length !== rows.length) {
+        return {
+          ok: false as const,
+          wait: Boolean(options.quiet),
+          message: options.quiet ? adminUx.semiWaiting : copy.semiPlaceRequired,
+        };
+      }
+
+      const placeNumbers = placedRows.map((row) => rowToNumber(row.place));
+      const hasInvalidPlace = placeNumbers.some((value) => value <= 0);
+      const uniquePlaces = new Set(placeNumbers);
+      if (hasInvalidPlace || uniquePlaces.size !== rows.length) {
+        return { ok: false as const, wait: false, message: copy.semiPlaceUnique };
+      }
+    }
+
+    const rowsToPublish = isSemiStage
+      ? [...activeRows].sort((left, right) => rowToNumber(left.place) - rowToNumber(right.place))
+      : activeRows;
+
+    return {
+      ok: true as const,
+      rowsToPublish,
+      ranking: rowsToPublish.map((row) => row.code),
+      breakdown: rowsToPublish
+        .filter((row) => hasScoreData(row))
+        .map((row) => ({
+          code: row.code,
+          jury: rowToNumber(row.jury),
+          tele: rowToNumber(row.tele),
+          total: row.total ? rowToNumber(row.total) : rowToNumber(row.jury) + rowToNumber(row.tele),
+        })),
+    };
+  }
   const resultsDeskText = isSemiStage ? copy.semiResultsDeskText : copy.resultsDeskText;
   const countdownRemainingMs = selectedStageCountdown
     ? Math.max(0, new Date(selectedStageCountdown.endsAt).getTime() - timeNow)
@@ -519,6 +624,7 @@ export function AdminControlRoom() {
       setUsers(usersPayload);
       setRows(buildEditableRows(actsPayload.acts, resultsPayload.results, selectedRoom, selectedStage, preferPublished));
       setScoringProfiles(snapshotPayload.scoringProfiles);
+      setDraftDirty(false);
     } catch (loadError) {
       console.error(loadError);
       setError(loadError instanceof Error ? loadError.message : copy.reloadFailed);
@@ -628,6 +734,10 @@ export function AdminControlRoom() {
 
     const socket = createRoomSocket(selectedRoom);
     const refresh = () => {
+      if (suppressResultsRefreshCountRef.current > 0) {
+        suppressResultsRefreshCountRef.current -= 1;
+        return;
+      }
       void loadPanelData();
     };
 
@@ -642,6 +752,8 @@ export function AdminControlRoom() {
 
   function setRowValue(code: string, field: "place" | "jury" | "tele" | "total", value: string) {
     const sanitized = toNumericString(value);
+    draftVersionRef.current += 1;
+    setDraftDirty(true);
     setRows((current) => {
       const next = current.map((row) => {
         if (row.code !== code) return row;
@@ -681,6 +793,53 @@ export function AdminControlRoom() {
       return sorted;
     });
   }
+
+  useEffect(() => {
+    if (!autoPublish || !draftDirty || !authenticated || !isMainAdmin || !selectedRoom || loadingPanel) {
+      return;
+    }
+
+    const payload = buildPublishPayload({ quiet: true });
+    if (!payload.ok) {
+      setStatusText(payload.wait ? payload.message : adminUx.draftSaved);
+      return;
+    }
+
+    suppressResultsRefreshCountRef.current += 1;
+    const publishVersion = draftVersionRef.current;
+    setPendingAction("auto-publish-results");
+    setError("");
+    publishStageResults({
+      roomSlug: selectedRoom,
+      stage: selectedStage,
+      ranking: payload.ranking,
+      breakdown: payload.breakdown,
+    })
+      .then(() => {
+        clearDraft(selectedRoom, selectedStage);
+        if (draftVersionRef.current === publishVersion) {
+          setDraftDirty(false);
+        }
+        setStatusText(adminUx.autoPublished);
+        setSnapshot((current) => current ? {
+          ...current,
+          stageOverview: {
+            ...current.stageOverview,
+            [selectedStage]: {
+              ...current.stageOverview[selectedStage],
+              revealedCount: payload.ranking.length,
+            },
+          },
+        } : current);
+      })
+      .catch((publishError) => {
+        console.error(publishError);
+        setError(publishError instanceof Error ? publishError.message : copy.reloadFailed);
+      })
+      .finally(() => {
+        setPendingAction(null);
+      });
+  }, [adminUx, authenticated, autoPublish, copy.reloadFailed, draftDirty, isMainAdmin, loadingPanel, rankedRows, rows.length, selectedRoom, selectedStage]);
 
   async function handleAdminLogin() {
     const key = adminKey.trim();
@@ -852,33 +1011,11 @@ export function AdminControlRoom() {
   async function handlePublishResults() {
     if (!selectedRoom) return;
 
-    const activeRows = rankedRows.filter((row) => hasRowData(row));
-    if (!activeRows.length) {
-      setError(copy.noData);
+    const payload = buildPublishPayload();
+    if (!payload.ok) {
+      setError(payload.message);
       return;
     }
-
-    if (isSemiStage) {
-      const placedRows = activeRows.filter((row) => hasPlacement(row));
-      if (placedRows.length > 0 && placedRows.length !== rows.length) {
-        setError(copy.semiPlaceRequired);
-        return;
-      }
-
-      if (placedRows.length === rows.length) {
-        const placeNumbers = placedRows.map((row) => rowToNumber(row.place));
-        const hasInvalidPlace = placeNumbers.some((value) => value <= 0);
-        const uniquePlaces = new Set(placeNumbers);
-        if (hasInvalidPlace || uniquePlaces.size !== rows.length) {
-          setError(copy.semiPlaceUnique);
-          return;
-        }
-      }
-    }
-
-    const rowsToPublish = isSemiStage && activeRows.every((row) => hasPlacement(row))
-      ? [...activeRows].sort((left, right) => rowToNumber(left.place) - rowToNumber(right.place))
-      : activeRows;
 
     setPendingAction("publish-results");
     setError("");
@@ -887,17 +1024,11 @@ export function AdminControlRoom() {
       await publishStageResults({
         roomSlug: selectedRoom,
         stage: selectedStage,
-        ranking: rowsToPublish.map((row) => row.code),
-        breakdown: rowsToPublish
-          .filter((row) => hasScoreData(row))
-          .map((row) => ({
-            code: row.code,
-            jury: rowToNumber(row.jury),
-            tele: rowToNumber(row.tele),
-            total: row.total ? rowToNumber(row.total) : rowToNumber(row.jury) + rowToNumber(row.tele),
-          })),
+        ranking: payload.ranking,
+        breakdown: payload.breakdown,
       });
       clearDraft(selectedRoom, selectedStage);
+      setDraftDirty(false);
       setStatusText(copy.publishedOk);
       await loadPanelData(true);
     } catch (publishError) {
@@ -1140,6 +1271,7 @@ export function AdminControlRoom() {
                     </button>
                   ))}
                 </div>
+                <p className="mt-3 text-xs leading-5 text-arenaMuted">{adminUx.stageTabsHint}</p>
               </div>
 
               {isMainAdmin ? (
@@ -1151,11 +1283,16 @@ export function AdminControlRoom() {
                     onChange={(event) => void handleScoringProfileChange(event.target.value)}
                   >
                     {scoringProfiles.map((profile) => (
-                      <option key={profile.key} value={profile.key}>{profile.label}</option>
+                      <option key={profile.key} value={profile.key}>{adminUx.scoringLabels[profile.key] || profile.label}</option>
                     ))}
                   </select>
-                  <p className="mt-3 text-xs text-arenaMuted">
-                    {scoringProfiles.find((profile) => profile.key === (snapshot?.scoringProfile || scoringProfiles[0]?.key))?.description}
+                  <p className="mt-3 text-xs font-semibold text-arenaBeam">{adminUx.scoringUnifiedTitle}</p>
+                  <p className="mt-2 text-xs leading-5 text-arenaMuted">
+                    {adminUx.scoringUnifiedHint} {adminUx.scoringRecommended}
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-arenaMuted">
+                    {adminUx.scoringProfiles[snapshot?.scoringProfile || scoringProfiles[0]?.key || "balanced"]
+                      || scoringProfiles.find((profile) => profile.key === (snapshot?.scoringProfile || scoringProfiles[0]?.key))?.description}
                   </p>
                 </label>
               ) : null}
@@ -1397,6 +1534,11 @@ export function AdminControlRoom() {
                   <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.resultsDesk}</p>
                   <h2 className="display-copy mt-3 text-3xl font-black">{getStageLabel(selectedStage)}</h2>
                   <p className="mt-3 text-sm text-arenaMuted">{resultsDeskText}</p>
+                  <p className="mt-2 text-sm text-arenaBeam">
+                    {autoPublish
+                      ? (isSemiStage ? adminUx.autoPublishHintSemi : adminUx.autoPublishHintFinal)
+                      : adminUx.autoPublishOff}
+                  </p>
                   {isSemiStage && qualificationCutoff ? (
                     <div className="mt-3">
                       <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
@@ -1406,6 +1548,14 @@ export function AdminControlRoom() {
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    className={`arena-button-secondary px-5 py-3 text-sm ${autoPublish ? "border-arenaBeam/35 text-white" : ""}`}
+                    onClick={() => setAutoPublish((current) => !current)}
+                  >
+                    {autoPublish ? <Unlock size={16} /> : <Lock size={16} />}
+                    {autoPublish ? adminUx.autoPublishOn : adminUx.autoPublish}
+                  </button>
                   <button type="button" className="arena-button-secondary px-5 py-3 text-sm" onClick={() => void handleLoadPublished()}>
                     <RotateCcw size={16} />
                     {copy.loadPublished}
@@ -1424,25 +1574,24 @@ export function AdminControlRoom() {
                   </div>
                 ) : rankedRows.map((row) => (
                   <div key={row.code} className="show-panel p-4">
-                    <div className="grid gap-4 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+                    <div className="grid gap-4 lg:grid-cols-[auto_minmax(12rem,1fr)_auto] lg:items-center">
                       <div className="flex items-center gap-4">
                         <div className="show-rank h-16 w-16 shrink-0">
                           <span className="display-copy text-3xl font-black text-arenaText">{activeRanking[row.code] || "—"}</span>
                         </div>
-                        <ActPoster act={row} compact />
                       </div>
 
                       <div className="min-w-0">
                         <div className="flex flex-wrap gap-2">
-                          <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">{row.country}</span>
-                          <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">{row.song}</span>
+                          <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">{adminUx.countryColumn}</span>
+                          <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">{row.code}</span>
                           {isSemiStage && hasPlacement(row) && qualificationCutoff ? (
                             <span className={`show-chip text-[11px] uppercase tracking-[0.22em] ${rowToNumber(row.place) <= qualificationCutoff ? "text-emerald-100" : "text-arenaMuted"}`}>
                               {rowToNumber(row.place) <= qualificationCutoff ? copy.qualifiedLabel : copy.outLabel}
                             </span>
                           ) : null}
                         </div>
-                        <p className="mt-3 text-xl font-semibold text-white">{row.artist}</p>
+                        <p className="mt-3 text-2xl font-black text-white">{row.country}</p>
                         <p className="mt-2 text-sm text-arenaMuted">
                           {isSemiStage
                             ? hasPlacement(row)
@@ -1484,9 +1633,9 @@ export function AdminControlRoom() {
 
           <div className="grid gap-4">
             <div className="show-card p-5 md:p-6">
-              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.participantDesk}</p>
+              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{adminUx.roomToolsTitle}</p>
               <h2 className="display-copy mt-3 text-3xl font-black">{selectedRoomMeta?.seasonLabel || selectedRoomMeta?.name}</h2>
-              <p className="mt-3 text-sm text-arenaMuted">{copy.participantDeskText}</p>
+              <p className="mt-3 text-sm text-arenaMuted">{adminUx.roomToolsText}</p>
             </div>
 
             <div className="grid gap-3">

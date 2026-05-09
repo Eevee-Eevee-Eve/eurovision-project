@@ -2990,17 +2990,24 @@ app.post('/api/admin/scoring', requireMainAdmin, (req, res) => {
     return res.status(404).json({ error: 'Unknown room' });
   }
 
-  const room = getRoomState(roomSlug);
-  touchRoomActivity(roomSlug);
-  room.scoringProfile = scoringProfile;
-  recomputeScores(roomSlug);
+  const updatedRooms = [];
+  getAllRooms().forEach((roomMeta) => {
+    const room = getRoomState(roomMeta.slug);
+    touchRoomActivity(roomMeta.slug);
+    room.scoringProfile = scoringProfile;
+    recomputeScores(roomMeta.slug);
+    updatedRooms.push(roomMeta.slug);
+  });
   persistState();
-  emitLeaderboard(roomSlug);
+  updatedRooms.forEach((updatedRoomSlug) => {
+    emitLeaderboard(updatedRoomSlug);
+  });
 
   return res.json({
     roomSlug,
     scoringProfile,
     scoringProfiles: getScoringProfilePayload(),
+    updatedRooms,
   });
 });
 
