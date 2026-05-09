@@ -705,7 +705,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
                   {leaders.length}
                 </span>
               </div>
-              <div className="show-scroll mt-3 grid max-w-4xl auto-rows-max content-start gap-2 overflow-y-auto pr-1">
+              <div className="show-scroll mt-3 grid auto-rows-max content-start gap-2 overflow-y-auto pr-1 xl:grid-cols-3 2xl:grid-cols-4">
                 {roomRows.length ? roomRows.map((row) => renderRoomRow(row, true, true)) : (
                   <div className="show-panel p-4 text-sm text-arenaMuted">{text.noResults}</div>
                 )}
