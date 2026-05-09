@@ -435,11 +435,11 @@ export function AdminControlRoom() {
           stageTabsHint: "Выбери этап, который сейчас ведёшь: данные и публикация переключаются вместе с вкладкой.",
           scoringUnifiedTitle: "Единая система очков",
           scoringUnifiedHint: "Этот профиль применяется ко всем комнатам, чтобы статистика сезона считалась одинаково.",
-          scoringRecommended: "Рекомендую Balanced: 10 очков за точное место, 7 за промах на одну позицию, 5 за две, 3 за три, 2 за четыре, 1 за пять.",
+          scoringRecommended: "Рекомендую «Стандартный»: финал считает близость к месту и даёт бонусы за победителя, топ-3 и топ-10; полуфиналы отдельно считают проход в финал.",
           scoringProfiles: {
-            balanced: "Balanced: универсальный режим для вечеринки, меньше ничьих и понятная награда за близкие места.",
-            classic: "Classic 3-2-1: самый простой режим, но при большом числе игроков чаще получаются ничьи.",
-            precision: "Precision: более жёсткий режим, сильно награждает точные попадания.",
+            balanced: "Стандартный: финал — 10/7/5/3/2/1 за близость к месту, плюс +15 за победителя, +6 за топ-3, +3 за топ-10. Полуфинал — +4 за угаданный проход, +1 за верно оставленного вне финала, +2/+1 за точное или близкое место.",
+            classic: "Простой 3-2-1: в финале только близость к месту без бонусов, в полуфинале — проход в финал плюс маленький бонус за точное место.",
+            precision: "Точный: более строгий вариант стандартного режима, сильнее награждает точные попадания.",
           } as Record<string, string>,
           scoringLabels: {
             balanced: "Стандартный",
@@ -463,11 +463,11 @@ export function AdminControlRoom() {
           stageTabsHint: "Choose the stage you are running now: data and publishing follow the selected tab.",
           scoringUnifiedTitle: "Unified scoring",
           scoringUnifiedHint: "This profile is applied to every room so season stats are counted consistently.",
-          scoringRecommended: "Recommended: Balanced. Exact place gives 10, then 7, 5, 3, 2, and 1 point within five positions.",
+          scoringRecommended: "Recommended: Standard. The final uses placement accuracy plus winner/top bonuses; semi-finals score qualification separately.",
           scoringProfiles: {
-            balanced: "Balanced: best for a party, fewer ties, clear reward for close calls.",
-            classic: "Classic 3-2-1: easiest to explain, but creates more ties in bigger rooms.",
-            precision: "Precision: stricter mode that rewards exact hits heavily.",
+            balanced: "Standard: final gives 10/7/5/3/2/1 for placement accuracy, plus +15 for the winner, +6 for top-3, +3 for top-10. Semi-finals give +4 for each qualifier hit, +1 for a correct non-qualifier, and +2/+1 for exact or near places.",
+            classic: "Simple 3-2-1: final uses placement distance without bonuses; semi-finals score qualification with a small exact-place bonus.",
+            precision: "Precision: a stricter standard-style mode that rewards exact hits more heavily.",
           } as Record<string, string>,
           scoringLabels: {
             balanced: "Standard",

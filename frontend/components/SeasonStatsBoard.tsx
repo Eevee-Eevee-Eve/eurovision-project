@@ -111,6 +111,19 @@ export function SeasonStatsBoard({ roomSlug }: { roomSlug: string }) {
 
   const topPlayers = stats.players.slice(0, 3);
   const remainingPlayers = stats.players.slice(3);
+  const scoringProfileLabel = (
+    language === "ru"
+      ? {
+          balanced: "Стандартный",
+          classic: "Простой 3-2-1",
+          precision: "Точный",
+        }
+      : {
+          balanced: "Standard",
+          classic: "Simple 3-2-1",
+          precision: "Precision",
+        }
+  )[stats.scoringProfile] || stats.scoringProfile;
 
   function renderPlayerCard(player: PlayerSeasonStats, featured = false) {
     return (
@@ -233,7 +246,7 @@ export function SeasonStatsBoard({ roomSlug }: { roomSlug: string }) {
         </div>
         <div className="show-card p-4">
           <p className="label-copy text-[11px] uppercase tracking-[0.22em] text-arenaMuted">{copy.scoring}</p>
-          <p className="mt-3 text-lg font-semibold text-white">{stats.scoringProfile}</p>
+          <p className="mt-3 text-lg font-semibold text-white">{scoringProfileLabel}</p>
         </div>
         <div className="show-card p-4">
           <p className="label-copy text-[11px] uppercase tracking-[0.22em] text-arenaMuted">{copy.leader}</p>
