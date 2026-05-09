@@ -35,14 +35,7 @@ body {
 
 body::before,
 body::after {
-  content: "";
-  position: fixed;
-  z-index: -2;
-  pointer-events: none;
-  border-radius: 9999px;
-  filter: blur(110px);
-  opacity: 0.42;
-  mix-blend-mode: screen;
+  content: none;
 }
 
 body::before {
@@ -1107,21 +1100,7 @@ select {
 }
 
 .room-lobby-hero::after {
-  content: "";
-  position: absolute;
-  inset: -24%;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle, rgba(129, 236, 255, 0.2), transparent 34%),
-    radial-gradient(circle, rgba(255, 99, 194, 0.18), transparent 32%),
-    radial-gradient(circle, rgba(199, 153, 255, 0.14), transparent 28%);
-  background-position: 8% 20%, 86% 16%, 56% 76%;
-  background-size: 44rem 44rem, 34rem 34rem, 28rem 28rem;
-  filter: blur(44px);
-  opacity: 0.68;
-  mix-blend-mode: screen;
-  animation: room-lobby-drift 18s ease-in-out infinite alternate;
+  content: none;
 }
 
 .room-lobby-hero > * {
@@ -1190,13 +1169,7 @@ select {
 
 .room-lobby-page::before,
 .room-lobby-page::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  border-radius: 9999px;
-  filter: blur(96px);
-  opacity: 0.42;
-  pointer-events: none;
+  content: none;
 }
 
 .room-lobby-page::before {
