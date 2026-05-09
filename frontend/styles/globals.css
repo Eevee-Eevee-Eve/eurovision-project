@@ -542,7 +542,10 @@ select {
 }
 
 .glass-panel {
-  background: rgba(18, 18, 34, 0.72);
+  background:
+    linear-gradient(135deg, rgba(129, 236, 255, 0.055), transparent 34%),
+    linear-gradient(315deg, rgba(255, 99, 194, 0.06), transparent 36%),
+    rgba(18, 18, 34, 0.72);
   backdrop-filter: blur(20px);
 }
 
@@ -998,8 +1001,11 @@ select {
   isolation: isolate;
   overflow: hidden;
   border-radius: 1.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(129, 236, 255, 0.1);
   background:
+    linear-gradient(90deg, rgba(129, 236, 255, 0.16), rgba(255, 99, 194, 0.14)) top / 100% 1px no-repeat,
+    linear-gradient(180deg, rgba(255, 99, 194, 0.06), transparent 28%),
+    linear-gradient(135deg, rgba(129, 236, 255, 0.055), transparent 38%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.025)),
     rgba(17, 18, 34, 0.84);
   box-shadow:
@@ -1013,7 +1019,8 @@ select {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(130deg, rgba(255, 255, 255, 0.035), transparent 44%);
+    linear-gradient(130deg, rgba(255, 255, 255, 0.04), transparent 42%),
+    linear-gradient(90deg, rgba(129, 236, 255, 0.055), transparent 16%, transparent 84%, rgba(255, 99, 194, 0.05));
   pointer-events: none;
 }
 
