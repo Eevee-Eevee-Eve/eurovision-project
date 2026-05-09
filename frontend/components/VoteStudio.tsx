@@ -4,7 +4,7 @@ import { closestCenter, DndContext, KeyboardSensor, PointerSensor, type DragEndE
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Check, CheckCircle2, ChevronDown, GripVertical, Lock, RotateCcw, Send } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, CheckCircle2, ChevronDown, GripVertical, Info, Lock, RotateCcw, Send } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
   createRoomSocket,
@@ -291,6 +291,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           savedBadge: "Заметка",
           openActHint: "Тапни по артисту, чтобы открыть фото, описание, видео и заметки",
           resultsLink: "Результаты",
+          scoringTitle: "Как считаются очки",
+          scoringFinal: "Финал: за каждую страну начисляются очки за близость к официальному месту: 10/7/5/3/2/1. Бонусы сверху: +15 за победителя, +6 если страна угадана в топ-3, +3 если угадана в топ-10.",
+          scoringSemi: "Полуфинал: главное угадать проход. +4 за страну, которую ты поставил в проходную зону и она прошла; +1 за верно оставленную вне финала; +2/+1 за точное или близкое место.",
           placeOptionCurrent: (place: number) => `#${place} — сейчас здесь`,
           placeOptionOccupied: (place: number, artist: string) => `#${place} — сейчас ${artist}`,
           placeOptionFree: (place: number) => `#${place} — свободно`,
@@ -359,6 +362,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           savedBadge: "Note",
           openActHint: "Tap an act to open photo, details, video, and notes",
           resultsLink: "Results",
+          scoringTitle: "How points work",
+          scoringFinal: "Final: every country scores for placement accuracy: 10/7/5/3/2/1. Extra bonuses: +15 for the winner, +6 when a country is correctly placed in the top 3, and +3 for the top 10.",
+          scoringSemi: "Semi-final: qualification matters most. +4 for every country you place in the qualifying zone that qualifies, +1 for a correct non-qualifier, and +2/+1 for exact or near places.",
           placeOptionCurrent: (place: number) => `#${place} — currently here`,
           placeOptionOccupied: (place: number, artist: string) => `#${place} — now ${artist}`,
           placeOptionFree: (place: number) => `#${place} — free`,
@@ -857,6 +863,20 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
             </div>
           </section>
         ) : null}
+
+        <section className="show-panel-muted border border-arenaBeam/10 px-3 py-3 md:p-4">
+          <div className="flex gap-3">
+            <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-arenaBeam/16 bg-arenaBeam/10 text-arenaBeam">
+              <Info size={15} />
+            </span>
+            <div className="min-w-0">
+              <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{text.scoringTitle}</p>
+              <p className="mt-2 text-xs leading-6 text-arenaMuted md:text-sm">
+                {stageKey === "final" ? text.scoringFinal : text.scoringSemi}
+              </p>
+            </div>
+          </div>
+        </section>
 
         <section className="show-card px-4 py-3 md:p-4">
           <div>

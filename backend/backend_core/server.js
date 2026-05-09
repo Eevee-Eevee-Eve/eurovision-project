@@ -80,21 +80,36 @@ const MAX_SUBMISSION_OVERRIDE_MINUTES = 30;
 const SCORING_PROFILES = {
   balanced: {
     key: 'balanced',
-    label: 'Balanced',
-    description: 'Recommended for bigger rooms. Exact and near placements matter, ties are much rarer.',
-    distancePoints: [10, 7, 5, 3, 2, 1],
+    label: 'Standard',
+    description: 'Final: placement accuracy plus winner/top bonuses. Semi-finals: qualifiers matter most, exact places are only a small bonus.',
+    finalDistancePoints: [10, 7, 5, 3, 2, 1],
+    finalWinnerBonus: 15,
+    finalTop3Bonus: 6,
+    finalTop10Bonus: 3,
+    semiQualifierPoints: 4,
+    semiNonQualifierPoints: 1,
+    semiDistancePoints: [2, 1],
   },
   classic: {
     key: 'classic',
-    label: 'Classic 3-2-1',
-    description: 'Closest to the original prototype. Very easy to explain, but creates more ties.',
-    distancePoints: [3, 2, 1],
+    label: 'Simple 3-2-1',
+    description: 'Simple final placement accuracy, with qualification-focused semi-finals.',
+    finalDistancePoints: [3, 2, 1],
+    semiQualifierPoints: 3,
+    semiNonQualifierPoints: 1,
+    semiDistancePoints: [1],
   },
   precision: {
     key: 'precision',
     label: 'Precision',
-    description: 'Rewards exact placement heavily and keeps a sharper spread near the correct spot.',
-    distancePoints: [12, 8, 5, 3, 1],
+    description: 'Strict placement accuracy. Rewards exact and near places more sharply than the standard mode.',
+    finalDistancePoints: [12, 8, 5, 3, 1],
+    finalWinnerBonus: 18,
+    finalTop3Bonus: 8,
+    finalTop10Bonus: 4,
+    semiQualifierPoints: 4,
+    semiNonQualifierPoints: 1,
+    semiDistancePoints: [3, 1],
   },
 };
 const DEFAULT_SCORING_PROFILE = 'balanced';
@@ -1178,8 +1193,42 @@ function getDisplayName(user) {
     || `Viewer #${String(user.id || '').slice(0, 4).toUpperCase()}`;
 }
 
-function getDistancePoints(profile, distance) {
-  return profile.distancePoints[distance] || 0;
+function getDistancePoints(profile, distance, stageKey) {
+  const points = stageKey === 'final'
+    ? profile.finalDistancePoints || profile.distancePoints || []
+    : profile.semiDistancePoints || profile.distancePoints || [];
+  return points[distance] || 0;
+}
+
+function getPredictionBonusPoints(profile, stageKey, predictionIndex, resultIndex) {
+  if (stageKey === 'final') {
+    let bonus = 0;
+    if (predictionIndex === 0 && resultIndex === 0) {
+      bonus += profile.finalWinnerBonus || 0;
+    }
+    if (predictionIndex < 3 && resultIndex < 3) {
+      bonus += profile.finalTop3Bonus || 0;
+    }
+    if (predictionIndex < 10 && resultIndex < 10) {
+      bonus += profile.finalTop10Bonus || 0;
+    }
+    return bonus;
+  }
+
+  const cutoff = getStageLineupMeta(stageKey).qualificationCutoff;
+  if (!cutoff) {
+    return 0;
+  }
+
+  const predictedQualifier = predictionIndex < cutoff;
+  const actualQualifier = resultIndex < cutoff;
+  if (predictedQualifier && actualQualifier) {
+    return profile.semiQualifierPoints || 0;
+  }
+  if (!predictedQualifier && !actualQualifier) {
+    return profile.semiNonQualifierPoints || 0;
+  }
+  return 0;
 }
 
 function getPredictionScoreBreakdown(roomSlug, userId, stageKey) {
@@ -1199,7 +1248,8 @@ function getPredictionScoreBreakdown(roomSlug, userId, stageKey) {
     }
 
     const distance = Math.abs(resultIndex - index);
-    acc.points += getDistancePoints(profile, distance);
+    acc.points += getDistancePoints(profile, distance, stageKey);
+    acc.points += getPredictionBonusPoints(profile, stageKey, index, resultIndex);
     acc.totalDistance += distance;
     acc.comparedEntries += 1;
     if (distance === 0) {
