@@ -35,10 +35,10 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
   const boardDescription = language === "ru"
     ? boardKey === "overall"
       ? "Отдельный экран рейтинга комнаты. Здесь лучше всего видно, кто точнее всего чувствует общий итог конкурса."
-      : `Отдельный экран по этапу ${getStageLabel(boardKey)}. Движение мест и точные попадания пересчитываются после каждого нового reveal.`
+      : `Отдельный экран по этапу ${getStageLabel(boardKey)}. Движение мест и точные попадания пересчитываются после каждой публикации результатов.`
     : boardKey === "overall"
       ? "A dedicated room leaderboard screen. It shows who is reading the overall contest most accurately."
-      : `A dedicated board for ${getStageLabel(boardKey)}. Position movement and exact hits update after every new reveal.`;
+      : `A dedicated board for ${getStageLabel(boardKey)}. Position movement and exact hits update after each published result.`;
 
   useEffect(() => {
     let active = true;
@@ -163,7 +163,7 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
               {room?.showState?.highlightMode ? (
                 <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
                   <Radio size={13} />
-                  {language === "ru" ? "Live sync" : "Live sync"}
+                  {language === "ru" ? "Синхронизация" : "Sync"}
                 </span>
               ) : null}
             </div>

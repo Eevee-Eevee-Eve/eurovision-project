@@ -61,19 +61,19 @@ export default function Home() {
       language === "ru"
         ? {
             kicker: "Евровидение у Морозовых 2026",
-            titleLoggedOut: "Сначала войди в аккаунт",
+            titleLoggedOut: "Войди и присоединяйся к вечеру",
             introLoggedOut:
-              "Аккаунт нужен один раз: после входа ты сможешь открыть активную комнату или создать свою.",
-            titleLoggedIn: "Выбирай комнату и начинай вечер",
+              "Аккаунт сохранит твои ответы, аватар и место в таблице. После входа можно открыть комнату друзей или создать свою.",
+            titleLoggedIn: "Выбирай комнату и начинай голосование",
             introLoggedIn:
-              "Самый быстрый вход теперь через список активных комнат. Если нужна новая комната для друзей, создай её ниже.",
+              "Открой активную комнату из списка или создай новую для своей компании. Все ответы и результаты останутся привязаны к твоему профилю.",
             accountReady: "Аккаунт активен",
             accountReadyText:
-              "Теперь можно открыть любую активную комнату или запустить новую для своей компании.",
+              "Можно заходить в активные комнаты, создавать свои и возвращаться к голосованию с любого устройства.",
             manageAccount: "Профиль",
             activeRoomsTitle: "Активные комнаты",
             activeRoomsText:
-              "Найди свою комнату по имени. Если комната закрыта паролем, сайт спросит его уже на следующем шаге.",
+              "Здесь видны комнаты, куда сейчас можно войти. Закрытые комнаты попросят пароль перед входом.",
             roomSearchLabel: "Поиск по активным комнатам",
             roomSearchPlaceholder: "Поиск по имени комнаты",
             roomSearchEmpty: "По этому запросу пока нет активных комнат.",
@@ -81,20 +81,23 @@ export default function Home() {
             openRoom: "Открыть комнату",
             signInFirstShort: "Сначала войди",
             signInToEnterHint:
-              "Войти или создать комнату можно сразу после входа в аккаунт.",
+              "После входа кнопки комнат откроются автоматически.",
             createTitle: "Создать комнату",
             createBodyReady:
-              "Придумай имя комнаты для друзей. Если нужно, сразу защити её паролем.",
+              "Назови комнату так, чтобы друзья сразу её узнали. Пароль можно добавить, если вечер только для своих.",
             createBodyLocked:
-              "Создание комнаты откроется сразу после входа в аккаунт.",
+              "Сначала войди в аккаунт, чтобы мы знали, кому принадлежит новая комната.",
             createNameLabel: "Имя комнаты",
             createNamePlaceholder: "Например: Полуфинал у Морозовых",
+            createStageLabel: "Событие",
             createPasswordLabel: "Пароль комнаты",
             createPasswordPlaceholder: "Необязательно",
             createButton: "Создать комнату",
             createNeedAuth: "Сначала войди в аккаунт",
             createHint:
-              "Если в комнате никого нет больше 4 часов, она исчезает автоматически.",
+              "После завершения события комната уйдёт в архив, а создатель получит таблицу результатов на почту.",
+            createLimitHint: "На один аккаунт можно создать до 3 комнат.",
+            nameLengthHint: "До 64 символов.",
             temporary: "Временная",
             privateRoom: "С паролем",
             noRooms: "Пока активна только основная комната.",
@@ -102,19 +105,19 @@ export default function Home() {
           }
         : {
             kicker: "Morozov Eurovision 2026",
-            titleLoggedOut: "Sign in first",
+            titleLoggedOut: "Sign in and join the night",
             introLoggedOut:
-              "You only need one account. After that, you can open an active room or create your own.",
-            titleLoggedIn: "Pick a room and start the night",
+              "Your account keeps your picks, avatar, and place on the leaderboard. After signing in, open a friends room or create your own.",
+            titleLoggedIn: "Pick a room and start voting",
             introLoggedIn:
-              "The fastest way in is now the active room list. If you need a new room for friends, create it below.",
+              "Open an active room from the list or create a new one for your group. Picks and results stay linked to your profile.",
             accountReady: "Account ready",
             accountReadyText:
-              "You can now open any active room or create a fresh one for your group.",
+              "You can join active rooms, create your own, and return to voting from any device.",
             manageAccount: "Profile",
             activeRoomsTitle: "Active rooms",
             activeRoomsText:
-              "Find your room by name. If the room is private, the password prompt appears on the next step.",
+              "These rooms are open for joining now. Private rooms ask for a password before entry.",
             roomSearchLabel: "Search active rooms",
             roomSearchPlaceholder: "Search by room name",
             roomSearchEmpty: "No active rooms match this search.",
@@ -122,12 +125,12 @@ export default function Home() {
             openRoom: "Open room",
             signInFirstShort: "Sign in first",
             signInToEnterHint:
-              "Joining or creating a room unlocks right after you sign in.",
+              "Room buttons unlock automatically after you sign in.",
             createTitle: "Create a room",
             createBodyReady:
-              "Choose a room name your friends can recognize. Add a password if you want privacy.",
+              "Choose a name your friends will recognize. Add a password if the night is private.",
             createBodyLocked:
-              "Room creation unlocks as soon as you sign in.",
+              "Sign in first so the new room has an owner.",
             createNameLabel: "Room name",
             createNamePlaceholder: "Example: Morozov semi-final party",
             createStageLabel: "Event",

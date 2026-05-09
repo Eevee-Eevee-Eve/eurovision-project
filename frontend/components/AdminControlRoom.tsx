@@ -229,13 +229,13 @@ export function AdminControlRoom() {
   const copy = useMemo(() => (
     language === "ru"
       ? {
-          kicker: "Host Control Room",
-          title: "Пульт Евровидения у Морозовых 2026",
-          description: "Управляй окнами голосования по этапам, публикуй результаты, следи за игроками и держи сезон под контролем из одной панели.",
-          loginTitle: "Админ-сессия",
-          loginText: "Введи admin key, чтобы открыть control room. После входа сессия хранится в защищённой cookie браузера.",
-          loginButton: "Открыть control room",
-          keyPlaceholder: "Admin key",
+          kicker: "Панель организатора",
+          title: "Управление Евровидением у Морозовых 2026",
+          description: "Открывай и закрывай голосование, публикуй официальные итоги, следи за участниками и завершай конкурс из одной панели.",
+          loginTitle: "Вход для организатора",
+          loginText: "Введи ключ или отдельный логин организатора, чтобы открыть панель управления.",
+          loginButton: "Открыть панель",
+          keyPlaceholder: "Ключ организатора",
           roomsLabel: "Комната",
           stageLabel: "Этап",
           scoringLabel: "Профиль очков",
@@ -265,21 +265,21 @@ export function AdminControlRoom() {
           removed: "Удалены",
           submitted: "Отправили",
           locked: "Зафиксировано",
-          revealed: "Открыто результатов",
-          lineup: "Лайнап",
-          resultsDesk: "Пульт итогов",
-          resultsDeskText: "Рейтинг сортируется по total, затем jury, затем tele. Для пустых строк сохраняется порядок выступления.",
-          semiResultsDeskText: "Для полуфинала лучше ввести официальные места целиком. Очки жюри и телезрителей можно добавить позже, когда появится полная разбивка.",
-          juryLabel: "Jury",
-          teleLabel: "Tele",
-          totalLabel: "Total",
+          revealed: "Опубликовано итогов",
+          lineup: "Список стран",
+          resultsDesk: "Итоги этапа",
+          resultsDeskText: "Сначала заполни официальные места и очки. После публикации эти данные увидят все комнаты.",
+          semiResultsDeskText: "Для полуфинала достаточно указать официальные места всем странам. Детальные очки можно добавить позже, если они понадобятся.",
+          juryLabel: "Жюри",
+          teleLabel: "Зрители",
+          totalLabel: "Итого",
           placeLabel: "Место",
           placeMissing: "Место пока не задано",
           semiPlaceRequired: "Для публикации полуфинала задай официальные места всем странам этого этапа.",
           semiPlaceUnique: "Места полуфинала должны быть уникальными и заполненными без пропусков.",
           qualifiedLabel: "Проходит в финал",
           outLabel: "Вне проходной зоны",
-          noData: "Пока без данных",
+          noData: "Данных ещё нет",
           participantDesk: "Участники комнаты",
           participantDeskText: "Для каждого игрока можно отдельно сбросить текущий этап, очистить все этапы или временно убрать доступ к комнате.",
           resetStage: "Сбросить этап",
@@ -293,14 +293,14 @@ export function AdminControlRoom() {
           removedState: "Удалён",
           activeState: "Активен",
           hardReset: "Полный сброс комнаты",
-          hardResetText: "Очищает все бюллетени, опубликованные итоги и статусы этапов в выбранной комнате.",
+          hardResetText: "Очищает ответы участников, опубликованные итоги и состояние этапов в выбранной комнате.",
           resetRoomButton: "Сбросить комнату",
           closeRoom: "Закрыть комнату",
           closeRoomText: "Удаляет временную комнату для всех участников. Доступ и данные комнаты будут закрыты.",
           closeRoomConfirm: "Закрыть и удалить эту комнату? Это действие нельзя отменить.",
           closeRoomDone: "Комната закрыта.",
           completeContest: "Завершить конкурс",
-          completeContestText: "После полного финала фиксирует сезон и открывает рассчитанные ачивки игрокам.",
+          completeContestText: "После публикации полного финала фиксирует сезон и начисляет игрокам доступные ачивки.",
           completeContestConfirm: "Завершить конкурс и открыть ачивки? Перед этим финальная таблица должна быть опубликована полностью.",
           completeContestDone: "Конкурс завершён, ачивки рассчитаны.",
           contestCompleted: "Конкурс завершён",
@@ -308,7 +308,7 @@ export function AdminControlRoom() {
           playersBoard: "Таблица игроков",
           seasonStats: "Сезонная статистика",
           roomHub: "Хаб комнаты",
-          authFailed: "Не удалось открыть admin-сессию.",
+          authFailed: "Не удалось войти в панель организатора.",
           reloadFailed: "Не удалось обновить данные комнаты.",
           publishedOk: "Итоги этапа опубликованы.",
           stageOpenOk: "Этап открыт для всех комнат.",
@@ -323,17 +323,17 @@ export function AdminControlRoom() {
           participantRestored: "Доступ участника восстановлен.",
           roomResetDone: "Комната полностью сброшена.",
           confirmRoomReset: "Полностью очистить бюллетени, результаты и статусы этой комнаты?",
-          socketLive: "Live sync активен",
-          socketIdle: "Live sync через refresh",
+          socketLive: "Синхронизация активна",
+          socketIdle: "Нажми «Обновить», чтобы подтянуть данные",
         }
       : {
-          kicker: "Host Control Room",
-          title: "Morozov Eurovision 2026 Admin",
-          description: "Manage stage-specific voting windows, publish results, monitor players, and keep the season under control from one dashboard.",
-          loginTitle: "Admin session",
-          loginText: "Enter the admin key to unlock the control room. After login, the session is stored in a secure browser cookie.",
-          loginButton: "Open control room",
-          keyPlaceholder: "Admin key",
+          kicker: "Organizer Panel",
+          title: "Morozov Eurovision 2026 Management",
+          description: "Open and close voting, publish official results, monitor participants, and complete the contest from one panel.",
+          loginTitle: "Organizer sign-in",
+          loginText: "Enter the organizer key or dedicated organizer login to open the admin panel.",
+          loginButton: "Open panel",
+          keyPlaceholder: "Organizer key",
           roomsLabel: "Room",
           stageLabel: "Stage",
           scoringLabel: "Scoring profile",
@@ -363,11 +363,11 @@ export function AdminControlRoom() {
           removed: "Removed",
           submitted: "Submitted",
           locked: "Locked",
-          revealed: "Revealed results",
-          lineup: "Lineup",
-          resultsDesk: "Results desk",
-          resultsDeskText: "Ranking is sorted by total, then jury, then tele. Empty rows fall back to running order.",
-          semiResultsDeskText: "For semi-finals, enter the official places first. Jury and televote splits can be added later when the full breakdown is available.",
+          revealed: "Published results",
+          lineup: "Country list",
+          resultsDesk: "Stage results",
+          resultsDeskText: "Enter the official places and points first. Once published, every room will see these results.",
+          semiResultsDeskText: "For semi-finals, official places for every country are enough. Detailed points can be added later if needed.",
           juryLabel: "Jury",
           teleLabel: "Tele",
           totalLabel: "Total",
@@ -398,7 +398,7 @@ export function AdminControlRoom() {
           closeRoomConfirm: "Close and delete this room? This cannot be undone.",
           closeRoomDone: "Room closed.",
           completeContest: "Complete contest",
-          completeContestText: "After the full final is published, locks the season and unlocks calculated achievements.",
+          completeContestText: "After the full final is published, completes the season and awards calculated achievements.",
           completeContestConfirm: "Complete the contest and unlock achievements? The full final ranking must already be published.",
           completeContestDone: "Contest completed, achievements calculated.",
           contestCompleted: "Contest completed",
@@ -421,8 +421,8 @@ export function AdminControlRoom() {
           participantRestored: "Participant access restored.",
           roomResetDone: "Room has been fully reset.",
           confirmRoomReset: "Clear ballots, published results, and stage states for this room?",
-          socketLive: "Live sync active",
-          socketIdle: "Live sync through refresh",
+          socketLive: "Sync active",
+          socketIdle: "Use refresh to load the latest data",
         }
   ), [getStageLabel, language]);
 
@@ -687,7 +687,7 @@ export function AdminControlRoom() {
     const email = adminEmail.trim();
     const password = adminPassword;
     if (!key && !(email && password)) {
-      setError(language === 'ru' ? 'Введи admin key или admin email/password.' : 'Enter an admin key or admin email/password.');
+      setError(language === 'ru' ? 'Введи ключ организатора или отдельный email и пароль.' : 'Enter an organizer key or dedicated organizer email and password.');
       return;
     }
 
@@ -1062,8 +1062,8 @@ export function AdminControlRoom() {
                   </div>
                   <p className="text-xs text-arenaMuted">
                     {language === "ru"
-                      ? "Можно войти либо по admin key, либо по отдельным admin email/password из env."
-                      : "Use either the admin key or a dedicated admin email/password from env."}
+                      ? "Можно войти по ключу организатора или по отдельному email и паролю."
+                      : "Use either the organizer key or a dedicated organizer email and password."}
                   </p>
                   <button
                     type="button"

@@ -79,17 +79,17 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
   const text = language === "ru"
     ? {
         kicker: "Комната",
-        title: isPhone ? "Комната готова" : "Комната готова. Дальше — голосование или общий экран результатов.",
+        title: isPhone ? "Комната готова" : "Комната готова. Выбирай, что открыть дальше.",
         description: isPhone
-          ? "Открой голосование на телефоне или результаты на большом экране."
-          : "Здесь начинается ваша сессия: на телефоне вы собираете личный выбор, а на большом экране следите за reveal и движением мест.",
+          ? "На телефоне удобно голосовать, а результаты лучше открыть на общем экране."
+          : "Отсюда начинается вечер: участники голосуют со своих телефонов, а общий экран показывает очки, места и движение таблицы.",
         vote: "Голосование",
-        voteText: "Личный выбор на телефоне: расставить артистов, оставить заметки и сохранить порядок.",
+        voteText: "Расставь артистов в своём порядке, добавь заметки и отправь итоговый выбор.",
         results: "Результаты",
-        resultsText: "Общий экран для очков, движения мест и reveal вашей компании.",
+        resultsText: "Экран для телевизора или проектора: очки, места и таблица участников обновляются вживую.",
         open: "Открыть",
         roomLink: "Пригласить друзей",
-        roomLinkText: "Скопируй ссылку и отправь друзьям, чтобы все вошли в ту же комнату.",
+        roomLinkText: "Отправь ссылку друзьям, чтобы все голосовали в одной комнате.",
         copy: "Скопировать ссылку",
         copied: "Скопировано",
         copyError: "Не удалось скопировать",
@@ -97,22 +97,22 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
         temporary: "Временная комната",
         privateRoom: "С паролем",
         roomExpires:
-          "Если в этой комнате никого не будет больше 4 часов, она исчезнет автоматически.",
+          "После события комната будет закрыта автоматически, а создатель получит итоговую таблицу.",
         roomPrivateText: "Гостей попросят ввести пароль уже на следующем шаге.",
       }
     : {
         kicker: "Room",
-        title: isPhone ? "Room ready" : "The room is ready. Next step: voting or the shared results screen.",
+        title: isPhone ? "Room ready" : "The room is ready. Choose what to open next.",
         description: isPhone
-          ? "Choose what to open next: the phone ballot or the shared results view."
-          : "This is the start of your session: phones stay focused on personal choices, while the big screen follows reveals and leaderboard movement.",
+          ? "Use the phone for voting and the shared screen for results."
+          : "This is the start of the night: everyone votes on their phone, while the shared screen follows points, places, and leaderboard movement.",
         vote: "Voting",
-        voteText: "Personal phone flow: rank acts, keep notes, and save a final order.",
+        voteText: "Rank the acts, add notes, and submit your final order.",
         results: "Results",
-        resultsText: "The shared screen for points, movement, and your room reveal.",
+        resultsText: "A TV or projector view for points, places, and live room standings.",
         open: "Open",
         roomLink: "Invite friends",
-        roomLinkText: "Copy the link and send it around so everyone enters the same room.",
+        roomLinkText: "Send the link to friends so everyone votes in the same room.",
         copy: "Copy link",
         copied: "Copied",
         copyError: "Unable to copy",

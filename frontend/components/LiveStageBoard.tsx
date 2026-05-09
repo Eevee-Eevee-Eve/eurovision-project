@@ -138,20 +138,20 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         title: isSemi ? "Кто проходит в финал" : "Результаты комнаты",
         mobileTitle: getStageLabel(stageKey),
         desktopDescription: isSemi
-          ? "Линия прохода и участники комнаты на одном экране."
-          : "Большой экран для движения мест, очков и рейтинга друзей.",
+          ? "Следи, какие страны проходят дальше, и кто из друзей ближе всего к итогам полуфинала."
+          : "Экран для телевизора или проектора: открытые страны, очки и рейтинг друзей обновляются вживую.",
         description: isSemi
-          ? "На большом экране важна линия прохода в финал, а на телефоне удобнее сначала видеть друзей."
-          : "На большом экране важны движение мест и очки, а на телефоне сначала лучше видеть участников комнаты.",
+          ? "На телефоне сверху показаны участники комнаты, ниже — опубликованные места полуфинала."
+          : "На телефоне сверху показаны участники комнаты, ниже — все открытые страны финала.",
         progressLabel: isSemi ? "Прошло дальше" : "Открыто стран",
         roomPlayers: "Участники комнаты",
         roomHint: isSemi
-          ? "Кто из друзей сейчас точнее угадывает полуфинал"
-          : "Кто из друзей лучше чувствует общий итог",
+          ? "Кто из друзей сейчас ближе к результатам полуфинала"
+          : "Кто из друзей сейчас ближе к итоговой таблице",
         stageBoard: isSemi ? "Линия прохода" : "Таблица этапа",
         stageHint: isSemi
-          ? "В мобильной версии только опубликованные проходы"
-          : "В мобильной версии главное - места, очки и движение",
+          ? "Открытые страны идут в порядке официального результата"
+          : "Все страны доступны списком: место, артист, песня и очки",
         noResults: isSemi ? "Пока нет опубликованных проходов." : "Пока нет опубликованных результатов этапа.",
         qualifiersTitle: "Проходят в финал",
         points: "баллов",
@@ -169,20 +169,20 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         title: isSemi ? "Who qualifies for the final" : "Room results",
         mobileTitle: getStageLabel(stageKey),
         desktopDescription: isSemi
-          ? "Qualification line and room ranking on one clean screen."
-          : "A large-screen view for movement, points and the room leaderboard.",
+          ? "Follow which countries qualify and which friends are closest to the semi-final result."
+          : "A TV or projector view where published countries, points, and room standings update live.",
         description: isSemi
-          ? "On wide screens the key thing is the qualification line. On phones it is easier to keep room participants first and published qualifiers second."
-          : "On wide screens the key thing is table movement and points. On phones room participants come first and the stage table stays compact.",
+          ? "On phones, room participants appear first, followed by the published semi-final places."
+          : "On phones, room participants appear first, followed by every published final country.",
         progressLabel: isSemi ? "Qualified" : "Countries shown",
         roomPlayers: "Room participants",
         roomHint: isSemi
-          ? "Who is reading the semi-final best so far"
-          : "Who is reading the overall result best so far",
+          ? "Who is closest to the semi-final result right now"
+          : "Who is closest to the final table right now",
         stageBoard: isSemi ? "Qualification line" : "Stage standings",
         stageHint: isSemi
-          ? "Mobile keeps only the published qualifiers in focus"
-          : "Mobile keeps rank, points and movement in focus",
+          ? "Published countries follow the official result order"
+          : "All countries are available as a readable list with place, act, song, and points",
         noResults: isSemi ? "No published qualifiers yet." : "No published results yet.",
         qualifiersTitle: "Qualified",
         points: "points",

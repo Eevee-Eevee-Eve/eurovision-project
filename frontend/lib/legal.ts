@@ -23,8 +23,8 @@ const RAW_LEGAL_CONFIG = {
 
 const LEGAL_DEFAULTS: Record<UiLanguage, Omit<LegalConfig, "requiredStorage">> = {
   ru: {
-    operatorName: "Организатор текущего деплоя «Евровидение у Морозовых 2026»",
-    operatorContact: "Свяжитесь с хостом комнаты через инвайт или канал координации этой Eurovision-вечеринки.",
+    operatorName: "Организатор «Евровидения у Морозовых 2026»",
+    operatorContact: "Свяжитесь с организатором через приглашение или общий чат вечеринки.",
     dataRegion: "Российская Федерация",
     retentionNotice:
       "Данные аккаунта, результаты комнаты и бюллетени хранятся до тех пор, пока организатор не сбросит комнату, пользователь не удалит аккаунт или сезон не будет отправлен в архив.",
@@ -34,7 +34,7 @@ const LEGAL_DEFAULTS: Record<UiLanguage, Omit<LegalConfig, "requiredStorage">> =
   en: {
     operatorName: "The host operating Morozov Eurovision 2026",
     operatorContact: "Contact the room host through the invitation or event coordination channel used for this watch party.",
-    dataRegion: "Configured by the deployment operator",
+    dataRegion: "Configured by the event organizer",
     retentionNotice:
       "Account data, room results, and ballots are kept until the operator resets the room, the user deletes the account, or the host archives the season.",
     publicDisplayNotice:
@@ -52,7 +52,7 @@ const REQUIRED_STORAGE: Record<UiLanguage, LegalConfig["requiredStorage"]> = {
     {
       key: "esc_admin_session",
       type: "HttpOnly cookie",
-      purpose: "Сохраняет админ-сессию control room после входа хоста.",
+      purpose: "Сохраняет вход организатора в панель управления.",
     },
     {
       key: "esc-ui-language",
@@ -62,7 +62,7 @@ const REQUIRED_STORAGE: Record<UiLanguage, LegalConfig["requiredStorage"]> = {
     {
       key: "esc-room-ranking:{room}:{stage}",
       type: "localStorage",
-      purpose: "Хранит локальный черновик рейтинга до официальной фиксации бюллетеня.",
+      purpose: "Сохраняет порядок стран на этом устройстве до отправки ответа.",
     },
     {
       key: "esc-room-notes:{room}:{stage}",
@@ -72,7 +72,7 @@ const REQUIRED_STORAGE: Record<UiLanguage, LegalConfig["requiredStorage"]> = {
     {
       key: "esc-compliance-notice-dismissed",
       type: "localStorage",
-      purpose: "Запоминает, что notice об обязательном storage уже был закрыт.",
+      purpose: "Запоминает, что сообщение об обязательном хранении данных уже было закрыто.",
     },
   ],
   en: [
@@ -84,7 +84,7 @@ const REQUIRED_STORAGE: Record<UiLanguage, LegalConfig["requiredStorage"]> = {
     {
       key: "esc_admin_session",
       type: "HttpOnly cookie",
-      purpose: "Keeps the admin control room session active after the host authenticates.",
+      purpose: "Keeps the organizer signed in to the admin panel.",
     },
     {
       key: "esc-ui-language",
@@ -94,7 +94,7 @@ const REQUIRED_STORAGE: Record<UiLanguage, LegalConfig["requiredStorage"]> = {
     {
       key: "esc-room-ranking:{room}:{stage}",
       type: "localStorage",
-      purpose: "Stores local draft rankings before a ballot is officially locked.",
+      purpose: "Stores local rankings on this device before the ballot is submitted.",
     },
     {
       key: "esc-room-notes:{room}:{stage}",
@@ -214,19 +214,19 @@ const LEGAL_COPY: Record<UiLanguage, {
     privacyTitle: "Конфиденциальность",
     privacyHeadline: "Политика обработки данных",
     privacyIntro:
-      "Эта страница описывает, как текущий деплой «Евровидение у Морозовых 2026» обрабатывает данные аккаунта, экранные никнеймы и бюллетени голосования по полуфиналам и финалу.",
+      "Здесь коротко описано, какие данные нужны сайту «Евровидение у Морозовых 2026»: аккаунт, публичный профиль, комнаты и ответы по полуфиналам и финалу.",
     privacySections: [
       {
-        title: "Что хранит портал",
-        body: "Сервис хранит данные аккаунта, настройки публичного профиля, участие в комнатах, бюллетени по этапам, расчёт очков и минимальные сессионные данные, которые нужны для работы голосования на телефонах, ноутбуках и экранных маршрутах.",
+        title: "Какие данные хранит сайт",
+        body: "Сайт хранит данные аккаунта, настройки публичного профиля, участие в комнатах, ответы по этапам, расчёт очков и служебные сессии, без которых не получится войти, голосовать и показывать результаты на общем экране.",
       },
       {
         title: "Аккаунт и профиль",
-        body: "Аккаунт может содержать email, имя, фамилию, никнейм, аватар, хеш пароля, отметки о согласиях и технические временные метки входа и обновления профиля. Email никогда не показывается на публичных таблицах.",
+        body: "Аккаунт может содержать email, имя, фамилию, никнейм, аватар, хеш пароля, отметки о согласиях и даты входа или обновления профиля. Email никогда не показывается в публичных таблицах.",
       },
       {
         title: "Голосование и данные комнаты",
-        body: "Участие в комнате, ранжирование стран по этапам, статусы lock, breakdown итогов и сезонная таблица хранятся для честного проведения Semi-final 1, Semi-final 2 и Grand Final у всех подключённых зрителей.",
+        body: "Участие в комнате, расстановка стран по этапам, отправленные ответы, опубликованные итоги и сезонная таблица нужны, чтобы одинаково показывать полуфиналы и финал всем участникам комнаты.",
       },
       {
         title: "Публичное отображение",
@@ -238,25 +238,25 @@ const LEGAL_COPY: Record<UiLanguage, {
       },
       {
         title: "РФ и Европа",
-        body: "Для пользователей из РФ сервис рассматривает имя, фамилию, email, аватар и любые сочетания полей, по которым можно идентифицировать человека, как персональные данные. Для пользователей из Европы сервис строится вокруг необходимых storage-механизмов для работы и отдельного согласия на публичное отображение профиля.",
+        body: "Для пользователей из РФ сайт рассматривает имя, фамилию, email, аватар и любые сочетания полей, по которым можно узнать человека, как персональные данные. Для пользователей из Европы используются только обязательные данные для работы сайта и отдельное согласие на публичное отображение профиля.",
       },
     ],
     cookiesTitle: "Cookies",
     cookiesHeadline: "Cookies и локальное хранилище",
     cookiesIntro:
-      "В текущем деплое используются только технически необходимые механизмы хранения. Аналитика, рекламные пиксели и маркетинговые cookies по умолчанию не включены.",
+      "Сайт использует только обязательные cookies и localStorage. Аналитика, рекламные пиксели и маркетинговые cookies не включены.",
     cookiesRequiredTitle: "Только обязательные механизмы",
     cookiesRequiredBody:
-      "Эти элементы хранения нужны, чтобы пользователь мог войти в аккаунт, продолжить черновик бюллетеня, сохранить язык интерфейса и дать хосту возможность безопасно вести лайв-результаты и админ-управление во время шоу.",
+      "Они нужны для входа, сохранения ответа до отправки, выбора языка, синхронизации результатов и работы панели организатора во время шоу.",
     cookiesFutureTitle: "Если появится трекинг",
     cookiesFutureBody:
-      "Если позже будут добавлены аналитика, пиксели, экспериментальные инструменты или любая необязательная телеметрия, перед их запуском нужен отдельный consent-баннер с понятным выбором принять или отклонить.",
+      "Если позже появятся аналитика, пиксели, эксперименты или другая необязательная телеметрия, сначала будет добавлен отдельный баннер с понятным выбором принять или отклонить.",
     complianceNotice:
-      "Проект «Евровидение у Морозовых 2026» использует только обязательные cookie и localStorage для входа, сохранения черновиков, языка интерфейса и live-синхронизации комнаты.",
+      "Проект «Евровидение у Морозовых 2026» использует только обязательные cookie и localStorage для входа, сохранения ответов, языка интерфейса и обновления данных комнаты.",
     dismissNotice: "Понятно",
     accountConsentTitle: "Согласия и публичный профиль",
     accountConsentText:
-      "При регистрации пользователь подтверждает политику обработки данных. Отдельная настройка управляет тем, как профиль показывается на публичных таблицах и экранных маршрутах комнаты.",
+      "При регистрации пользователь принимает правила обработки данных. Отдельная настройка управляет тем, как профиль показывается в публичных таблицах и на общем экране комнаты.",
     accountConsentPrivacy:
       "Согласие на политику обработки данных обязательно для создания аккаунта и работы сервиса.",
     accountConsentPublic:
@@ -264,31 +264,31 @@ const LEGAL_COPY: Record<UiLanguage, {
     accountConsentStorage:
       "Черновики бюллетеня и заметки сохраняются локально только на текущем устройстве, пока пользователь не отправит финальный ответ или не очистит данные браузера.",
     accountConsentTimeline:
-      "Ниже показаны даты, когда был принят privacy policy и, при необходимости, отдельное согласие на публичное отображение профиля.",
+      "Ниже показано, когда были приняты правила обработки данных и, при необходимости, отдельное согласие на публичное отображение профиля.",
     operatorLabel: "Оператор",
     contactLabel: "Контакт",
     regionLabel: "Регион хранения",
     retentionLabel: "Срок хранения",
     productionTip:
-      "Перед публичным запуском задай `NEXT_PUBLIC_OPERATOR_CONTACT`, чтобы здесь показывался прямой контакт оператора.",
+      "Перед публичным использованием укажи рабочий контакт организатора, чтобы участники знали, куда обращаться.",
   },
   en: {
     privacyTitle: "Privacy",
     privacyHeadline: "Privacy Notice",
     privacyIntro:
-      "This page explains how the current Morozov Eurovision 2026 deployment handles account data, public profile choices, and Eurovision ballots across both semi-finals and the final.",
+      "This page briefly explains which data Morozov Eurovision 2026 needs: account details, public profile choices, rooms, and ballots for the semi-finals and final.",
     privacySections: [
       {
-        title: "What the portal stores",
-        body: "The service stores account credentials, public profile settings, room participation, stage ballots, score calculations, and the minimum session data required to keep voting working across phones, laptops, and display routes.",
+        title: "What the site stores",
+        body: "The site stores account details, public profile settings, room participation, stage ballots, score calculations, and the session data needed to sign in, vote, and show results on the shared screen.",
       },
       {
         title: "Account and profile data",
-        body: "Account records may contain email, first name, last name, nickname, avatar, password hash, consent timestamps, and technical timestamps for login and profile updates. Public scoreboards never show the private email address.",
+        body: "Account records may contain email, first name, last name, nickname, avatar, password hash, consent dates, and profile update dates. Public scoreboards never show the private email address.",
       },
       {
         title: "Voting and room data",
-        body: "Room participation, stage rankings, lock states, published result breakdowns, and the season standings are stored so the host can run Semi-final 1, Semi-final 2, and the Grand Final consistently for everyone connected.",
+        body: "Room participation, stage rankings, submitted ballots, published results, and season standings are stored so every participant sees the same semi-finals and final.",
       },
       {
         title: "Public display",
@@ -300,19 +300,19 @@ const LEGAL_COPY: Record<UiLanguage, {
       },
       {
         title: "Russia and Europe",
-        body: "For Russian users, the service treats first name, last name, email, avatar, and any identifying profile combination as personal data. For European users, the service is structured around required storage for operation and separate consent for public display choices.",
+        body: "For Russian users, the site treats first name, last name, email, avatar, and any identifying profile combination as personal data. For European users, the site uses only the data required for operation plus separate consent for public profile display.",
       },
     ],
     cookiesTitle: "Cookies",
     cookiesHeadline: "Cookies and Local Storage",
     cookiesIntro:
-      "This deployment uses required storage only. Optional analytics, ad-tech, and marketing cookies are not enabled by default.",
+      "This site uses only required cookies and local storage. Optional analytics, ad-tech, and marketing cookies are not enabled.",
     cookiesRequiredTitle: "Required mechanisms only",
     cookiesRequiredBody:
-      "These storage entries exist so people can sign in, continue ballot drafts, preserve language choice, and let the host run live scoring and admin controls safely during the show.",
+      "These entries let people sign in, keep a ballot before submitting, remember language choice, sync results, and let the organizer run the show safely.",
     cookiesFutureTitle: "If tracking is added later",
     cookiesFutureBody:
-      "If analytics, pixels, experiments, or any optional telemetry are introduced later, the deployment should add a proper consent banner with clear accept and reject choices before those tools run.",
+      "If analytics, pixels, experiments, or optional telemetry are introduced later, a separate consent banner with clear accept and reject choices should appear before those tools run.",
     complianceNotice:
       "Morozov Eurovision 2026 uses required cookies and local storage only for sign-in, ballot drafts, language choice, and live room synchronization.",
     dismissNotice: "Got it",
@@ -322,17 +322,17 @@ const LEGAL_COPY: Record<UiLanguage, {
     accountConsentPrivacy:
       "Accepting the privacy notice is required to create an account and operate the service.",
     accountConsentPublic:
-      "Public display controls whether your nickname and avatar appear on live room boards and display routes.",
+      "Public display controls whether your nickname and avatar appear on live room boards and shared screens.",
     accountConsentStorage:
       "Ballot drafts and notes are saved locally on the current device only, until the final ballot is submitted or the browser data is cleared.",
     accountConsentTimeline:
-      "The timestamps below show when the privacy policy was accepted and, when applicable, when public display consent was recorded.",
+      "The dates below show when the privacy notice was accepted and, when applicable, when public display consent was recorded.",
     operatorLabel: "Operator",
     contactLabel: "Contact",
     regionLabel: "Storage region",
     retentionLabel: "Retention",
     productionTip:
-      "Before public launch, set `NEXT_PUBLIC_OPERATOR_CONTACT` so this page shows a direct operator contact.",
+      "Before public use, add a working organizer contact so participants know where to ask questions.",
   },
 };
 
