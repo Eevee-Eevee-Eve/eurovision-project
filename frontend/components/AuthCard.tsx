@@ -48,8 +48,8 @@ export function AuthCard({
   const [statusText, setStatusText] = useState("");
   const [resetPreview, setResetPreview] = useState<string | null>(null);
   const resetDisabledText = language === "ru"
-    ? "На этом деплое восстановление пароля по почте пока не настроено. Перед публичным запуском подключи почтовый провайдер."
-    : "Password recovery email is not configured on this deployment yet. Connect a mail provider before public launch.";
+    ? "Восстановление пароля по почте сейчас недоступно. Если нужно вернуть доступ, напиши организатору."
+    : "Password recovery email is not available right now. Contact the organizer if you need access restored.";
 
   useEffect(() => {
     if (forcedMode) {

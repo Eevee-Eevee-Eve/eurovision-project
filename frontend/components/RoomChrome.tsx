@@ -112,21 +112,21 @@ export function RoomChrome({
     ? {
         kicker: "Телефон / голосование",
         title: "Голосование",
-        description: "Перетаскивай артистов в свой порядок. Тап по строке открывает карточку с описанием, заметкой и видео.",
+      description: "Расставь артистов в своём порядке. Тап по строке откроет фото, описание, видео и заметки.",
       }
     : {
         kicker: "Phone / voting",
         title: "Voting",
-        description: "Drag acts into your own order. Tap any row to open the card with details, notes, and video.",
+      description: "Rank acts in your own order. Tap a row to open photo, details, video, and notes.",
       };
 
   const unlockCopy = language === "ru"
     ? {
-        loading: "Проверяю доступ к комнате...",
+    loading: "Открываем комнату...",
         missingTitle: "Комната не найдена",
-        missingText: "Эта комната уже исчезла или ссылка неверная.",
+    missingText: "Проверь ссылку или попроси организатора прислать приглашение ещё раз.",
         lockedTitle: "Комната закрыта паролем",
-        lockedText: "Сначала открой комнату паролем, а потом переходи к голосованию и результатам.",
+    lockedText: "Введи пароль, чтобы перейти к голосованию и результатам этой комнаты.",
         passwordLabel: "Пароль комнаты",
         passwordPlaceholder: "Введите пароль",
         open: "Открыть комнату",
@@ -137,11 +137,11 @@ export function RoomChrome({
         privateRoom: "С паролем",
       }
     : {
-        loading: "Checking room access...",
+    loading: "Opening the room...",
         missingTitle: "Room not found",
-        missingText: "This room has expired or the link is invalid.",
+    missingText: "Check the link or ask the organizer to send the invitation again.",
         lockedTitle: "Room is password-protected",
-        lockedText: "Unlock the room first, then continue into voting or results.",
+    lockedText: "Enter the password to continue to voting and results for this room.",
         passwordLabel: "Room password",
         passwordPlaceholder: "Enter password",
         open: "Open room",

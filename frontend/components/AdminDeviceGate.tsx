@@ -26,7 +26,7 @@ export function AdminDeviceGate() {
           <BrandLogo variant="header" />
           <section className="show-card p-6 md:p-8">
             <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
-              {language === "ru" ? "Пульт хоста" : "Host control room"}
+              {language === "ru" ? "Панель организатора" : "Organizer panel"}
             </p>
             <h1 className="display-copy mt-3 text-3xl font-black text-white md:text-5xl">
               {language === "ru" ? "Админка доступна только на планшете или десктопе" : "Admin is desktop and tablet only"}
