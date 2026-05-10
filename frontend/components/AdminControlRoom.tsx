@@ -360,7 +360,7 @@ export function AdminControlRoom() {
           temporaryRoom: "Временная",
           protectedRoom: "С паролем",
           officialRoom: "Официальная",
-          deleteCatalogBlocked: "Основную комнату нельзя удалить из админки. Можно переименовать её или переназначить официальный слот.",
+          deleteCatalogBlocked: "Основные комнаты может удалять только главный админ.",
           roomUpdated: "Комната обновлена.",
           officialRoomUpdated: "Официальный слот обновлён.",
         }
@@ -481,7 +481,7 @@ export function AdminControlRoom() {
           temporaryRoom: "Temporary",
           protectedRoom: "Password",
           officialRoom: "Official",
-          deleteCatalogBlocked: "Main catalog rooms cannot be deleted from the admin panel. Rename it or reassign the official slot instead.",
+          deleteCatalogBlocked: "Only the main admin can delete main rooms.",
           roomUpdated: "Room updated.",
           officialRoomUpdated: "Official slot updated.",
         }
@@ -1336,15 +1336,15 @@ export function AdminControlRoom() {
   }
 
   async function handleDeleteRoomFromList(room: RoomSummary) {
-    if (!room.isTemporary) {
+    if (!room.isTemporary && !isMainAdmin) {
       setError(copy.deleteCatalogBlocked);
       return;
     }
 
     const officialStageLabels = getOfficialStageKeysForRoom(room.slug).map((stageKey) => getStageLabel(stageKey));
     const confirmed = window.confirm(language === "ru"
-      ? `Удалить комнату «${getRoomName(room.slug, room.name)}»? Данные комнаты будут закрыты.${officialStageLabels.length ? `\n\nСейчас она отмечена как официальная: ${officialStageLabels.join(", ")}. После удаления слот будет сброшен.` : ""}`
-      : `Delete room "${getRoomName(room.slug, room.name)}"? Room data will be closed.${officialStageLabels.length ? `\n\nIt is currently marked official for: ${officialStageLabels.join(", ")}. The slot will be reset after deletion.` : ""}`);
+      ? `Удалить комнату «${getRoomName(room.slug, room.name)}»? ${room.isTemporary ? "Данные временной комнаты будут закрыты." : "Основная комната пропадёт из списка комнат и пользовательских маршрутов."}${officialStageLabels.length ? `\n\nСейчас она отмечена как официальная: ${officialStageLabels.join(", ")}. После удаления официальный слот будет сброшен.` : ""}`
+      : `Delete room "${getRoomName(room.slug, room.name)}"? ${room.isTemporary ? "Temporary room data will be closed." : "The main room will disappear from room lists and guest routes."}${officialStageLabels.length ? `\n\nIt is currently marked official for: ${officialStageLabels.join(", ")}. The official slot will be reset after deletion.` : ""}`);
     if (!confirmed) return;
 
     setPendingAction(`room-delete-${room.slug}`);
@@ -1729,8 +1729,8 @@ export function AdminControlRoom() {
                           <button
                             type="button"
                             className="rounded-full bg-rose-500/15 px-3 py-2 text-xs font-semibold text-rose-100 transition hover:bg-rose-500/25 disabled:cursor-not-allowed disabled:opacity-45"
-                            disabled={Boolean(pendingAction) || !room.isTemporary}
-                            title={!room.isTemporary ? copy.deleteCatalogBlocked : undefined}
+                            disabled={Boolean(pendingAction) || (!room.isTemporary && !isMainAdmin)}
+                            title={!room.isTemporary && !isMainAdmin ? copy.deleteCatalogBlocked : undefined}
                             onClick={() => void handleDeleteRoomFromList(room)}
                           >
                             <Trash2 size={15} />

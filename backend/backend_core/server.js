@@ -239,6 +239,9 @@ state.globalStageCountdowns = normalizeStageCountdownsShape(state.globalStageCou
 if (!state.dynamicRooms || typeof state.dynamicRooms !== 'object') {
   state.dynamicRooms = {};
 }
+if (!state.deletedCatalogRooms || typeof state.deletedCatalogRooms !== 'object') {
+  state.deletedCatalogRooms = {};
+}
 if (!state.officialRooms || typeof state.officialRooms !== 'object') {
   state.officialRooms = {};
 }
@@ -257,9 +260,10 @@ function getScoringProfile(profileKey) {
 }
 
 function normalizeOfficialRoomsShape(value) {
+  const fallbackRoomSlug = getDefaultRoomSlug() || DEFAULT_ROOM_SLUG;
   return STAGE_KEYS.reduce((acc, stage) => {
     const roomSlug = normalizeRoomSlug(value?.[stage], { allowDefault: true });
-    acc[stage] = roomSlug && getRoomBySlug(roomSlug) ? roomSlug : DEFAULT_ROOM_SLUG;
+    acc[stage] = roomSlug && getRoomBySlug(roomSlug) ? roomSlug : fallbackRoomSlug;
     return acc;
   }, {});
 }
@@ -516,6 +520,18 @@ function toPublicRoomSummary(room) {
   };
 }
 
+function isCatalogRoomDeleted(roomSlug) {
+  return Boolean(state.deletedCatalogRooms?.[roomSlug]);
+}
+
+function getDefaultRoomSlug() {
+  if (DEFAULT_ROOM_SLUG && !isCatalogRoomDeleted(DEFAULT_ROOM_SLUG) && getCatalogRoomBySlug(DEFAULT_ROOM_SLUG)) {
+    return DEFAULT_ROOM_SLUG;
+  }
+
+  return getAllRooms()[0]?.slug || null;
+}
+
 function getAllRooms() {
   const dynamicRooms = Object.values(state.dynamicRooms)
     .map((room) => normalizeDynamicRoomShape(room))
@@ -523,13 +539,16 @@ function getAllRooms() {
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
 
   return [
-    ...ROOMS.map((room) => applyRoomOverride({ ...room, isTemporary: false, passwordRequired: false })),
+    ...ROOMS
+      .filter((room) => !isCatalogRoomDeleted(room.slug))
+      .map((room) => applyRoomOverride({ ...room, isTemporary: false, passwordRequired: false })),
     ...dynamicRooms.map((room) => applyRoomOverride(room)),
   ];
 }
 
 function getRoomBySlug(roomSlug) {
-  const room = getCatalogRoomBySlug(roomSlug) || normalizeDynamicRoomShape(state.dynamicRooms[roomSlug]) || null;
+  const catalogRoom = !isCatalogRoomDeleted(roomSlug) ? getCatalogRoomBySlug(roomSlug) : null;
+  const room = catalogRoom || normalizeDynamicRoomShape(state.dynamicRooms[roomSlug]) || null;
   return room ? applyRoomOverride(room) : null;
 }
 
@@ -671,15 +690,32 @@ function removeDynamicRoom(roomSlug) {
   delete state.roomStates[roomSlug];
   delete roomStates[roomSlug];
   delete state.roomOverrides[roomSlug];
-  STAGE_KEYS.forEach((stage) => {
-    if (state.officialRooms[stage] === roomSlug) {
-      state.officialRooms[stage] = DEFAULT_ROOM_SLUG;
-    }
-  });
+  resetOfficialRoomsForRemovedRoom(roomSlug);
   roomPresence.delete(roomSlug);
   Object.entries(state.roomAccessSessions).forEach(([key, session]) => {
     if (session.roomSlug === roomSlug) {
       delete state.roomAccessSessions[key];
+    }
+  });
+}
+
+function removeCatalogRoom(roomSlug) {
+  state.deletedCatalogRooms[roomSlug] = new Date().toISOString();
+  delete state.roomOverrides[roomSlug];
+  resetOfficialRoomsForRemovedRoom(roomSlug);
+  roomPresence.delete(roomSlug);
+  Object.entries(state.roomAccessSessions).forEach(([key, session]) => {
+    if (session.roomSlug === roomSlug) {
+      delete state.roomAccessSessions[key];
+    }
+  });
+}
+
+function resetOfficialRoomsForRemovedRoom(roomSlug) {
+  const fallbackRoomSlug = getAllRooms().find((room) => room.slug !== roomSlug)?.slug || '';
+  STAGE_KEYS.forEach((stage) => {
+    if (state.officialRooms[stage] === roomSlug) {
+      state.officialRooms[stage] = fallbackRoomSlug;
     }
   });
 }
@@ -875,7 +911,7 @@ function persistState() {
 
 function normalizeRoomSlug(value, { allowDefault = false } = {}) {
   if (value == null || value === '') {
-    return allowDefault ? DEFAULT_ROOM_SLUG : null;
+    return allowDefault ? getDefaultRoomSlug() : null;
   }
   if (typeof value !== 'string') {
     return null;
@@ -2481,7 +2517,7 @@ app.post('/api/rooms/:roomSlug/join', requireAuth, (req, res) => {
 
 app.get('/api/rooms', (req, res) => {
   return res.json({
-    defaultRoom: DEFAULT_ROOM_SLUG,
+    defaultRoom: getDefaultRoomSlug(),
     rooms: getAllRooms().map(toPublicRoomSummary),
   });
 });
@@ -3027,7 +3063,16 @@ app.delete('/api/admin/rooms/:roomSlug', requireRoomAdmin, (req, res) => {
     return res.status(404).json({ error: 'Unknown room' });
   }
   if (!isTemporaryRoom(roomSlug)) {
-    return res.status(409).json({ error: 'Catalog rooms cannot be deleted. Rename or reassign the official slot instead.' });
+    if (req.adminRole !== 'main') {
+      return res.status(403).json({ error: 'Only the main admin can delete main rooms' });
+    }
+    if (getAllRooms().filter((room) => room.slug !== roomSlug).length === 0) {
+      return res.status(409).json({ error: 'At least one room must remain available' });
+    }
+
+    removeCatalogRoom(roomSlug);
+    persistState();
+    return res.json({ ok: true, roomSlug });
   }
   if (req.adminRole !== 'main' && !canManageDynamicRoom(roomSlug, req.account)) {
     return res.status(403).json({ error: 'Only the room creator can close this room' });
