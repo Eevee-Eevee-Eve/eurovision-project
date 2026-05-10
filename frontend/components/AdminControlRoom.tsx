@@ -359,6 +359,7 @@ export function AdminControlRoom() {
           catalogRoom: "Основная",
           temporaryRoom: "Временная",
           protectedRoom: "С паролем",
+          officialRoom: "Официальная",
           deleteCatalogBlocked: "Основную комнату нельзя удалить из админки. Можно переименовать её или переназначить официальный слот.",
           roomUpdated: "Комната обновлена.",
           officialRoomUpdated: "Официальный слот обновлён.",
@@ -479,6 +480,7 @@ export function AdminControlRoom() {
           catalogRoom: "Main",
           temporaryRoom: "Temporary",
           protectedRoom: "Password",
+          officialRoom: "Official",
           deleteCatalogBlocked: "Main catalog rooms cannot be deleted from the admin panel. Rename it or reassign the official slot instead.",
           roomUpdated: "Room updated.",
           officialRoomUpdated: "Official slot updated.",
@@ -548,6 +550,11 @@ export function AdminControlRoom() {
   const selectedRoomMeta = rooms.find((room) => room.slug === selectedRoom) || null;
   const isMainAdmin = adminRole === "main";
   const canCloseSelectedRoom = Boolean(selectedRoomMeta?.isTemporary);
+  const getOfficialStageKeysForRoom = useCallback((roomSlug: string) => (
+    STAGE_OPTIONS
+      .filter((stage) => officialRooms[stage.key] === roomSlug)
+      .map((stage) => stage.key)
+  ), [officialRooms]);
   const filteredRooms = useMemo(() => {
     const query = roomSearch.trim().toLowerCase();
     if (!query) return rooms;
@@ -734,6 +741,9 @@ export function AdminControlRoom() {
         });
         setScoringProfiles(payload.scoringProfiles);
         setContestCompletedAt(payload.contestCompletedAt || null);
+        if (payload.role === "main") {
+          setActiveAdminTab("rooms");
+        }
 
         const roomFromQuery = searchParams.get("room");
         const roomFromStorage = typeof window !== "undefined" ? window.localStorage.getItem("admin_room_slug") : null;
@@ -965,6 +975,9 @@ export function AdminControlRoom() {
       });
       setScoringProfiles(payload.scoringProfiles);
       setContestCompletedAt(payload.contestCompletedAt || null);
+      if ((payload.role || "main") === "main") {
+        setActiveAdminTab("rooms");
+      }
       setSelectedRoom((current) => current || payload.rooms[0]?.slug || "");
       setAdminKey("");
       setAdminEmail("");
@@ -1328,9 +1341,10 @@ export function AdminControlRoom() {
       return;
     }
 
+    const officialStageLabels = getOfficialStageKeysForRoom(room.slug).map((stageKey) => getStageLabel(stageKey));
     const confirmed = window.confirm(language === "ru"
-      ? `Удалить комнату «${getRoomName(room.slug, room.name)}»? Данные комнаты будут закрыты.`
-      : `Delete room "${getRoomName(room.slug, room.name)}"? Room data will be closed.`);
+      ? `Удалить комнату «${getRoomName(room.slug, room.name)}»? Данные комнаты будут закрыты.${officialStageLabels.length ? `\n\nСейчас она отмечена как официальная: ${officialStageLabels.join(", ")}. После удаления слот будет сброшен.` : ""}`
+      : `Delete room "${getRoomName(room.slug, room.name)}"? Room data will be closed.${officialStageLabels.length ? `\n\nIt is currently marked official for: ${officialStageLabels.join(", ")}. The slot will be reset after deletion.` : ""}`);
     if (!confirmed) return;
 
     setPendingAction(`room-delete-${room.slug}`);
@@ -1647,12 +1661,19 @@ export function AdminControlRoom() {
                 {filteredRooms.map((room) => {
                   const editing = editingRoomSlug === room.slug;
                   const roomName = getRoomName(room.slug, room.name);
+                  const officialStageKeys = getOfficialStageKeysForRoom(room.slug);
                   return (
                     <div key={room.slug} className="show-panel p-3">
                       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                         <div className="min-w-0">
                           <div className="flex flex-wrap gap-2">
                             <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">{room.isTemporary ? copy.temporaryRoom : copy.catalogRoom}</span>
+                            {officialStageKeys.map((stageKey) => (
+                              <span key={`${room.slug}-official-${stageKey}`} className="show-chip bg-emerald-400/10 text-[11px] uppercase tracking-[0.22em] text-emerald-100">
+                                <Check size={14} />
+                                {copy.officialRoom}: {getStageLabel(stageKey)}
+                              </span>
+                            ))}
                             {room.passwordRequired ? <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">{copy.protectedRoom}</span> : null}
                             <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">{getStageLabel(room.defaultStage)}</span>
                           </div>
