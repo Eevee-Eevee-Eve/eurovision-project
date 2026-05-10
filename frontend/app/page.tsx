@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { ArrowRight, Eye, EyeOff, Lock, PlusCircle, Search } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Lock, MonitorPlay, PlusCircle, Radio, Search, Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAccount } from "../components/AccountProvider";
@@ -169,6 +169,16 @@ export default function Home() {
     });
   }, [getRoomCityLabel, getRoomName, getStageLabel, roomSearch, rooms]);
 
+  const renderRoomIcon = (room: RoomSummary) => {
+    const Icon = room.defaultStage === "final" ? Trophy : room.defaultStage === "semi2" ? Radio : MonitorPlay;
+
+    return (
+      <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-[linear-gradient(135deg,rgba(129,236,255,0.16),rgba(255,108,190,0.12))] text-arenaBeam shadow-[0_16px_36px_rgba(129,236,255,0.12)]">
+        <Icon className="h-5 w-5" />
+      </span>
+    );
+  };
+
   function scrollToAuthCard() {
     document.getElementById(AUTH_CARD_ID)?.scrollIntoView({
       behavior: "smooth",
@@ -307,22 +317,25 @@ export default function Home() {
               filteredRooms.map((room) => (
                 <div key={room.slug} className="show-panel p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="room-lobby-title text-lg font-semibold text-white">{getRoomName(room.slug, room.name)}</p>
-                      <p className="mt-2 text-sm text-arenaMuted">
-                        {getRoomCityLabel(room.slug, room.cityLabel)}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                        <span className="show-chip">
-                          {text.currentStage}: {getStageLabel(room.defaultStage)}
-                        </span>
-                        {room.isTemporary ? <span className="show-chip">{text.temporary}</span> : null}
-                        {room.passwordRequired ? (
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                      {renderRoomIcon(room)}
+                      <div className="min-w-0">
+                        <p className="room-lobby-title text-lg font-semibold text-white">{getRoomName(room.slug, room.name)}</p>
+                        <p className="mt-2 text-sm text-arenaMuted">
+                          {getRoomCityLabel(room.slug, room.cityLabel)}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs">
                           <span className="show-chip">
-                            <Lock size={12} />
-                            {text.privateRoom}
+                            {text.currentStage}: {getStageLabel(room.defaultStage)}
                           </span>
-                        ) : null}
+                          {room.isTemporary ? <span className="show-chip">{text.temporary}</span> : null}
+                          {room.passwordRequired ? (
+                            <span className="show-chip">
+                              <Lock size={12} />
+                              {text.privateRoom}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
 
