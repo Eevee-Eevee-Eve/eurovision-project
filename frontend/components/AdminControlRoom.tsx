@@ -1437,11 +1437,57 @@ export function AdminControlRoom() {
   return (
     <main className="min-h-screen bg-arena-grid px-4 pb-24 pt-4 text-arenaText md:px-8">
       <div className="mx-auto grid max-w-[96rem] gap-5">
+        <nav className="glass-panel sticky top-3 z-30 rounded-[1.6rem] border border-white/10 px-3 py-3 shadow-soft md:px-4" aria-label={language === "ru" ? "Навигация админки" : "Admin navigation"}>
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
+              <BrandLogo href="/admin" variant="compact" />
+              <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">
+                <ShieldCheck size={14} />
+                {language === "ru" ? "Админка" : "Admin"}
+              </span>
+              <span className="hidden max-w-[24rem] truncate text-sm text-arenaMuted md:inline">
+                {selectedRoomMeta?.name || selectedRoom} · {getStageLabel(selectedStage)}
+              </span>
+            </div>
+
+            <div className="show-panel flex min-w-0 gap-1 overflow-x-auto p-1">
+              {adminTabs.map((tab) => (
+                <button
+                  key={`admin-nav-${tab.key}`}
+                  type="button"
+                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    activeAdminTab === tab.key
+                      ? "bg-arenaSurfaceMax text-white shadow-glow"
+                      : "text-arenaMuted hover:bg-white/[0.07] hover:text-white"
+                  }`}
+                  onClick={() => setActiveAdminTab(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <Link href={`/${selectedRoom || rooms[0]?.slug || ""}/live/${selectedStage}`} className="arena-button-secondary inline-flex items-center px-4 py-2 text-xs">
+                <MonitorPlay size={15} />
+                {language === "ru" ? "Открыть экран" : "Open screen"}
+              </Link>
+              <Link href="/" className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-arenaMuted transition hover:bg-white/[0.08] hover:text-white">
+                {language === "ru" ? "Сайт для гостей" : "Guest site"}
+              </Link>
+              <button type="button" className="arena-button-secondary px-4 py-2 text-xs" onClick={handleLogout}>
+                <LogOut size={15} />
+                {copy.logoutButton}
+              </button>
+            </div>
+          </div>
+        </nav>
+
         <section className="glass-panel ghost-grid rounded-shell border border-white/10 p-5 md:p-6">
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
-                <BrandLogo variant="header" />
+                <BrandLogo href="/admin" variant="header" />
                 <p className="label-copy mt-5 text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.kicker}</p>
                 <h1 className="display-copy mt-3 text-4xl font-black md:text-6xl">{copy.title}</h1>
                 <p className="mt-4 max-w-3xl text-sm text-arenaMuted md:text-base">{copy.description}</p>
@@ -1541,22 +1587,6 @@ export function AdminControlRoom() {
               </button>
             </div>
 
-            <div className="show-panel flex flex-wrap gap-2 p-2">
-              {adminTabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  type="button"
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    activeAdminTab === tab.key
-                      ? "bg-arenaSurfaceMax text-white shadow-glow"
-                      : "text-arenaMuted hover:bg-white/[0.07] hover:text-white"
-                  }`}
-                  onClick={() => setActiveAdminTab(tab.key)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
           </div>
         </section>
 
