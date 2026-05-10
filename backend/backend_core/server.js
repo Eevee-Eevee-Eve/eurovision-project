@@ -1073,7 +1073,8 @@ function validateResultBreakdown(stageKey, breakdown, ranking) {
     const jury = Number.isFinite(Number(row?.jury)) ? Number(row.jury) : 0;
     const tele = Number.isFinite(Number(row?.tele)) ? Number(row.tele) : 0;
     const total = Number.isFinite(Number(row?.total)) ? Number(row.total) : jury + tele;
-    normalized[code] = { jury, tele, total };
+    const place = Number.isFinite(Number(row?.place)) && Number(row.place) > 0 ? Number(row.place) : null;
+    normalized[code] = { jury, tele, total, place };
   }
 
   return { ok: true, breakdown: normalized };
@@ -1826,9 +1827,12 @@ function buildStageResults(roomSlug, stageKey) {
     .map((act) => {
       const resultIndex = ranking.indexOf(act.code);
       const breakdown = room.resultBreakdown[stageKey][act.code] || null;
+      const explicitPlace = breakdown?.place && Number.isFinite(Number(breakdown.place)) && Number(breakdown.place) > 0
+        ? Number(breakdown.place)
+        : null;
       return {
         ...act,
-        rank: resultIndex === -1 ? null : resultIndex + 1,
+        rank: resultIndex === -1 ? null : explicitPlace || resultIndex + 1,
         revealed: resultIndex !== -1,
         juryPoints: breakdown ? breakdown.jury : null,
         telePoints: breakdown ? breakdown.tele : null,

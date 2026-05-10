@@ -500,7 +500,7 @@ export function AdminControlRoom() {
           autoPublishOn: "Автопубликация включена",
           autoPublishOff: "Черновик публикуется только кнопкой",
           autoPublishHintFinal: "В финале каждое введённое значение сразу уходит на экран результатов.",
-          autoPublishHintSemi: "В полуфинале экран обновится сразу, когда заполнены все места без дублей.",
+          autoPublishHintSemi: "В полуфинале каждое введённое место сразу уходит на экран результатов.",
           autoPublished: "Изменения опубликованы на экране.",
           draftSaved: "Черновик сохранён. До публикации зрители его не видят.",
           semiWaiting: "Полуфинал пока в черновике: заполни места всем странам без дублей.",
@@ -528,7 +528,7 @@ export function AdminControlRoom() {
           autoPublishOn: "Auto-publish is on",
           autoPublishOff: "Draft publishes only by button",
           autoPublishHintFinal: "In the final, every entered value is pushed to the results screen immediately.",
-          autoPublishHintSemi: "In semi-finals, the screen updates as soon as every place is filled without duplicates.",
+          autoPublishHintSemi: "In semi-finals, every entered place is pushed to the results screen immediately.",
           autoPublished: "Changes published to the screen.",
           draftSaved: "Draft saved. Viewers do not see it until publishing.",
           semiWaiting: "Semi-final is still a draft: fill every place without duplicates.",
@@ -583,25 +583,18 @@ export function AdminControlRoom() {
     };
   }, [rows]);
   function buildPublishPayload(options: { quiet?: boolean } = {}) {
-    const activeRows = rankedRows.filter((row) => hasRowData(row));
+    const activeRows = isSemiStage
+      ? rankedRows.filter((row) => hasPlacement(row))
+      : rankedRows.filter((row) => hasRowData(row));
     if (!activeRows.length) {
       return { ok: false as const, wait: false, message: copy.noData };
     }
 
     if (isSemiStage) {
-      const placedRows = activeRows.filter((row) => hasPlacement(row));
-      if (placedRows.length !== rows.length) {
-        return {
-          ok: false as const,
-          wait: Boolean(options.quiet),
-          message: options.quiet ? adminUx.semiWaiting : copy.semiPlaceRequired,
-        };
-      }
-
-      const placeNumbers = placedRows.map((row) => rowToNumber(row.place));
+      const placeNumbers = activeRows.map((row) => rowToNumber(row.place));
       const hasInvalidPlace = placeNumbers.some((value) => value <= 0);
       const uniquePlaces = new Set(placeNumbers);
-      if (hasInvalidPlace || uniquePlaces.size !== rows.length) {
+      if (hasInvalidPlace || uniquePlaces.size !== activeRows.length) {
         return { ok: false as const, wait: false, message: copy.semiPlaceUnique };
       }
     }
@@ -615,9 +608,10 @@ export function AdminControlRoom() {
       rowsToPublish,
       ranking: rowsToPublish.map((row) => row.code),
       breakdown: rowsToPublish
-        .filter((row) => hasScoreData(row))
+        .filter((row) => isSemiStage ? hasPlacement(row) : hasScoreData(row))
         .map((row) => ({
           code: row.code,
+          place: isSemiStage ? rowToNumber(row.place) : undefined,
           jury: rowToNumber(row.jury),
           tele: rowToNumber(row.tele),
           total: row.total ? rowToNumber(row.total) : rowToNumber(row.jury) + rowToNumber(row.tele),

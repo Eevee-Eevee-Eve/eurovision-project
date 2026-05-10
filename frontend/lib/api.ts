@@ -233,7 +233,7 @@ export async function publishStageResults(payload: {
   roomSlug: string;
   stage: StageKey;
   ranking: string[];
-  breakdown: Array<{ code: string; jury: number; tele: number; total: number }>;
+  breakdown: Array<{ code: string; place?: number; jury: number; tele: number; total: number }>;
 }) {
   return sendJson<{ ok: true; roomSlug: string; stage: StageKey; updated: number; updatedRooms?: string[] }>("/api/results", {
     method: "POST",
