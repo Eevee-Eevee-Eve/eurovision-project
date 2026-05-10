@@ -20,12 +20,13 @@ const rowTransition = {
   mass: 0.8,
 } as const;
 
-const FINAL_STAGE_COLUMN_SIZE = 10;
+const STAGE_COLUMN_COUNT = 2;
 
-function splitFinalStageColumns(rows: ActEntry[]) {
+function splitStageColumns(rows: ActEntry[], columnCount = STAGE_COLUMN_COUNT) {
   const columns: ActEntry[][] = [];
-  for (let index = 0; index < rows.length; index += FINAL_STAGE_COLUMN_SIZE) {
-    columns.push(rows.slice(index, index + FINAL_STAGE_COLUMN_SIZE));
+  const columnSize = Math.ceil(rows.length / columnCount);
+  for (let index = 0; index < rows.length; index += columnSize) {
+    columns.push(rows.slice(index, index + columnSize));
   }
   return columns;
 }
@@ -243,10 +244,10 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
 
   const stageRows = useMemo(() => sortedResults, [sortedResults]);
 
-  const finalStageColumns = useMemo(() => {
-    if (!isDesktop || !isFinal) return [];
-    return splitFinalStageColumns(stageRows);
-  }, [isDesktop, isFinal, stageRows]);
+  const desktopStageColumns = useMemo(() => {
+    if (!isDesktop) return [];
+    return splitStageColumns(stageRows);
+  }, [isDesktop, stageRows]);
 
   const roomRows = useMemo(() => {
     if (isDesktop) return leaders;
@@ -732,47 +733,39 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
                 </div>
               </div>
 
-              {isFinal ? (
-                <div className="mt-3 min-h-0 flex-1 overflow-hidden pr-1">
-                  {stageRows.length ? (
-                    <div className="live-final-stage-columns">
-                      {finalStageColumns.map((column, columnIndex) => (
-                        <div key={`final-column-${columnIndex}`} className="live-final-stage-column grid auto-rows-max content-start">
-                          {column.map((act) => renderStageDesktopRow(act))}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="show-panel p-5 text-sm text-arenaMuted">{text.noResults}</div>
-                  )}
-                </div>
-              ) : (
-                <div className={`show-scroll mt-3 grid flex-1 auto-rows-max content-start overflow-y-auto pr-1 ${isSemi ? "gap-1 xl:grid-cols-2" : "gap-0.75 xl:grid-cols-4"}`}>
-                  {stageRows.length ? stageRows.flatMap((act) => {
-                    const row = renderStageDesktopRow(act);
-                    if (!isSemi || qualificationCutoff == null || act.rank !== qualificationCutoff) {
-                      return [row];
-                    }
+              <div className="mt-3 min-h-0 flex-1 overflow-hidden pr-1">
+                {stageRows.length ? (
+                  <div className="live-stage-columns">
+                    {desktopStageColumns.map((column, columnIndex) => (
+                      <div key={`stage-column-${columnIndex}`} className="live-stage-column grid auto-rows-max content-start">
+                        {column.flatMap((act) => {
+                          const row = renderStageDesktopRow(act);
+                          if (!isSemi || qualificationCutoff == null || act.rank !== qualificationCutoff) {
+                            return [row];
+                          }
 
-                    return [
-                      row,
-                      <div key={`cutoff-divider-${act.code}`} className="show-panel live-cutoff-divider px-4 py-3 xl:col-span-2">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="label-copy text-[11px] uppercase tracking-[0.28em] text-emerald-100">
-                            {cutoffCopy.label}
-                          </span>
-                          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em]">
-                            <span className="show-chip px-3 py-1 text-emerald-100">{cutoffCopy.inLabel}</span>
-                            <span className="show-chip px-3 py-1 text-arenaMuted">{cutoffCopy.outLabel}</span>
-                          </div>
-                        </div>
-                      </div>,
-                    ];
-                  }) : (
-                    <div className="show-panel p-5 text-sm text-arenaMuted">{text.noResults}</div>
-                  )}
-                </div>
-              )}
+                          return [
+                            row,
+                            <div key={`cutoff-divider-${act.code}`} className="show-panel live-cutoff-divider px-4 py-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="label-copy text-[11px] uppercase tracking-[0.28em] text-emerald-100">
+                                  {cutoffCopy.label}
+                                </span>
+                                <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em]">
+                                  <span className="show-chip px-3 py-1 text-emerald-100">{cutoffCopy.inLabel}</span>
+                                  <span className="show-chip px-3 py-1 text-arenaMuted">{cutoffCopy.outLabel}</span>
+                                </div>
+                              </div>
+                            </div>,
+                          ];
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="show-panel p-5 text-sm text-arenaMuted">{text.noResults}</div>
+                )}
+              </div>
             </div>
 
             <div className="show-card flex h-[calc(100vh-10.75rem)] flex-col p-3 md:p-4 xl:p-5">
