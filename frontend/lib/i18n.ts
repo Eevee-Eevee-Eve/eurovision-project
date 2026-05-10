@@ -544,6 +544,36 @@ const ROOM_META: Record<string, { tagline: Record<Language, string>; cityLabel: 
       en: "Shared watch party across cities",
     },
   },
+  "morozov-semi1": {
+    tagline: {
+      ru: "Официальная комната первого полуфинала",
+      en: "Official Semi-final 1 room",
+    },
+    cityLabel: {
+      ru: "Официальный эфир первого полуфинала",
+      en: "Official Semi-final 1 watch room",
+    },
+  },
+  "morozov-semi2": {
+    tagline: {
+      ru: "Официальная комната второго полуфинала",
+      en: "Official Semi-final 2 room",
+    },
+    cityLabel: {
+      ru: "Официальный эфир второго полуфинала",
+      en: "Official Semi-final 2 watch room",
+    },
+  },
+  "morozov-final": {
+    tagline: {
+      ru: "Официальная комната финала",
+      en: "Official Grand Final room",
+    },
+    cityLabel: {
+      ru: "Официальный эфир финала",
+      en: "Official Grand Final watch room",
+    },
+  },
 };
 
 const MANUAL_EN_TEXT: Record<string, string> = {
@@ -635,6 +665,15 @@ export function localizeTextForLanguage(language: Language, value: string) {
 export function getRoomName(language: Language, roomSlug: string, fallback: string) {
   if (language === "en" && roomSlug === "neon-arena") {
     return "Eurovision at the Morozovs 2026";
+  }
+  if (language === "en" && roomSlug === "morozov-semi1") {
+    return "Eurovision at the Morozovs 2026 - Semi-final 1";
+  }
+  if (language === "en" && roomSlug === "morozov-semi2") {
+    return "Eurovision at the Morozovs 2026 - Semi-final 2";
+  }
+  if (language === "en" && roomSlug === "morozov-final") {
+    return "Eurovision at the Morozovs 2026 - Grand Final";
   }
 
   return localizeTextForLanguage(language, fallback);

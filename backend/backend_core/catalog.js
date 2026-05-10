@@ -43,6 +43,33 @@ const ROOMS = Object.freeze([
     seasonLabel: 'Евровидение у Морозовых 2026',
     defaultStage: 'semi1',
   },
+  {
+    slug: 'morozov-semi1',
+    name: 'Евровидение у Морозовых 2026 — 1-й полуфинал',
+    tagline: 'Официальная комната первого полуфинала',
+    cityLabel: 'Официальный эфир первого полуфинала',
+    seasonYear: 2026,
+    seasonLabel: 'Евровидение у Морозовых 2026',
+    defaultStage: 'semi1',
+  },
+  {
+    slug: 'morozov-semi2',
+    name: 'Евровидение у Морозовых 2026 — 2-й полуфинал',
+    tagline: 'Официальная комната второго полуфинала',
+    cityLabel: 'Официальный эфир второго полуфинала',
+    seasonYear: 2026,
+    seasonLabel: 'Евровидение у Морозовых 2026',
+    defaultStage: 'semi2',
+  },
+  {
+    slug: 'morozov-final',
+    name: 'Евровидение у Морозовых 2026 — Финал',
+    tagline: 'Официальная комната финала',
+    cityLabel: 'Официальный эфир финала',
+    seasonYear: 2026,
+    seasonLabel: 'Евровидение у Морозовых 2026',
+    defaultStage: 'final',
+  },
 ]);
 
 const DEFAULT_ROOM_SLUG = ROOMS[0].slug;

@@ -1653,14 +1653,14 @@ export function AdminControlRoom() {
         ) : null}
 
         {activeAdminTab !== "rooms" ? (
-        <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <section className="grid gap-4">
           <div className="grid gap-4">
-            <div className="show-card p-5 md:p-6">
+            <div className="show-card p-4 md:p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.roomStats}</p>
-                  <h2 className="display-copy mt-3 text-3xl font-black">{selectedRoomMeta?.name || selectedRoom}</h2>
-                  <p className="mt-3 text-sm text-arenaMuted">
+                  <h2 className="display-copy mt-2 text-2xl font-black">{selectedRoomMeta?.name || selectedRoom}</h2>
+                  <p className="mt-2 text-sm text-arenaMuted">
                     {snapshot?.predictionWindows[selectedStage] ? copy.stageWindowOpen : copy.stageWindowClosed}
                   </p>
                 </div>
@@ -1762,7 +1762,7 @@ export function AdminControlRoom() {
               </div>
               ) : null}
 
-              <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-4 grid gap-2 md:grid-cols-3 xl:grid-cols-6">
                 {[
                   { label: copy.participants, value: snapshot?.participants.activeCount ?? 0 },
                   { label: copy.removed, value: snapshot?.participants.removedCount ?? 0 },
@@ -1771,9 +1771,9 @@ export function AdminControlRoom() {
                   { label: copy.revealed, value: selectedStageOverview?.revealedCount ?? 0 },
                   { label: copy.lineup, value: `${selectedStageOverview?.currentEntries ?? 0}/${selectedStageOverview?.expectedEntries ?? 0}` },
                 ].map((item) => (
-                  <div key={item.label} className="show-panel p-4">
+                  <div key={item.label} className="show-panel p-3">
                     <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{item.label}</p>
-                    <p className="display-copy mt-3 text-4xl font-black">{item.value}</p>
+                    <p className="display-copy mt-2 text-2xl font-black">{item.value}</p>
                   </div>
                 ))}
               </div>
@@ -1857,12 +1857,12 @@ export function AdminControlRoom() {
             ) : null}
 
             {isMainAdmin && activeAdminTab === "voting" ? (
-            <div className="show-card p-5 md:p-6">
+            <div className="show-card p-4 md:p-5">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.resultsDesk}</p>
-                  <h2 className="display-copy mt-3 text-3xl font-black">{getStageLabel(selectedStage)}</h2>
-                  <p className="mt-3 text-sm text-arenaMuted">{resultsDeskText}</p>
+                  <h2 className="display-copy mt-2 text-2xl font-black">{getStageLabel(selectedStage)}</h2>
+                  <p className="mt-2 text-sm text-arenaMuted">{resultsDeskText}</p>
                   <p className="mt-2 text-sm text-arenaBeam">
                     {autoPublish
                       ? (isSemiStage ? adminUx.autoPublishHintSemi : adminUx.autoPublishHintFinal)
@@ -1904,41 +1904,38 @@ export function AdminControlRoom() {
                 </div>
               </div>
 
-              <div className="show-scroll mt-5 grid max-h-[min(44rem,62vh)] gap-2 overflow-y-auto pr-1">
+              <div className="mt-4 grid gap-1.5">
                 {loadingPanel ? (
                   <div className="rounded-[1.6rem] bg-white/5 p-5 text-sm text-arenaMuted">
                     {language === "ru" ? "Загружаю данные этапа..." : "Loading stage data..."}
                   </div>
                 ) : rankedRows.map((row) => (
-                  <div key={row.code} className="show-panel p-3">
-                    <div className="grid gap-3 lg:grid-cols-[auto_minmax(12rem,1fr)_auto] lg:items-center">
-                      <div className="flex items-center gap-3">
-                        <div className="show-rank h-11 w-11 shrink-0">
-                          <span className="display-copy text-lg font-black text-arenaText">{activeRanking[row.code] || "—"}</span>
+                  <div key={row.code} className="show-panel px-2 py-1.5">
+                    <div className="grid gap-2 lg:grid-cols-[auto_minmax(12rem,1fr)_auto] lg:items-center">
+                      <div className="flex items-center gap-2">
+                        <div className="show-rank h-9 w-9 shrink-0">
+                          <span className="display-copy text-sm font-black text-arenaText">{activeRanking[row.code] || "—"}</span>
                         </div>
                       </div>
 
                       <div className="min-w-0">
-                        <div className="flex flex-wrap gap-2">
-                          <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">{row.code}</span>
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          <span className="show-chip px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-arenaMuted">{row.code}</span>
                           {isSemiStage && hasPlacement(row) && qualificationCutoff ? (
-                            <span className={`show-chip text-[11px] uppercase tracking-[0.22em] ${rowToNumber(row.place) <= qualificationCutoff ? "text-emerald-100" : "text-arenaMuted"}`}>
+                            <span className={`show-chip px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] ${rowToNumber(row.place) <= qualificationCutoff ? "text-emerald-100" : "text-arenaMuted"}`}>
                               {rowToNumber(row.place) <= qualificationCutoff ? copy.qualifiedLabel : copy.outLabel}
                             </span>
                           ) : null}
-                        </div>
-                        <div className="mt-2 flex min-w-0 items-center gap-3">
                           {!isSemiStage ? (
                             <img
                               src={resolveMediaUrl(row.flagUrl) || row.flagUrl}
                               alt=""
-                              className="h-8 w-8 shrink-0 rounded-full border border-white/10 object-cover"
+                              className="h-5 w-5 shrink-0 rounded-full border border-white/10 object-cover"
                               loading="lazy"
                             />
                           ) : null}
-                          <p className="min-w-0 truncate text-xl font-black text-white">{row.country}</p>
-                        </div>
-                        <p className="mt-1 text-sm text-arenaMuted">
+                          <p className="min-w-0 truncate text-base font-black text-white">{row.country}</p>
+                          <span className="truncate text-xs text-arenaMuted">
                           {isSemiStage
                             ? hasPlacement(row)
                               ? `${copy.placeLabel}: #${row.place}`
@@ -1946,28 +1943,29 @@ export function AdminControlRoom() {
                             : hasRowData(row)
                               ? `${copy.totalLabel}: ${row.total || "0"}`
                               : copy.noData}
-                        </p>
+                          </span>
+                        </div>
                       </div>
 
                       <div className={`grid gap-2 ${isSemiStage ? "lg:w-[7rem]" : "md:grid-cols-3 lg:w-[20rem]"}`}>
                         {isSemiStage ? (
-                          <label className="grid gap-2 text-xs text-arenaMuted">
+                          <label className="grid gap-1 text-xs text-arenaMuted">
                             <span className="label-copy uppercase tracking-[0.2em]">{copy.placeLabel}</span>
-                            <input className="arena-input h-11" inputMode="numeric" value={row.place} onChange={(event) => setRowValue(row.code, "place", event.target.value)} onKeyDown={handleResultInputKeyDown} />
+                            <input className="arena-input h-9" inputMode="numeric" value={row.place} onChange={(event) => setRowValue(row.code, "place", event.target.value)} onKeyDown={handleResultInputKeyDown} />
                           </label>
                         ) : (
                           <>
-                            <label className="grid gap-2 text-xs text-arenaMuted">
+                            <label className="grid gap-1 text-xs text-arenaMuted">
                               <span className="label-copy uppercase tracking-[0.2em]">{copy.juryLabel}</span>
-                              <input className="arena-input h-11" inputMode="numeric" value={row.jury} onChange={(event) => setRowValue(row.code, "jury", event.target.value)} onKeyDown={handleResultInputKeyDown} />
+                              <input className="arena-input h-9" inputMode="numeric" value={row.jury} onChange={(event) => setRowValue(row.code, "jury", event.target.value)} onKeyDown={handleResultInputKeyDown} />
                             </label>
-                            <label className="grid gap-2 text-xs text-arenaMuted">
+                            <label className="grid gap-1 text-xs text-arenaMuted">
                               <span className="label-copy uppercase tracking-[0.2em]">{copy.teleLabel}</span>
-                              <input className="arena-input h-11" inputMode="numeric" value={row.tele} onChange={(event) => setRowValue(row.code, "tele", event.target.value)} onKeyDown={handleResultInputKeyDown} />
+                              <input className="arena-input h-9" inputMode="numeric" value={row.tele} onChange={(event) => setRowValue(row.code, "tele", event.target.value)} onKeyDown={handleResultInputKeyDown} />
                             </label>
-                            <label className="grid gap-2 text-xs text-arenaMuted">
+                            <label className="grid gap-1 text-xs text-arenaMuted">
                               <span className="label-copy uppercase tracking-[0.2em]">{copy.totalLabel}</span>
-                              <input className="arena-input h-11" inputMode="numeric" value={row.total} onChange={(event) => setRowValue(row.code, "total", event.target.value)} onKeyDown={handleResultInputKeyDown} />
+                              <input className="arena-input h-9" inputMode="numeric" value={row.total} onChange={(event) => setRowValue(row.code, "total", event.target.value)} onKeyDown={handleResultInputKeyDown} />
                             </label>
                           </>
                         )}
@@ -1983,41 +1981,41 @@ export function AdminControlRoom() {
           <div className="grid gap-4">
             {activeAdminTab === "participants" || activeAdminTab === "voting" ? (
               <>
-            <div className="show-card p-5 md:p-6">
+            <div className="show-card p-4 md:p-5">
               <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{adminUx.roomToolsTitle}</p>
               <h2 className="display-copy mt-2 text-2xl font-black">{selectedRoomMeta?.seasonLabel || selectedRoomMeta?.name}</h2>
               <p className="mt-2 text-sm text-arenaMuted">{adminUx.roomToolsText}</p>
             </div>
 
-            <div className="show-scroll grid max-h-[min(42rem,64vh)] gap-2 overflow-y-auto pr-1">
+            <div className="show-scroll grid max-h-[min(26rem,48vh)] gap-1.5 overflow-y-auto pr-1">
               {users.map((user) => (
-                <div key={user.id} className="show-panel p-3">
-                  <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+                <div key={user.id} className="show-panel px-2 py-1.5">
+                  <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={`show-chip text-[11px] uppercase tracking-[0.22em] ${user.removed ? "border-rose-300/20 bg-rose-400/15 text-rose-100" : "text-arenaBeam"}`}>
+                        <span className={`show-chip px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] ${user.removed ? "border-rose-300/20 bg-rose-400/15 text-rose-100" : "text-arenaBeam"}`}>
                           {user.removed ? copy.removedState : copy.activeState}
                         </span>
                         {user.submittedStages.map((stage) => (
-                          <span key={`${user.id}-${stage}`} className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+                          <span key={`${user.id}-${stage}`} className="show-chip px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-arenaMuted">
                             {getStageLabel(stage)}
                           </span>
                         ))}
                         {user.submissionOverrides[selectedStage] ? (
-                          <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
+                          <span className="show-chip px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-emerald-100">
                             <Unlock size={13} />
                             {copy.latePassActive}
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-2 truncate text-base font-semibold text-white">{getDisplayName(user.name)}</p>
+                      <p className="mt-1 truncate text-base font-semibold text-white">{getDisplayName(user.name)}</p>
                       <p className="mt-1 truncate text-xs text-arenaMuted">{user.firstName} {user.lastName}</p>
                     </div>
 
-                  <div className="grid gap-2 sm:grid-cols-2 xl:w-[19rem]">
+                  <div className="grid gap-1.5 sm:grid-cols-2 xl:w-[18rem]">
                     <button
                       type="button"
-                      className="arena-button-secondary px-3 py-2 text-xs"
+                      className="arena-button-secondary px-3 py-1.5 text-[11px]"
                       disabled={Boolean(pendingAction)}
                       onClick={() => void handleParticipantAction(`reset-stage-${user.id}`, () => resetParticipant(selectedRoom, user.id, selectedStage), copy.participantReset(selectedStage))}
                     >
@@ -2025,7 +2023,7 @@ export function AdminControlRoom() {
                     </button>
                     <button
                       type="button"
-                      className="arena-button-secondary px-3 py-2 text-xs"
+                      className="arena-button-secondary px-3 py-1.5 text-[11px]"
                       disabled={Boolean(pendingAction)}
                       onClick={() => void handleParticipantAction(`reset-all-${user.id}`, () => resetParticipant(selectedRoom, user.id), copy.participantReset(null))}
                     >
@@ -2035,7 +2033,7 @@ export function AdminControlRoom() {
                       user.submissionOverrides[selectedStage] ? (
                         <button
                           type="button"
-                          className="arena-button-secondary px-3 py-2 text-xs sm:col-span-2"
+                          className="arena-button-secondary px-3 py-1.5 text-[11px] sm:col-span-2"
                           disabled={Boolean(pendingAction)}
                           onClick={() => void handleParticipantLatePass(user.id, true)}
                         >
@@ -2045,7 +2043,7 @@ export function AdminControlRoom() {
                       ) : (
                         <button
                           type="button"
-                          className="arena-button-primary h-10 px-3 text-xs sm:col-span-2"
+                          className="arena-button-primary h-9 px-3 text-[11px] sm:col-span-2"
                           disabled={Boolean(pendingAction)}
                           onClick={() => void handleParticipantLatePass(user.id)}
                         >
@@ -2057,7 +2055,7 @@ export function AdminControlRoom() {
                     {user.removed ? (
                       <button
                         type="button"
-                        className="arena-button-primary h-10 px-3 text-xs sm:col-span-2"
+                        className="arena-button-primary h-9 px-3 text-[11px] sm:col-span-2"
                         disabled={Boolean(pendingAction)}
                         onClick={() => void handleParticipantAction(`restore-${user.id}`, () => restoreParticipant(selectedRoom, user.id), copy.participantRestored)}
                       >
@@ -2066,7 +2064,7 @@ export function AdminControlRoom() {
                     ) : (
                       <button
                         type="button"
-                        className="rounded-full bg-rose-500/15 px-3 py-2 text-xs font-semibold text-rose-100 transition hover:bg-rose-500/25 sm:col-span-2"
+                        className="rounded-full bg-rose-500/15 px-3 py-1.5 text-[11px] font-semibold text-rose-100 transition hover:bg-rose-500/25 sm:col-span-2"
                         disabled={Boolean(pendingAction)}
                         onClick={() => {
                           const confirmed = window.confirm(language === "ru" ? "Удалить участника из комнаты?" : "Remove this participant from the room?");
