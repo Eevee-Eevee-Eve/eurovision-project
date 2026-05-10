@@ -254,6 +254,22 @@ export async function closeAdminRoom(roomSlug: string) {
   });
 }
 
+export async function updateAdminRoom(roomSlug: string, payload: { name: string }) {
+  return sendJson<{ ok: true; room: RoomSummary }>(`/api/admin/rooms/${roomSlug}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateOfficialRoom(stage: StageKey, roomSlug: string) {
+  return sendJson<{ ok: true; officialRooms: Record<StageKey, string> }>("/api/admin/official-rooms", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ stage, roomSlug }),
+  });
+}
+
 export async function resetParticipant(roomSlug: string, accountId: string, stage?: StageKey) {
   return sendJson<{ reset: string; roomSlug: string; stage?: StageKey | null }>(`/api/users/${accountId}/reset?room=${roomSlug}`, {
     method: "POST",

@@ -34,6 +34,8 @@ function createEmptyState(createRoomState, rooms) {
     dynamicRooms: {},
     roomAccessSessions: {},
     contestCompletedAt: null,
+    officialRooms: {},
+    roomOverrides: {},
     globalPredictionWindows: null,
     globalStageCountdowns: {},
     roomStates: rooms.reduce((acc, room) => {
@@ -71,6 +73,8 @@ function loadState(createRoomState, rooms) {
       dynamicRooms,
       roomAccessSessions: raw.roomAccessSessions || {},
       contestCompletedAt: raw.contestCompletedAt || null,
+      officialRooms: raw.officialRooms && typeof raw.officialRooms === 'object' ? raw.officialRooms : {},
+      roomOverrides: raw.roomOverrides && typeof raw.roomOverrides === 'object' ? raw.roomOverrides : {},
       globalPredictionWindows: raw.globalPredictionWindows || null,
       globalStageCountdowns: raw.globalStageCountdowns || {},
       roomStates,

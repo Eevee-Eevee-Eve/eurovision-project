@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, Clock3, KeyRound, Lock, LogOut, MonitorPlay, RefreshCw, RotateCcw, Settings2, ShieldCheck, Trophy, Unlock, Users } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Activity, Check, Clock3, KeyRound, Lock, LogOut, MonitorPlay, Pencil, RefreshCw, RotateCcw, Search, Settings2, ShieldCheck, Trash2, Trophy, Unlock, Users, X } from "lucide-react";
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   closeAdminRoom,
   completeContest,
@@ -26,8 +26,11 @@ import {
   stopStageCountdown,
   toggleStageWindow,
   updateAdminShowState,
+  updateAdminRoom,
   updateAdminScoring,
+  updateOfficialRoom,
 } from "../lib/api";
+import { resolveMediaUrl } from "../lib/media";
 import { STAGE_OPTIONS } from "../lib/rooms";
 import type { ActEntry, AdminRoomSnapshot, AdminSessionPayload, AdminUserEntry, RoomSummary, ShowHighlightMode, StageKey } from "../lib/types";
 import { BrandLogo } from "./BrandLogo";
@@ -43,6 +46,7 @@ type EditableResultRow = ActEntry & {
 };
 
 type DraftMemory = Record<string, { place: string; jury: string; tele: string; total: string }>;
+type AdminTab = "rooms" | "voting" | "participants" | "technical";
 
 function isStageKey(value: string | null): value is StageKey {
   return value === "semi1" || value === "semi2" || value === "final";
@@ -200,9 +204,18 @@ export function AdminControlRoom() {
   const [authenticated, setAuthenticated] = useState(false);
   const [adminRole, setAdminRole] = useState<AdminSessionPayload["role"]>(null);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
+  const [officialRooms, setOfficialRooms] = useState<Record<StageKey, string>>({
+    semi1: "",
+    semi2: "",
+    final: "",
+  });
   const [scoringProfiles, setScoringProfiles] = useState<AdminSessionPayload["scoringProfiles"]>([]);
   const [selectedRoom, setSelectedRoom] = useState("");
   const [selectedStage, setSelectedStage] = useState<StageKey>("semi1");
+  const [activeAdminTab, setActiveAdminTab] = useState<AdminTab>("voting");
+  const [roomSearch, setRoomSearch] = useState("");
+  const [editingRoomSlug, setEditingRoomSlug] = useState("");
+  const [editingRoomName, setEditingRoomName] = useState("");
   const [snapshot, setSnapshot] = useState<AdminRoomSnapshot | null>(null);
   const [users, setUsers] = useState<AdminUserEntry[]>([]);
   const [rows, setRows] = useState<EditableResultRow[]>([]);
@@ -328,6 +341,25 @@ export function AdminControlRoom() {
           confirmRoomReset: "Полностью очистить бюллетени, результаты и статусы этой комнаты?",
           socketLive: "Синхронизация активна",
           socketIdle: "Нажми «Обновить», чтобы подтянуть данные",
+          roomsTab: "Комнаты",
+          votingTab: "Голосование",
+          participantsTab: "Участники",
+          technicalTab: "Техблок",
+          officialRoomsTitle: "Официальные слоты этапов",
+          officialRoomsText: "Эти слоты помогают быстро открыть нужную комнату для полуфинала или финала. Публикация официальных результатов всё равно остаётся глобальной для всех комнат.",
+          roomsListTitle: "Все комнаты",
+          roomSearchPlaceholder: "Найти комнату",
+          openRoomAdmin: "Открыть",
+          renameRoom: "Переименовать",
+          saveRoomName: "Сохранить",
+          cancelRoomName: "Отмена",
+          deleteRoom: "Удалить",
+          catalogRoom: "Основная",
+          temporaryRoom: "Временная",
+          protectedRoom: "С паролем",
+          deleteCatalogBlocked: "Основную комнату нельзя удалить из админки. Можно переименовать её или переназначить официальный слот.",
+          roomUpdated: "Комната обновлена.",
+          officialRoomUpdated: "Официальный слот обновлён.",
         }
       : {
           kicker: "Organizer Panel",
@@ -426,6 +458,25 @@ export function AdminControlRoom() {
           confirmRoomReset: "Clear ballots, published results, and stage states for this room?",
           socketLive: "Sync active",
           socketIdle: "Use refresh to load the latest data",
+          roomsTab: "Rooms",
+          votingTab: "Voting",
+          participantsTab: "Participants",
+          technicalTab: "Technical",
+          officialRoomsTitle: "Official stage slots",
+          officialRoomsText: "These slots make it quick to open the room used for each semi-final or final. Official result publishing still remains global for every room.",
+          roomsListTitle: "All rooms",
+          roomSearchPlaceholder: "Find room",
+          openRoomAdmin: "Open",
+          renameRoom: "Rename",
+          saveRoomName: "Save",
+          cancelRoomName: "Cancel",
+          deleteRoom: "Delete",
+          catalogRoom: "Main",
+          temporaryRoom: "Temporary",
+          protectedRoom: "Password",
+          deleteCatalogBlocked: "Main catalog rooms cannot be deleted from the admin panel. Rename it or reassign the official slot instead.",
+          roomUpdated: "Room updated.",
+          officialRoomUpdated: "Official slot updated.",
         }
   ), [getStageLabel, language]);
 
@@ -492,6 +543,23 @@ export function AdminControlRoom() {
   const selectedRoomMeta = rooms.find((room) => room.slug === selectedRoom) || null;
   const isMainAdmin = adminRole === "main";
   const canCloseSelectedRoom = Boolean(selectedRoomMeta?.isTemporary);
+  const filteredRooms = useMemo(() => {
+    const query = roomSearch.trim().toLowerCase();
+    if (!query) return rooms;
+    return rooms.filter((room) => [
+      room.name,
+      room.slug,
+      room.seasonLabel,
+      room.cityLabel,
+      getStageLabel(room.defaultStage),
+    ].filter(Boolean).some((value) => String(value).toLowerCase().includes(query)));
+  }, [getStageLabel, roomSearch, rooms]);
+  const adminTabs = useMemo<Array<{ key: AdminTab; label: string }>>(() => [
+    { key: "rooms", label: copy.roomsTab },
+    { key: "voting", label: copy.votingTab },
+    { key: "participants", label: copy.participantsTab },
+    { key: "technical", label: copy.technicalTab },
+  ], [copy]);
   const selectedStageOverview = snapshot?.stageOverview[selectedStage];
   const selectedStageCountdown = snapshot?.submissionCountdowns?.[selectedStage] || null;
   const isSemiStage = isSemiStageValue(selectedStage);
@@ -506,6 +574,15 @@ export function AdminControlRoom() {
       return acc;
     }, {});
   }, [isSemiStage, rankedRows]);
+  const semiPlaceState = useMemo(() => {
+    const placeNumbers = rows.map((row) => rowToNumber(row.place)).filter((value) => value > 0);
+    const duplicates = Array.from(new Set(placeNumbers.filter((value, index) => placeNumbers.indexOf(value) !== index))).sort((a, b) => a - b);
+    return {
+      filled: placeNumbers.length,
+      free: Math.max(0, rows.length - placeNumbers.length),
+      duplicates,
+    };
+  }, [rows]);
   function buildPublishPayload(options: { quiet?: boolean } = {}) {
     const activeRows = rankedRows.filter((row) => hasRowData(row));
     if (!activeRows.length) {
@@ -643,6 +720,11 @@ export function AdminControlRoom() {
         setAuthenticated(payload.authenticated);
         setAdminRole(payload.role || null);
         setRooms(payload.rooms);
+        setOfficialRooms({
+          semi1: payload.officialRooms?.semi1 || payload.rooms[0]?.slug || "",
+          semi2: payload.officialRooms?.semi2 || payload.rooms[0]?.slug || "",
+          final: payload.officialRooms?.final || payload.rooms[0]?.slug || "",
+        });
         setScoringProfiles(payload.scoringProfiles);
         setContestCompletedAt(payload.contestCompletedAt || null);
 
@@ -794,6 +876,13 @@ export function AdminControlRoom() {
     });
   }
 
+  function handleResultInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.currentTarget.blur();
+      void handlePublishResults();
+    }
+  }
+
   useEffect(() => {
     if (!autoPublish || !draftDirty || !authenticated || !isMainAdmin || !selectedRoom || loadingPanel) {
       return;
@@ -862,6 +951,11 @@ export function AdminControlRoom() {
       setAuthenticated(true);
       setAdminRole(payload.role || "main");
       setRooms(payload.rooms);
+      setOfficialRooms({
+        semi1: payload.officialRooms?.semi1 || payload.rooms[0]?.slug || "",
+        semi2: payload.officialRooms?.semi2 || payload.rooms[0]?.slug || "",
+        final: payload.officialRooms?.final || payload.rooms[0]?.slug || "",
+      });
       setScoringProfiles(payload.scoringProfiles);
       setContestCompletedAt(payload.contestCompletedAt || null);
       setSelectedRoom((current) => current || payload.rooms[0]?.slug || "");
@@ -1137,6 +1231,90 @@ export function AdminControlRoom() {
     }
   }
 
+  function startRoomRename(room: RoomSummary) {
+    setEditingRoomSlug(room.slug);
+    setEditingRoomName(getRoomName(room.slug, room.name));
+  }
+
+  async function handleRoomRename(roomSlug: string) {
+    const nextName = editingRoomName.trim();
+    if (!nextName) return;
+
+    setPendingAction(`room-rename-${roomSlug}`);
+    setError("");
+    setStatusText("");
+    try {
+      const payload = await updateAdminRoom(roomSlug, { name: nextName });
+      setRooms((current) => current.map((room) => room.slug === roomSlug ? payload.room : room));
+      if (selectedRoom === roomSlug) {
+        setSnapshot((current) => current ? { ...current } : current);
+      }
+      setEditingRoomSlug("");
+      setEditingRoomName("");
+      setStatusText(copy.roomUpdated);
+    } catch (renameError) {
+      console.error(renameError);
+      setError(renameError instanceof Error ? renameError.message : copy.reloadFailed);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function handleOfficialRoomChange(stage: StageKey, roomSlug: string) {
+    if (!isMainAdmin) return;
+
+    setPendingAction(`official-room-${stage}`);
+    setError("");
+    setStatusText("");
+    try {
+      const payload = await updateOfficialRoom(stage, roomSlug);
+      setOfficialRooms(payload.officialRooms);
+      setSelectedRoom(roomSlug);
+      setSelectedStage(stage);
+      setStatusText(copy.officialRoomUpdated);
+    } catch (saveError) {
+      console.error(saveError);
+      setError(saveError instanceof Error ? saveError.message : copy.reloadFailed);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function handleDeleteRoomFromList(room: RoomSummary) {
+    if (!room.isTemporary) {
+      setError(copy.deleteCatalogBlocked);
+      return;
+    }
+
+    const confirmed = window.confirm(language === "ru"
+      ? `Удалить комнату «${getRoomName(room.slug, room.name)}»? Данные комнаты будут закрыты.`
+      : `Delete room "${getRoomName(room.slug, room.name)}"? Room data will be closed.`);
+    if (!confirmed) return;
+
+    setPendingAction(`room-delete-${room.slug}`);
+    setError("");
+    setStatusText("");
+    try {
+      await closeAdminRoom(room.slug);
+      const nextRooms = rooms.filter((item) => item.slug !== room.slug);
+      setRooms(nextRooms);
+      setOfficialRooms((current) => ({
+        semi1: current.semi1 === room.slug ? nextRooms[0]?.slug || "" : current.semi1,
+        semi2: current.semi2 === room.slug ? nextRooms[0]?.slug || "" : current.semi2,
+        final: current.final === room.slug ? nextRooms[0]?.slug || "" : current.final,
+      }));
+      if (selectedRoom === room.slug) {
+        setSelectedRoom(nextRooms[0]?.slug || "");
+      }
+      setStatusText(copy.closeRoomDone);
+    } catch (deleteError) {
+      console.error(deleteError);
+      setError(deleteError instanceof Error ? deleteError.message : copy.reloadFailed);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
   if (booting) {
     return <div className="show-card p-6 text-sm text-arenaMuted">Загружаю пульт...</div>;
   }
@@ -1320,12 +1498,162 @@ export function AdminControlRoom() {
                 {copy.refreshButton}
               </button>
             </div>
+
+            <div className="show-panel flex flex-wrap gap-2 p-2">
+              {adminTabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    activeAdminTab === tab.key
+                      ? "bg-arenaSurfaceMax text-white shadow-glow"
+                      : "text-arenaMuted hover:bg-white/[0.07] hover:text-white"
+                  }`}
+                  onClick={() => setActiveAdminTab(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 
         {error ? <div className="rounded-[1.4rem] bg-rose-400/10 px-4 py-3 text-sm text-rose-100">{error}</div> : null}
         {statusText ? <div className="rounded-[1.4rem] bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">{statusText}</div> : null}
 
+        {activeAdminTab === "rooms" ? (
+          <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+            {isMainAdmin ? (
+              <div className="show-card p-5 md:p-6">
+                <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.officialRoomsTitle}</p>
+                <h2 className="display-copy mt-3 text-3xl font-black">{copy.roomsTab}</h2>
+                <p className="mt-3 text-sm leading-6 text-arenaMuted">{copy.officialRoomsText}</p>
+                <div className="mt-5 grid gap-3">
+                  {STAGE_OPTIONS.map((stage) => {
+                    const officialSlug = officialRooms[stage.key] || rooms[0]?.slug || "";
+                    return (
+                      <label key={`official-${stage.key}`} className="show-panel p-4">
+                        <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{getStageLabel(stage.key)}</p>
+                        <select
+                          className="arena-input mt-3"
+                          value={officialSlug}
+                          disabled={pendingAction === `official-room-${stage.key}`}
+                          onChange={(event) => void handleOfficialRoomChange(stage.key, event.target.value)}
+                        >
+                          {rooms.map((room) => (
+                            <option key={`${stage.key}-${room.slug}`} value={room.slug}>{getRoomName(room.slug, room.name)}</option>
+                          ))}
+                        </select>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="show-card p-5 md:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.roomsListTitle}</p>
+                  <h2 className="display-copy mt-3 text-3xl font-black">{rooms.length}</h2>
+                </div>
+                <label className="min-w-[16rem] flex-1 sm:max-w-sm">
+                  <span className="sr-only">{copy.roomSearchPlaceholder}</span>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-arenaMuted" size={17} />
+                    <input
+                      className="arena-input pl-11"
+                      value={roomSearch}
+                      placeholder={copy.roomSearchPlaceholder}
+                      onChange={(event) => setRoomSearch(event.target.value)}
+                    />
+                  </div>
+                </label>
+              </div>
+
+              <div className="mt-5 grid gap-3">
+                {filteredRooms.map((room) => {
+                  const editing = editingRoomSlug === room.slug;
+                  const roomName = getRoomName(room.slug, room.name);
+                  return (
+                    <div key={room.slug} className="show-panel p-4">
+                      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap gap-2">
+                            <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">{room.isTemporary ? copy.temporaryRoom : copy.catalogRoom}</span>
+                            {room.passwordRequired ? <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">{copy.protectedRoom}</span> : null}
+                            <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">{getStageLabel(room.defaultStage)}</span>
+                          </div>
+                          {editing ? (
+                            <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                              <input
+                                className="arena-input"
+                                value={editingRoomName}
+                                onChange={(event) => setEditingRoomName(event.target.value)}
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter") {
+                                    void handleRoomRename(room.slug);
+                                  }
+                                  if (event.key === "Escape") {
+                                    setEditingRoomSlug("");
+                                    setEditingRoomName("");
+                                  }
+                                }}
+                              />
+                              <button type="button" className="arena-button-primary h-12 px-4 text-sm" onClick={() => void handleRoomRename(room.slug)}>
+                                <Check size={15} />
+                                {copy.saveRoomName}
+                              </button>
+                              <button type="button" className="arena-button-secondary px-4 py-3 text-sm" onClick={() => {
+                                setEditingRoomSlug("");
+                                setEditingRoomName("");
+                              }}>
+                                <X size={15} />
+                                {copy.cancelRoomName}
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="mt-3 truncate text-xl font-semibold text-white">{roomName}</p>
+                              <p className="mt-1 text-sm text-arenaMuted">{room.slug}</p>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button type="button" className="arena-button-secondary px-4 py-3 text-sm" onClick={() => {
+                            setSelectedRoom(room.slug);
+                            setActiveAdminTab("voting");
+                          }}>
+                            <MonitorPlay size={15} />
+                            {copy.openRoomAdmin}
+                          </button>
+                          {isMainAdmin ? (
+                            <button type="button" className="arena-button-secondary px-4 py-3 text-sm" onClick={() => startRoomRename(room)}>
+                              <Pencil size={15} />
+                              {copy.renameRoom}
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="rounded-full bg-rose-500/15 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/25 disabled:cursor-not-allowed disabled:opacity-45"
+                            disabled={Boolean(pendingAction) || !room.isTemporary}
+                            title={!room.isTemporary ? copy.deleteCatalogBlocked : undefined}
+                            onClick={() => void handleDeleteRoomFromList(room)}
+                          >
+                            <Trash2 size={15} />
+                            {copy.deleteRoom}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {activeAdminTab !== "rooms" ? (
         <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
           <div className="grid gap-4">
             <div className="show-card p-5 md:p-6">
@@ -1452,6 +1780,7 @@ export function AdminControlRoom() {
               </div>
             </div>
 
+            {activeAdminTab === "voting" ? (
             <div className="show-card p-5 md:p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -1526,8 +1855,9 @@ export function AdminControlRoom() {
                 </div>
               </div>
             </div>
+            ) : null}
 
-            {isMainAdmin ? (
+            {isMainAdmin && activeAdminTab === "voting" ? (
             <div className="show-card p-5 md:p-6">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
@@ -1540,10 +1870,18 @@ export function AdminControlRoom() {
                       : adminUx.autoPublishOff}
                   </p>
                   {isSemiStage && qualificationCutoff ? (
-                    <div className="mt-3">
+                    <div className="mt-3 flex flex-wrap gap-2">
                       <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-emerald-100">
                         {language === "ru" ? `Проходят места 1–${qualificationCutoff}` : `Places 1-${qualificationCutoff} qualify`}
                       </span>
+                      <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+                        {language === "ru" ? `Свободно мест: ${semiPlaceState.free}` : `Open places: ${semiPlaceState.free}`}
+                      </span>
+                      {semiPlaceState.duplicates.length ? (
+                        <span className="show-chip border-rose-300/20 bg-rose-400/10 text-[11px] uppercase tracking-[0.22em] text-rose-100">
+                          {language === "ru" ? `Дубли: ${semiPlaceState.duplicates.join(", ")}` : `Duplicates: ${semiPlaceState.duplicates.join(", ")}`}
+                        </span>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
@@ -1591,7 +1929,17 @@ export function AdminControlRoom() {
                             </span>
                           ) : null}
                         </div>
-                        <p className="mt-3 text-2xl font-black text-white">{row.country}</p>
+                        <div className="mt-3 flex min-w-0 items-center gap-3">
+                          {!isSemiStage ? (
+                            <img
+                              src={resolveMediaUrl(row.flagUrl) || row.flagUrl}
+                              alt=""
+                              className="h-8 w-8 shrink-0 rounded-full border border-white/10 object-cover"
+                              loading="lazy"
+                            />
+                          ) : null}
+                          <p className="min-w-0 truncate text-2xl font-black text-white">{row.country}</p>
+                        </div>
                         <p className="mt-2 text-sm text-arenaMuted">
                           {isSemiStage
                             ? hasPlacement(row)
@@ -1603,25 +1951,28 @@ export function AdminControlRoom() {
                         </p>
                       </div>
 
-                      <div className={`grid gap-3 ${isSemiStage ? "md:grid-cols-4 lg:w-[28rem]" : "md:grid-cols-3 lg:w-[21rem]"}`}>
+                      <div className={`grid gap-3 ${isSemiStage ? "lg:w-[8rem]" : "md:grid-cols-3 lg:w-[21rem]"}`}>
                         {isSemiStage ? (
                           <label className="grid gap-2 text-xs text-arenaMuted">
                             <span className="label-copy uppercase tracking-[0.2em]">{copy.placeLabel}</span>
-                            <input className="arena-input" inputMode="numeric" value={row.place} onChange={(event) => setRowValue(row.code, "place", event.target.value)} />
+                            <input className="arena-input" inputMode="numeric" value={row.place} onChange={(event) => setRowValue(row.code, "place", event.target.value)} onKeyDown={handleResultInputKeyDown} />
                           </label>
-                        ) : null}
-                        <label className="grid gap-2 text-xs text-arenaMuted">
-                          <span className="label-copy uppercase tracking-[0.2em]">{copy.juryLabel}</span>
-                          <input className="arena-input" inputMode="numeric" value={row.jury} onChange={(event) => setRowValue(row.code, "jury", event.target.value)} />
-                        </label>
-                        <label className="grid gap-2 text-xs text-arenaMuted">
-                          <span className="label-copy uppercase tracking-[0.2em]">{copy.teleLabel}</span>
-                          <input className="arena-input" inputMode="numeric" value={row.tele} onChange={(event) => setRowValue(row.code, "tele", event.target.value)} />
-                        </label>
-                        <label className="grid gap-2 text-xs text-arenaMuted">
-                          <span className="label-copy uppercase tracking-[0.2em]">{copy.totalLabel}</span>
-                          <input className="arena-input" inputMode="numeric" value={row.total} onChange={(event) => setRowValue(row.code, "total", event.target.value)} />
-                        </label>
+                        ) : (
+                          <>
+                            <label className="grid gap-2 text-xs text-arenaMuted">
+                              <span className="label-copy uppercase tracking-[0.2em]">{copy.juryLabel}</span>
+                              <input className="arena-input" inputMode="numeric" value={row.jury} onChange={(event) => setRowValue(row.code, "jury", event.target.value)} onKeyDown={handleResultInputKeyDown} />
+                            </label>
+                            <label className="grid gap-2 text-xs text-arenaMuted">
+                              <span className="label-copy uppercase tracking-[0.2em]">{copy.teleLabel}</span>
+                              <input className="arena-input" inputMode="numeric" value={row.tele} onChange={(event) => setRowValue(row.code, "tele", event.target.value)} onKeyDown={handleResultInputKeyDown} />
+                            </label>
+                            <label className="grid gap-2 text-xs text-arenaMuted">
+                              <span className="label-copy uppercase tracking-[0.2em]">{copy.totalLabel}</span>
+                              <input className="arena-input" inputMode="numeric" value={row.total} onChange={(event) => setRowValue(row.code, "total", event.target.value)} onKeyDown={handleResultInputKeyDown} />
+                            </label>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1632,6 +1983,8 @@ export function AdminControlRoom() {
           </div>
 
           <div className="grid gap-4">
+            {activeAdminTab === "participants" || activeAdminTab === "voting" ? (
+              <>
             <div className="show-card p-5 md:p-6">
               <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{adminUx.roomToolsTitle}</p>
               <h2 className="display-copy mt-3 text-3xl font-black">{selectedRoomMeta?.seasonLabel || selectedRoomMeta?.name}</h2>
@@ -1739,8 +2092,10 @@ export function AdminControlRoom() {
                 </div>
               ))}
             </div>
+              </>
+            ) : null}
 
-            {canCloseSelectedRoom ? (
+            {activeAdminTab === "technical" && canCloseSelectedRoom ? (
               <div className="show-card p-5 md:p-6">
                 <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.closeRoom}</p>
                 <p className="mt-3 text-sm text-arenaMuted">{copy.closeRoomText}</p>
@@ -1755,7 +2110,7 @@ export function AdminControlRoom() {
               </div>
             ) : null}
 
-            {isMainAdmin ? (
+            {activeAdminTab === "technical" && isMainAdmin ? (
               <>
                 <div className="show-card p-5 md:p-6">
                   <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">{copy.completeContest}</p>
@@ -1793,6 +2148,7 @@ export function AdminControlRoom() {
             ) : null}
           </div>
         </section>
+        ) : null}
       </div>
     </main>
   );

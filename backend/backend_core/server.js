@@ -239,6 +239,12 @@ state.globalStageCountdowns = normalizeStageCountdownsShape(state.globalStageCou
 if (!state.dynamicRooms || typeof state.dynamicRooms !== 'object') {
   state.dynamicRooms = {};
 }
+if (!state.officialRooms || typeof state.officialRooms !== 'object') {
+  state.officialRooms = {};
+}
+if (!state.roomOverrides || typeof state.roomOverrides !== 'object') {
+  state.roomOverrides = {};
+}
 if (!state.roomAccessSessions || typeof state.roomAccessSessions !== 'object') {
   state.roomAccessSessions = {};
 }
@@ -248,6 +254,36 @@ const stageCountdownTimers = new Map();
 
 function getScoringProfile(profileKey) {
   return SCORING_PROFILES[profileKey] || SCORING_PROFILES[DEFAULT_SCORING_PROFILE];
+}
+
+function normalizeOfficialRoomsShape(value) {
+  return STAGE_KEYS.reduce((acc, stage) => {
+    const roomSlug = normalizeRoomSlug(value?.[stage], { allowDefault: true });
+    acc[stage] = roomSlug && getRoomBySlug(roomSlug) ? roomSlug : DEFAULT_ROOM_SLUG;
+    return acc;
+  }, {});
+}
+
+state.officialRooms = normalizeOfficialRoomsShape(state.officialRooms);
+
+function getRoomOverride(roomSlug) {
+  const override = state.roomOverrides?.[roomSlug];
+  return override && typeof override === 'object' ? override : null;
+}
+
+function applyRoomOverride(room) {
+  const override = getRoomOverride(room.slug);
+  if (!override) {
+    return room;
+  }
+
+  const name = sanitizeRoomName(override.name);
+  return name ? {
+    ...room,
+    name,
+    tagline: sanitizeText(override.tagline, 120) || name,
+    seasonLabel: sanitizeText(override.seasonLabel, 120) || room.seasonLabel || name,
+  } : room;
 }
 
 function normalizeRoomStateShape(room) {
@@ -465,17 +501,18 @@ function normalizeDynamicRoomShape(room) {
 
 function toPublicRoomSummary(room) {
   if (!room) return null;
+  const publicRoom = applyRoomOverride(room);
   return {
-    slug: room.slug,
-    name: room.name,
-    tagline: room.tagline,
-    cityLabel: room.cityLabel,
-    seasonYear: room.seasonYear,
-    seasonLabel: room.seasonLabel,
-    defaultStage: room.defaultStage,
-    isTemporary: Boolean(room.isTemporary),
-    passwordRequired: Boolean(room.passwordRequired),
-    eventCompletedAt: room.eventCompletedAt || null,
+    slug: publicRoom.slug,
+    name: publicRoom.name,
+    tagline: publicRoom.tagline,
+    cityLabel: publicRoom.cityLabel,
+    seasonYear: publicRoom.seasonYear,
+    seasonLabel: publicRoom.seasonLabel,
+    defaultStage: publicRoom.defaultStage,
+    isTemporary: Boolean(publicRoom.isTemporary),
+    passwordRequired: Boolean(publicRoom.passwordRequired),
+    eventCompletedAt: publicRoom.eventCompletedAt || null,
   };
 }
 
@@ -485,11 +522,15 @@ function getAllRooms() {
     .filter(Boolean)
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
 
-  return [...ROOMS.map((room) => ({ ...room, isTemporary: false, passwordRequired: false })), ...dynamicRooms];
+  return [
+    ...ROOMS.map((room) => applyRoomOverride({ ...room, isTemporary: false, passwordRequired: false })),
+    ...dynamicRooms.map((room) => applyRoomOverride(room)),
+  ];
 }
 
 function getRoomBySlug(roomSlug) {
-  return getCatalogRoomBySlug(roomSlug) || normalizeDynamicRoomShape(state.dynamicRooms[roomSlug]) || null;
+  const room = getCatalogRoomBySlug(roomSlug) || normalizeDynamicRoomShape(state.dynamicRooms[roomSlug]) || null;
+  return room ? applyRoomOverride(room) : null;
 }
 
 function findRoomsByName(roomName) {
@@ -629,6 +670,12 @@ function removeDynamicRoom(roomSlug) {
   delete state.dynamicRooms[roomSlug];
   delete state.roomStates[roomSlug];
   delete roomStates[roomSlug];
+  delete state.roomOverrides[roomSlug];
+  STAGE_KEYS.forEach((stage) => {
+    if (state.officialRooms[stage] === roomSlug) {
+      state.officialRooms[stage] = DEFAULT_ROOM_SLUG;
+    }
+  });
   roomPresence.delete(roomSlug);
   Object.entries(state.roomAccessSessions).forEach(([key, session]) => {
     if (session.roomSlug === roomSlug) {
@@ -2046,6 +2093,7 @@ app.get('/api/admin/session', (req, res) => {
       role: 'main',
       rooms: getAllRooms().map(toPublicRoomSummary),
       contestCompletedAt: state.contestCompletedAt,
+      officialRooms: state.officialRooms,
       authMethods: getAdminAuthMethods(),
       scoringProfiles: getScoringProfilePayload(),
     });
@@ -2058,6 +2106,7 @@ app.get('/api/admin/session', (req, res) => {
     role: managedRooms.length ? 'room' : null,
     rooms: managedRooms.map(toPublicRoomSummary),
     contestCompletedAt: state.contestCompletedAt,
+    officialRooms: state.officialRooms,
     authMethods: getAdminAuthMethods(),
     scoringProfiles: getScoringProfilePayload(),
   });
@@ -2084,6 +2133,7 @@ app.post('/api/admin/session', (req, res) => {
     role: 'main',
     rooms: getAllRooms().map(toPublicRoomSummary),
     contestCompletedAt: state.contestCompletedAt,
+    officialRooms: state.officialRooms,
     authMethods: getAdminAuthMethods(),
     scoringProfiles: getScoringProfilePayload(),
   });
@@ -2903,10 +2953,77 @@ app.post('/api/admin/contest/complete', requireMainAdmin, (req, res) => {
   });
 });
 
+app.post('/api/admin/official-rooms', requireMainAdmin, (req, res) => {
+  const stageKey = normalizeStage(req.body.stage);
+  const roomSlug = normalizeRoomSlug(req.body.roomSlug);
+
+  if (!stageKey) {
+    return res.status(400).json({ error: 'Unknown stage' });
+  }
+  if (!roomSlug || !getRoomBySlug(roomSlug)) {
+    return res.status(404).json({ error: 'Unknown room' });
+  }
+
+  state.officialRooms[stageKey] = roomSlug;
+  persistState();
+
+  return res.json({
+    ok: true,
+    officialRooms: state.officialRooms,
+  });
+});
+
+app.patch('/api/admin/rooms/:roomSlug', requireMainAdmin, (req, res) => {
+  const roomSlug = normalizeRoomSlug(req.params.roomSlug);
+  const name = sanitizeRoomName(req.body.name);
+
+  if (!roomSlug || !getRoomBySlug(roomSlug)) {
+    return res.status(404).json({ error: 'Unknown room' });
+  }
+  if (!name) {
+    return res.status(400).json({ error: 'Room name is required', code: 'ROOM_NAME_REQUIRED' });
+  }
+  if (name.length > 64) {
+    return res.status(400).json({ error: 'Room name is too long', code: 'ROOM_NAME_TOO_LONG' });
+  }
+  if (hasRoomNameConflict(name, roomSlug)) {
+    return res.status(409).json({ error: 'A room with this name already exists', code: 'ROOM_NAME_TAKEN' });
+  }
+
+  if (isTemporaryRoom(roomSlug)) {
+    const room = normalizeDynamicRoomShape(state.dynamicRooms[roomSlug]);
+    state.dynamicRooms[roomSlug] = {
+      ...state.dynamicRooms[roomSlug],
+      name,
+      tagline: name,
+      seasonLabel: room?.seasonLabel || name,
+      updatedAt: new Date().toISOString(),
+    };
+  } else {
+    state.roomOverrides[roomSlug] = {
+      ...getRoomOverride(roomSlug),
+      name,
+      tagline: name,
+      seasonLabel: name,
+    };
+  }
+
+  persistState();
+  emitRoomMeta(roomSlug);
+
+  return res.json({
+    ok: true,
+    room: toPublicRoomSummary(getRoomBySlug(roomSlug)),
+  });
+});
+
 app.delete('/api/admin/rooms/:roomSlug', requireRoomAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.params.roomSlug);
-  if (!roomSlug || !isTemporaryRoom(roomSlug)) {
-    return res.status(404).json({ error: 'Unknown temporary room' });
+  if (!roomSlug || !getRoomBySlug(roomSlug)) {
+    return res.status(404).json({ error: 'Unknown room' });
+  }
+  if (!isTemporaryRoom(roomSlug)) {
+    return res.status(409).json({ error: 'Catalog rooms cannot be deleted. Rename or reassign the official slot instead.' });
   }
   if (req.adminRole !== 'main' && !canManageDynamicRoom(roomSlug, req.account)) {
     return res.status(403).json({ error: 'Only the room creator can close this room' });

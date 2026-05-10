@@ -224,6 +224,7 @@ export interface AdminSessionPayload {
   authenticated: boolean;
   role?: "main" | "room" | null;
   rooms: RoomSummary[];
+  officialRooms?: Record<StageKey, string>;
   contestCompletedAt?: string | null;
   authMethods?: {
     key: boolean;
