@@ -66,7 +66,7 @@ function isSemiStageValue(stageKey: StageKey) {
 }
 
 function hasPlacement(row: { place: string }) {
-  return row.place !== "";
+  return rowToNumber(row.place) > 0;
 }
 
 function hasScoreData(row: { jury: string; tele: string; total: string }) {
@@ -273,6 +273,9 @@ export function AdminControlRoom() {
           countdownConfirmAction: "Запустить отсчёт",
           publishButton: "Опубликовать итоги",
           loadPublished: "Загрузить опубликованное",
+          clearResults: "Сбросить итоги",
+          clearResultsConfirm: "Сбросить опубликованные итоги этого этапа во всех комнатах?",
+          resultsCleared: "Итоги этапа сброшены.",
           stageWindowOpen: "Окно голосования открыто",
           stageWindowClosed: "Окно голосования закрыто",
           roomStats: "Статус комнаты",
@@ -291,7 +294,7 @@ export function AdminControlRoom() {
           placeLabel: "Место",
           placeMissing: "Место пока не задано",
           semiPlaceRequired: "Для публикации полуфинала задай официальные места всем странам этого этапа.",
-          semiPlaceUnique: "Места полуфинала должны быть уникальными и заполненными без пропусков.",
+          semiPlaceUnique: "Места полуфинала не должны повторяться и должны быть больше нуля.",
           qualifiedLabel: "Проходит в финал",
           outLabel: "Вне проходной зоны",
           noData: "Данных ещё нет",
@@ -390,6 +393,9 @@ export function AdminControlRoom() {
           countdownConfirmAction: "Start countdown",
           publishButton: "Publish results",
           loadPublished: "Load published",
+          clearResults: "Clear results",
+          clearResultsConfirm: "Clear published results for this stage in every room?",
+          resultsCleared: "Stage results cleared.",
           stageWindowOpen: "Voting window is open",
           stageWindowClosed: "Voting window is closed",
           roomStats: "Room status",
@@ -408,7 +414,7 @@ export function AdminControlRoom() {
           placeLabel: "Place",
           placeMissing: "Place is not set yet",
           semiPlaceRequired: "To publish a semi-final, set official places for every act in this stage.",
-          semiPlaceUnique: "Semi-final places must be unique and filled without gaps.",
+          semiPlaceUnique: "Semi-final places must be unique and greater than zero.",
           qualifiedLabel: "Qualifies for the final",
           outLabel: "Outside the qualification zone",
           noData: "No points yet",
@@ -582,11 +588,19 @@ export function AdminControlRoom() {
       duplicates,
     };
   }, [rows]);
-  function buildPublishPayload(options: { quiet?: boolean } = {}) {
+  function buildPublishPayload(options: { quiet?: boolean; allowEmpty?: boolean } = {}) {
     const activeRows = isSemiStage
       ? rankedRows.filter((row) => hasPlacement(row))
       : rankedRows.filter((row) => hasRowData(row));
     if (!activeRows.length) {
+      if (isSemiStage && options.allowEmpty) {
+        return {
+          ok: true as const,
+          rowsToPublish: [],
+          ranking: [],
+          breakdown: [],
+        };
+      }
       return { ok: false as const, wait: false, message: copy.noData };
     }
 
@@ -836,7 +850,7 @@ export function AdminControlRoom() {
         if (field === "place") {
           return {
             ...row,
-            place: sanitized,
+            place: rowToNumber(sanitized) > 0 ? sanitized : "",
           };
         }
 
@@ -881,7 +895,7 @@ export function AdminControlRoom() {
       return;
     }
 
-    const payload = buildPublishPayload({ quiet: true });
+    const payload = buildPublishPayload({ quiet: true, allowEmpty: true });
     if (!payload.ok) {
       setStatusText(payload.wait ? payload.message : adminUx.draftSaved);
       return;
@@ -1132,6 +1146,41 @@ export function AdminControlRoom() {
     setStatusText("");
     setError("");
     await loadPanelData(true);
+  }
+
+  async function handleClearPublishedResults() {
+    if (!selectedRoom) return;
+
+    const confirmed = window.confirm(copy.clearResultsConfirm);
+    if (!confirmed) return;
+
+    setPendingAction("clear-results");
+    setError("");
+    setStatusText("");
+    try {
+      await publishStageResults({
+        roomSlug: selectedRoom,
+        stage: selectedStage,
+        ranking: [],
+        breakdown: [],
+      });
+      clearDraft(selectedRoom, selectedStage);
+      setRows((current) => current.map((row) => ({
+        ...row,
+        place: "",
+        jury: "",
+        tele: "",
+        total: "",
+      })));
+      setDraftDirty(false);
+      setStatusText(copy.resultsCleared);
+      await loadPanelData(true);
+    } catch (clearError) {
+      console.error(clearError);
+      setError(clearError instanceof Error ? clearError.message : copy.reloadFailed);
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   async function handleParticipantAction(actionKey: string, runner: () => Promise<unknown>, nextStatus: string) {
@@ -1890,6 +1939,15 @@ export function AdminControlRoom() {
                   <button type="button" className="arena-button-secondary px-5 py-3 text-sm" onClick={() => void handleLoadPublished()}>
                     <RotateCcw size={16} />
                     {copy.loadPublished}
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-full bg-rose-500/15 px-5 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/25 disabled:cursor-not-allowed disabled:opacity-45"
+                    disabled={pendingAction === "clear-results"}
+                    onClick={() => void handleClearPublishedResults()}
+                  >
+                    <RotateCcw size={16} />
+                    {copy.clearResults}
                   </button>
                   <button type="button" className="arena-button-primary h-12 px-5 text-sm" onClick={() => void handlePublishResults()}>
                     <Settings2 size={16} />
