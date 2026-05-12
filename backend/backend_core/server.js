@@ -2,6 +2,7 @@
  * Eurovision backend v6
  */
 const express = require('express');
+const fs = require('fs');
 const http = require('http');
 const cors = require('cors');
 const crypto = require('crypto');
@@ -11,6 +12,36 @@ const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const { Server: IOServer } = require('socket.io');
+
+function loadLocalEnvFile() {
+  const envPath = path.join(__dirname, '.env');
+  if (!fs.existsSync(envPath)) {
+    return;
+  }
+
+  const lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/);
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      return;
+    }
+    const separatorIndex = trimmed.indexOf('=');
+    if (separatorIndex <= 0) {
+      return;
+    }
+    const key = trimmed.slice(0, separatorIndex).trim();
+    let value = trimmed.slice(separatorIndex + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    if (!Object.prototype.hasOwnProperty.call(process.env, key)) {
+      process.env[key] = value;
+    }
+  });
+}
+
+loadLocalEnvFile();
+
 const {
   ACTS_BY_STAGE,
   DEFAULT_ROOM_SLUG,
@@ -58,6 +89,11 @@ const ADMIN_EMAIL = normalizeEmail(process.env.ADMIN_EMAIL);
 const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '');
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
 const APP_PUBLIC_URL = (process.env.APP_PUBLIC_URL || CLIENT_ORIGIN || 'http://localhost:3000').replace(/\/$/, '');
+const OAUTH_REDIRECT_BASE = (process.env.OAUTH_REDIRECT_BASE || `http://localhost:${PORT}`).replace(/\/$/, '');
+const GOOGLE_CLIENT_ID = String(process.env.GOOGLE_CLIENT_ID || '').trim();
+const GOOGLE_CLIENT_SECRET = String(process.env.GOOGLE_CLIENT_SECRET || '');
+const YANDEX_CLIENT_ID = String(process.env.YANDEX_CLIENT_ID || '').trim();
+const YANDEX_CLIENT_SECRET = String(process.env.YANDEX_CLIENT_SECRET || '');
 const ADMIN_SESSION_COOKIE_NAME = 'esc_admin_session';
 const ADMIN_SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 const SMTP_HOST = String(process.env.SMTP_HOST || '').trim();
@@ -76,6 +112,8 @@ const STAGE_COUNTDOWN_DEFAULT_MINUTES = 5;
 const SUBMISSION_OVERRIDE_DEFAULT_MINUTES = 5;
 const MAX_STAGE_COUNTDOWN_MINUTES = 30;
 const MAX_SUBMISSION_OVERRIDE_MINUTES = 30;
+const OAUTH_STATE_TTL_MS = 1000 * 60 * 10;
+const oauthStates = new Map();
 
 const SCORING_PROFILES = {
   balanced: {
@@ -883,6 +921,7 @@ setInterval(() => {
   pruneExpiredState(state);
   pruneExpiredAdminSessions();
   pruneExpiredSubmissionOverrides();
+  pruneOAuthStates();
   void pruneArchivedDynamicRooms().then(() => saveState(state));
 }, 60_000 * 5).unref();
 
@@ -1183,6 +1222,207 @@ function getAccountById(accountId) {
 function getAccountByEmail(email) {
   const accountId = state.emailToAccountId[normalizeEmail(email)];
   return accountId ? getAccountById(accountId) : null;
+}
+
+function getOAuthRedirectUri(provider) {
+  return `${OAUTH_REDIRECT_BASE}/api/auth/oauth/${provider}/callback`;
+}
+
+function normalizeReturnTo(value) {
+  const returnTo = typeof value === 'string' ? value.trim() : '';
+  if (!returnTo || !returnTo.startsWith('/') || returnTo.startsWith('//')) {
+    return '/';
+  }
+  return returnTo.slice(0, 512);
+}
+
+function createOAuthState(provider, req) {
+  const token = crypto.randomBytes(24).toString('base64url');
+  const roomSlug = normalizeRoomSlug(req.query.roomSlug);
+  oauthStates.set(token, {
+    provider,
+    roomSlug,
+    returnTo: normalizeReturnTo(req.query.returnTo),
+    createdAt: Date.now(),
+    expiresAt: Date.now() + OAUTH_STATE_TTL_MS,
+  });
+  return token;
+}
+
+function consumeOAuthState(provider, token) {
+  const entry = oauthStates.get(token);
+  oauthStates.delete(token);
+  if (!entry || entry.provider !== provider || entry.expiresAt <= Date.now()) {
+    return null;
+  }
+  return entry;
+}
+
+function pruneOAuthStates() {
+  const now = Date.now();
+  oauthStates.forEach((entry, key) => {
+    if (!entry?.expiresAt || entry.expiresAt <= now) {
+      oauthStates.delete(key);
+    }
+  });
+}
+
+function redirectToApp(res, returnTo = '/') {
+  return res.redirect(`${APP_PUBLIC_URL}${normalizeReturnTo(returnTo)}`);
+}
+
+function redirectToAuthError(res, message) {
+  const url = new URL('/account', APP_PUBLIC_URL);
+  url.searchParams.set('authError', message);
+  return res.redirect(url.toString());
+}
+
+async function fetchOAuthJson(url, options = {}) {
+  const response = await fetch(url, options);
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const errorMessage = payload.error_description || payload.error || `OAuth request failed (${response.status})`;
+    throw new Error(errorMessage);
+  }
+  return payload;
+}
+
+async function exchangeOAuthCode(provider, code) {
+  if (provider === 'google') {
+    return fetchOAuthJson('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: getOAuthRedirectUri(provider),
+      }),
+    });
+  }
+
+  return fetchOAuthJson('https://oauth.yandex.ru/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: YANDEX_CLIENT_ID,
+      client_secret: YANDEX_CLIENT_SECRET,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: getOAuthRedirectUri(provider),
+    }),
+  });
+}
+
+async function fetchOAuthProfile(provider, accessToken) {
+  if (provider === 'google') {
+    const payload = await fetchOAuthJson('https://openidconnect.googleapis.com/v1/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    return {
+      provider,
+      subject: sanitizeText(payload.sub, 256),
+      email: normalizeEmail(payload.email),
+      firstName: sanitizeText(payload.given_name, 64),
+      lastName: sanitizeText(payload.family_name, 64),
+      displayName: sanitizeText(payload.name, 64),
+      avatarUrl: sanitizeText(payload.picture, 512),
+    };
+  }
+
+  const payload = await fetchOAuthJson('https://login.yandex.ru/info?format=json', {
+    headers: { Authorization: `OAuth ${accessToken}` },
+  });
+  const realName = sanitizeText(payload.real_name, 128).split(/\s+/).filter(Boolean);
+  const avatarId = sanitizeText(payload.default_avatar_id, 256);
+  return {
+    provider,
+    subject: sanitizeText(payload.id, 256),
+    email: normalizeEmail(payload.default_email || payload.emails?.[0]),
+    firstName: sanitizeText(payload.first_name, 64) || realName[0] || '',
+    lastName: sanitizeText(payload.last_name, 64) || realName.slice(1).join(' '),
+    displayName: sanitizeText(payload.display_name || payload.login || payload.real_name, 64),
+    avatarUrl: payload.is_avatar_empty || !avatarId
+      ? ''
+      : `https://avatars.yandex.net/get-yapic/${avatarId}/islands-200`,
+  };
+}
+
+function findAccountByOAuthIdentity(provider, subject) {
+  return Object.values(state.accounts).find((account) => (
+    account?.oauthIdentities?.[provider]?.subject === subject
+  )) || null;
+}
+
+function attachOAuthIdentity(account, profile) {
+  const now = new Date().toISOString();
+  account.oauthIdentities = account.oauthIdentities && typeof account.oauthIdentities === 'object'
+    ? account.oauthIdentities
+    : {};
+  account.oauthIdentities[profile.provider] = {
+    subject: profile.subject,
+    email: profile.email,
+    linkedAt: account.oauthIdentities[profile.provider]?.linkedAt || now,
+    updatedAt: now,
+  };
+
+  if (!account.avatarUrl && profile.avatarUrl) {
+    account.avatarUrl = profile.avatarUrl;
+  }
+  if (!account.firstName && profile.firstName) {
+    account.firstName = profile.firstName;
+  }
+  if (!account.lastName && profile.lastName) {
+    account.lastName = profile.lastName;
+  }
+  if (!account.displayName && profile.displayName) {
+    account.displayName = profile.displayName;
+  }
+  account.lastLoginAt = now;
+  account.updatedAt = now;
+  return account;
+}
+
+function createAccountFromOAuthProfile(profile) {
+  const account = buildAccountRecord({
+    email: profile.email,
+    firstName: profile.firstName || profile.displayName || 'Eurovision',
+    lastName: profile.lastName || 'Viewer',
+    displayName: profile.displayName,
+    avatarUrl: profile.avatarUrl,
+    publicDisplayMode: 'full_name',
+    publicDisplayOptIn: true,
+    oauthIdentities: {
+      [profile.provider]: {
+        subject: profile.subject,
+        email: profile.email,
+        linkedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    },
+  });
+  state.accounts[account.id] = account;
+  state.emailToAccountId[account.email] = account.id;
+  return account;
+}
+
+function getOrCreateOAuthAccount(profile) {
+  if (!profile.subject || !validateEmail(profile.email)) {
+    throw new Error('Provider did not return a usable email profile.');
+  }
+
+  const existingByIdentity = findAccountByOAuthIdentity(profile.provider, profile.subject);
+  if (existingByIdentity) {
+    return attachOAuthIdentity(existingByIdentity, profile);
+  }
+
+  const existingByEmail = getAccountByEmail(profile.email);
+  if (existingByEmail) {
+    return attachOAuthIdentity(existingByEmail, profile);
+  }
+
+  return createAccountFromOAuthProfile(profile);
 }
 
 function buildRoomUserFromAccount(account) {
@@ -2123,6 +2363,86 @@ app.get('/api/auth/session', (req, res) => {
     passwordResetMode: getPasswordResetMode(),
     account: auth ? toAccountProfile(auth.account) : null,
   });
+});
+
+app.get('/api/auth/oauth/:provider/start', (req, res) => {
+  const provider = sanitizeText(req.params.provider, 16);
+  if (!['google', 'yandex'].includes(provider)) {
+    return res.status(404).json({ error: 'Unknown OAuth provider' });
+  }
+  if (provider === 'google' && (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET)) {
+    return res.status(503).json({ error: 'Google sign-in is not configured' });
+  }
+  if (provider === 'yandex' && (!YANDEX_CLIENT_ID || !YANDEX_CLIENT_SECRET)) {
+    return res.status(503).json({ error: 'Yandex sign-in is not configured' });
+  }
+
+  const stateToken = createOAuthState(provider, req);
+  const redirectUri = getOAuthRedirectUri(provider);
+  if (provider === 'google') {
+    const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    url.searchParams.set('client_id', GOOGLE_CLIENT_ID);
+    url.searchParams.set('redirect_uri', redirectUri);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('scope', 'openid email profile');
+    url.searchParams.set('state', stateToken);
+    url.searchParams.set('prompt', 'select_account');
+    return res.redirect(url.toString());
+  }
+
+  const url = new URL('https://oauth.yandex.ru/authorize');
+  url.searchParams.set('client_id', YANDEX_CLIENT_ID);
+  url.searchParams.set('redirect_uri', redirectUri);
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('scope', 'login:info login:email login:avatar');
+  url.searchParams.set('state', stateToken);
+  return res.redirect(url.toString());
+});
+
+app.get('/api/auth/oauth/:provider/callback', async (req, res) => {
+  const provider = sanitizeText(req.params.provider, 16);
+  if (!['google', 'yandex'].includes(provider)) {
+    return redirectToAuthError(res, 'Unknown OAuth provider');
+  }
+  if (req.query.error) {
+    return redirectToAuthError(res, sanitizeText(req.query.error_description || req.query.error, 160));
+  }
+
+  const oauthState = consumeOAuthState(provider, sanitizeText(req.query.state, 256));
+  if (!oauthState) {
+    return redirectToAuthError(res, 'OAuth session expired. Try signing in again.');
+  }
+
+  try {
+    const code = sanitizeText(req.query.code, 2048);
+    if (!code) {
+      throw new Error('OAuth code was not returned.');
+    }
+
+    const tokenPayload = await exchangeOAuthCode(provider, code);
+    const accessToken = sanitizeText(tokenPayload.access_token, 4096);
+    if (!accessToken) {
+      throw new Error('OAuth access token was not returned.');
+    }
+
+    const profile = await fetchOAuthProfile(provider, accessToken);
+    const account = getOrCreateOAuthAccount(profile);
+
+    if (oauthState.roomSlug) {
+      const membership = ensureRoomMembership(oauthState.roomSlug, account);
+      if (membership.blocked) {
+        return redirectToAuthError(res, 'This account is not allowed to join the selected room right now');
+      }
+    }
+
+    const sessionToken = createSession(state, account.id);
+    setSessionCookie(res, sessionToken);
+    persistState();
+    return redirectToApp(res, oauthState.returnTo);
+  } catch (error) {
+    console.error(`${provider} OAuth failed`, error);
+    return redirectToAuthError(res, error instanceof Error ? error.message : 'OAuth sign-in failed');
+  }
 });
 
 app.get('/api/admin/session', (req, res) => {

@@ -143,6 +143,20 @@ export async function fetchSessionAccount() {
   return readJson<AuthSessionPayload>("/api/auth/session");
 }
 
+export function getOAuthStartUrl(provider: "google" | "yandex", options: {
+  roomSlug?: string;
+  returnTo?: string;
+} = {}) {
+  const url = new URL(`${getApiBase()}/api/auth/oauth/${provider}/start`);
+  if (options.roomSlug) {
+    url.searchParams.set("roomSlug", options.roomSlug);
+  }
+  if (options.returnTo) {
+    url.searchParams.set("returnTo", options.returnTo);
+  }
+  return url.toString();
+}
+
 export async function fetchAdminSession() {
   return readJson<AdminSessionPayload>("/api/admin/session");
 }
