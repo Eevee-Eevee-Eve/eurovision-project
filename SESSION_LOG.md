@@ -6,6 +6,19 @@
 ### 2026-05-12 auth coordination note
 
 - active work area: authorization/account/session flow
+- planned auth direction: add social sign-in with Google, Apple, and Yandex while preserving the existing email/password flow
+- requested provider data only:
+  - external provider user ID
+  - email
+  - first/last/display name when available
+  - avatar when the provider actually exposes one
+- do not request broad service scopes such as Google Drive, Gmail, Calendar, contacts, documents, Yandex phone/date-of-birth, or any write/admin scopes
+- provider caveats:
+  - Google should use basic OIDC scopes only: `openid email profile`
+  - Yandex should be registered as a user-login app and request only the Yandex ID permissions needed for name, email, and avatar
+  - Apple Sign in can provide name/email, but name is generally only available on first authorization and Apple does not provide a profile avatar
+- OAuth accounts should map into the existing internal account/session model instead of replacing it
+- keep room password access and admin sessions separate from user social auth
 - before continuing from another PC or another Codex chat, read this entry plus:
   - `PROJECT_CONTEXT.md`
   - `KNOWN_ISSUES.md`
