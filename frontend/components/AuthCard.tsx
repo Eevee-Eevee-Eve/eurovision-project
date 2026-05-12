@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import { Mail } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { getOAuthStartUrl, loginAccount, registerAccount, requestPasswordReset, resetPassword } from "../lib/api";
 import { getAccountCopy } from "../lib/account-copy";
@@ -98,6 +99,24 @@ export function AuthCard({
         };
   }, [accountCopy, mode, passwordResetMode, resetDisabledText]);
 
+  const authMethodCopy = language === "ru"
+    ? {
+        title: "Способ входа",
+        google: "Google",
+        yandex: "Яндекс",
+        email: "Почта",
+        emailHint: "Email и пароль",
+        privacy: "Берём только базовый профиль: email, имя и аватар.",
+      }
+    : {
+        title: "Sign-in method",
+        google: "Google",
+        yandex: "Yandex",
+        email: "Email",
+        emailHint: "Email and password",
+        privacy: "We only request a basic profile: email, name, and avatar.",
+      };
+
   async function handleSubmit() {
     setPending(true);
     setError("");
@@ -184,6 +203,43 @@ export function AuthCard({
           <h3 className="display-copy mt-2 text-2xl font-black md:text-4xl">{modeCopy.title}</h3>
           <p className="mt-3 text-sm text-arenaMuted">{modeCopy.text}</p>
         </div>
+
+        {!forcedMode && mode !== "requestReset" && mode !== "applyReset" ? (
+          <div className="grid gap-3">
+            <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{authMethodCopy.title}</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <a
+                className="group flex min-h-14 items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/[0.055] px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.09]"
+                href={getOAuthStartUrl("google", { roomSlug, returnTo })}
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg font-black shadow-glow">
+                  <span className="bg-[linear-gradient(90deg,#4285f4,#34a853,#fbbc05,#ea4335)] bg-clip-text text-transparent">G</span>
+                </span>
+                <span className="min-w-0">{authMethodCopy.google}</span>
+              </a>
+              <a
+                className="group flex min-h-14 items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/[0.055] px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.09]"
+                href={getOAuthStartUrl("yandex", { roomSlug, returnTo })}
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fc3f1d] text-lg font-black text-white shadow-glow">Я</span>
+                <span className="min-w-0">{authMethodCopy.yandex}</span>
+              </a>
+              <button
+                type="button"
+                className="flex min-h-14 items-center gap-3 rounded-[1.25rem] border border-arenaBeam/35 bg-arenaBeam/10 px-4 py-3 text-left text-sm font-semibold text-white ring-1 ring-arenaBeam/20"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-arenaBeam">
+                  <Mail size={18} />
+                </span>
+                <span className="grid min-w-0">
+                  <span>{authMethodCopy.email}</span>
+                  <span className="truncate text-xs font-medium text-arenaMuted">{authMethodCopy.emailHint}</span>
+                </span>
+              </button>
+            </div>
+            <p className="text-xs leading-6 text-arenaMuted">{authMethodCopy.privacy}</p>
+          </div>
+        ) : null}
 
         <div className="grid gap-3 lg:grid-cols-2">
           <input
@@ -297,8 +353,9 @@ export function AuthCard({
             type="button"
             onClick={handleSubmit}
             disabled={pending}
-            className="arena-button-primary h-12 px-6 text-sm"
+            className="arena-button-primary inline-flex h-12 items-center justify-center gap-2 px-6 text-sm"
           >
+            <Mail size={16} />
             {pending
               ? "..."
               : mode === "register"
@@ -332,25 +389,6 @@ export function AuthCard({
           ) : null}
         </div>
 
-        {!forcedMode && mode !== "requestReset" && mode !== "applyReset" ? (
-          <div className="grid gap-3 border-t border-white/10 pt-4 sm:grid-cols-2">
-            <a
-              className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm"
-              href={getOAuthStartUrl("google", { roomSlug, returnTo })}
-            >
-              Continue with Google
-            </a>
-            <a
-              className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm"
-              href={getOAuthStartUrl("yandex", { roomSlug, returnTo })}
-            >
-              Continue with Yandex
-            </a>
-            <p className="sm:col-span-2 text-xs leading-6 text-arenaMuted">
-              We only request basic profile data: email, name, provider ID, and avatar when available.
-            </p>
-          </div>
-        ) : null}
       </div>
     </section>
   );
