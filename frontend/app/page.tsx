@@ -316,8 +316,8 @@ export default function Home() {
             {filteredRooms.length ? (
               filteredRooms.map((room) => (
                 <div key={room.slug} className="show-panel p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                  <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                    <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
                       {renderRoomIcon(room)}
                       <div className="min-w-0">
                         <p className="room-lobby-title text-lg font-semibold text-white">{getRoomName(room.slug, room.name)}</p>
@@ -342,7 +342,7 @@ export default function Home() {
                     {account ? (
                       <Link
                         href={`/${room.slug}`}
-                        className="arena-button-room inline-flex h-11 items-center justify-center gap-2 px-5 text-xs"
+                        className="arena-button-room inline-flex h-11 w-full items-center justify-center gap-2 px-5 text-xs sm:w-auto"
                       >
                         <ArrowRight size={15} />
                         {text.openRoom}
@@ -351,7 +351,7 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={scrollToAuthCard}
-                        className="arena-button-room inline-flex h-11 items-center justify-center gap-2 px-5 text-xs opacity-85"
+                        className="arena-button-room inline-flex h-11 w-full items-center justify-center gap-2 px-5 text-xs opacity-85 sm:w-auto"
                       >
                         <Lock size={15} />
                         {text.signInFirstShort}
