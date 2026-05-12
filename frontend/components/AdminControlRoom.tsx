@@ -213,6 +213,7 @@ function formatCountdown(ms: number) {
 }
 
 function buildEditableRows(acts: ActEntry[], publishedRows: ActEntry[], roomSlug: string, stageKey: StageKey, preferPublished = false) {
+  const isSemiStage = isSemiStageValue(stageKey);
   const publishedMap = publishedRows.reduce<Record<string, { place: string; jury: string; tele: string; total: string }>>((acc, row) => {
     acc[row.code] = {
       place: row.rank == null ? "" : String(row.rank),
@@ -223,12 +224,20 @@ function buildEditableRows(acts: ActEntry[], publishedRows: ActEntry[], roomSlug
     return acc;
   }, {});
   const draft = preferPublished ? null : readDraft(roomSlug, stageKey);
+  const hasDraft = Boolean(draft && Object.keys(draft).length);
+  const hasPublishedResults = publishedRows.some((row) => (
+    row.rank != null ||
+    row.juryPoints != null ||
+    row.telePoints != null ||
+    row.totalPoints != null
+  ));
+  const useSemiRunningOrderBaseline = isSemiStage && !hasDraft && !hasPublishedResults;
 
   const rows = acts.map((act) => {
     const memory = draft?.[act.code] || publishedMap[act.code] || { place: "", jury: "", tele: "", total: "" };
     return {
       ...act,
-      place: memory.place || "",
+      place: memory.place || (useSemiRunningOrderBaseline && act.runningOrder ? String(act.runningOrder) : ""),
       jury: memory.jury,
       tele: memory.tele,
       total: memory.total,
