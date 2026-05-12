@@ -4,7 +4,7 @@ import { closestCenter, DndContext, KeyboardSensor, PointerSensor, type DragEndE
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Check, CheckCircle2, ChevronDown, GripVertical, Info, Lock, RotateCcw, Send } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, Check, CheckCircle2, ChevronDown, GripVertical, Info, ListChecks, Lock, RotateCcw, Send, Tags, Trophy } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
   createRoomSocket,
@@ -222,6 +222,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   const [expectedEntries, setExpectedEntries] = useState(0);
   const [currentEntries, setCurrentEntries] = useState(0);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [timeNow, setTimeNow] = useState(Date.now());
   const deferredQuery = useDeferredValue(query);
 
@@ -291,6 +292,26 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           savedBadge: "Заметка",
           openActHint: "Тапни по артисту, чтобы открыть фото, описание, видео и заметки",
           resultsLink: "Результаты",
+          guideButton: "Как играть",
+          guideTitle: "Как играть и не запутаться",
+          guideIntro: "Три простых действия: расставь страны, помечай впечатления и отправь итог до закрытия этапа.",
+          guideOpenHint: "Открой короткую памятку по голосованию, заметкам и начислению очков.",
+          guideSteps: [
+            {
+              title: "Расставь весь список",
+              body: "Перетаскивай строки или открой артиста и выбери точное место. В зачёт идёт полный порядок, без одинаковых мест.",
+            },
+            {
+              title: "Делай заметки",
+              body: "Тап по артисту открывает фото, видео, описание и личную заметку. Теги и текст сохраняются только на этом устройстве.",
+            },
+            {
+              title: "Отправь результат",
+              body: "Пока этап открыт, можно менять порядок и отправлять новую версию. Последняя отправленная версия считается финальной.",
+            },
+          ],
+          notesGuideTitle: "Облако быстрых тегов",
+          notesGuideText: "Теги нужны как память по ходу шоу: кто похож на победителя, кто зайдёт жюри, кто рискованный, но яркий.",
           scoringTitle: "Как считаются очки",
           scoringFinal: "Финал: за каждую страну начисляются очки за близость к официальному месту: 10/7/5/3/2/1. Бонусы сверху: +15 за победителя, +6 если страна угадана в топ-3, +3 если угадана в топ-10.",
           scoringSemi: "Полуфинал: главное угадать проход. +4 за страну, которую ты поставил в проходную зону и она прошла; +1 за верно оставленную вне финала; +2/+1 за точное или близкое место.",
@@ -362,6 +383,26 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           savedBadge: "Note",
           openActHint: "Tap an act to open photo, details, video, and notes",
           resultsLink: "Results",
+          guideButton: "How to play",
+          guideTitle: "How to play without getting lost",
+          guideIntro: "Three moves: rank every country, mark your impressions, and submit before the stage closes.",
+          guideOpenHint: "Open a short guide for voting, notes, and scoring.",
+          guideSteps: [
+            {
+              title: "Rank the full list",
+              body: "Drag rows or open an act and pick an exact place. The submitted ballot is a complete order with no duplicate places.",
+            },
+            {
+              title: "Use notes",
+              body: "Tap an act to open photo, video, details, and a private note. Tags and text stay on this device.",
+            },
+            {
+              title: "Submit your result",
+              body: "While the stage is open, you can reorder and submit an updated version. The latest submitted version counts.",
+            },
+          ],
+          notesGuideTitle: "Quick tag cloud",
+          notesGuideText: "Tags are memory hooks during the show: winner vibes, jury appeal, televote energy, risky picks, and fun chaos.",
           scoringTitle: "How points work",
           scoringFinal: "Final: every country scores for placement accuracy: 10/7/5/3/2/1. Extra bonuses: +15 for the winner, +6 when a country is correctly placed in the top 3, and +3 for the top 10.",
           scoringSemi: "Semi-final: qualification matters most. +4 for every country you place in the qualifying zone that qualifies, +1 for a correct non-qualifier, and +2/+1 for exact or near places.",
@@ -430,6 +471,13 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           song: "Песня",
           energy: "Энергия",
           memorable: "Запомнилось",
+          top10: "Топ-10",
+          jury: "Жюри",
+          televote: "Зрители",
+          risk: "Риск",
+          borderline: "На грани",
+          grower: "Раскроется",
+          meme: "Мем",
           skip: "Мимо",
         }
       : {
@@ -440,6 +488,13 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           song: "Song",
           energy: "Energy",
           memorable: "Memorable",
+          top10: "Top 10",
+          jury: "Jury",
+          televote: "Televote",
+          risk: "Risk",
+          borderline: "Borderline",
+          grower: "Grower",
+          meme: "Meme",
           skip: "Skip",
         }
   ), [language]);
@@ -865,16 +920,26 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         ) : null}
 
         <section className="show-panel-muted border border-arenaBeam/10 px-3 py-3 md:p-4">
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="flex min-w-0 gap-3">
             <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-arenaBeam/16 bg-arenaBeam/10 text-arenaBeam">
               <Info size={15} />
             </span>
             <div className="min-w-0">
-              <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{text.scoringTitle}</p>
+                <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{text.guideTitle}</p>
               <p className="mt-2 text-xs leading-6 text-arenaMuted md:text-sm">
-                {stageKey === "final" ? text.scoringFinal : text.scoringSemi}
+                  {text.guideIntro}
               </p>
             </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setGuideOpen(true)}
+              className="arena-button-secondary inline-flex h-10 shrink-0 items-center justify-center gap-2 px-4 text-xs"
+            >
+              <BookOpen size={15} />
+              {text.guideButton}
+            </button>
           </div>
         </section>
 
@@ -1046,6 +1111,57 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
       ) : null}
 
       {renderVotingList()}
+
+      <BottomSheet open={guideOpen} onClose={() => setGuideOpen(false)}>
+        <div className="grid gap-4 md:gap-5">
+          <div>
+            <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaPulse">{text.guideButton}</p>
+            <h3 className="display-copy mt-3 text-3xl font-black leading-none text-white md:text-4xl">{text.guideTitle}</h3>
+            <p className="mt-4 text-sm leading-7 text-arenaMuted">{text.guideOpenHint}</p>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            {text.guideSteps.map((step, index) => {
+              const Icon = [ListChecks, Tags, Send][index] || ListChecks;
+              return (
+                <div key={step.title} className="show-panel p-4">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-arenaBeam/16 bg-arenaBeam/10 text-arenaBeam">
+                    <Icon size={18} />
+                  </span>
+                  <p className="mt-4 text-base font-black text-white">{step.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-arenaMuted">{step.body}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="show-panel p-4">
+            <div className="flex gap-3">
+              <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-arenaPulse/18 bg-arenaPulse/10 text-arenaPulse">
+                <Trophy size={17} />
+              </span>
+              <div className="min-w-0">
+                <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaPulse">{text.scoringTitle}</p>
+                <p className="mt-2 text-sm leading-7 text-arenaMuted">
+                  {stageKey === "final" ? text.scoringFinal : text.scoringSemi}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="show-panel p-4">
+            <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{text.notesGuideTitle}</p>
+            <p className="mt-2 text-sm leading-6 text-arenaMuted">{text.notesGuideText}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {NOTE_TONES.map((tone) => (
+                <span key={`guide-tone-${tone.key}`} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] font-semibold text-white/82">
+                  #{resolvedNoteTagLabels[tone.key]}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
 
       <BottomSheet
         open={Boolean(selectedAct)}
@@ -1219,7 +1335,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
                         : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
                     }`}
                   >
-                    <span className="label-copy uppercase tracking-[0.14em]">{resolvedNoteTagLabels[tone.key]}</span>
+                    <span className="label-copy uppercase tracking-[0.14em]">#{resolvedNoteTagLabels[tone.key]}</span>
                   </button>
                 ))}
               </div>

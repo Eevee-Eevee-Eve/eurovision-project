@@ -8,6 +8,13 @@ const ALLOWED_NOTE_TONES = new Set([
   "song",
   "energy",
   "memorable",
+  "top10",
+  "jury",
+  "televote",
+  "risk",
+  "borderline",
+  "grower",
+  "meme",
   "skip",
 ]);
 

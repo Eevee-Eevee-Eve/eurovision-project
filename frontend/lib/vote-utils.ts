@@ -8,6 +8,13 @@ export const NOTE_TONES: { key: NoteTone; label: string; hint: string }[] = [
   { key: "song", label: "Song", hint: "Song sticks with me" },
   { key: "energy", label: "Energy", hint: "Brings strong energy" },
   { key: "memorable", label: "Memorable", hint: "Hard to forget" },
+  { key: "top10", label: "Top 10", hint: "Feels like a top-10 act" },
+  { key: "jury", label: "Jury", hint: "Could score with juries" },
+  { key: "televote", label: "Televote", hint: "Could score with viewers" },
+  { key: "risk", label: "Risk", hint: "High-risk pick" },
+  { key: "borderline", label: "Borderline", hint: "On the edge" },
+  { key: "grower", label: "Grower", hint: "Might grow on me" },
+  { key: "meme", label: "Meme", hint: "Fun chaos potential" },
   { key: "skip", label: "Skip", hint: "Not landing for me" },
 ];
 

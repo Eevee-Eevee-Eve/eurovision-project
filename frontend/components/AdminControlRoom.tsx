@@ -118,6 +118,49 @@ function sortResultRows(rows: EditableResultRow[], stageKey: StageKey) {
   });
 }
 
+function reorderSemiRows(rows: EditableResultRow[], movedCode: string) {
+  const target = rows.find((row) => row.code === movedCode);
+  if (!target) return rows;
+
+  const desiredPlace = rowToNumber(target.place);
+  const alreadyPlaced = sortResultRows(
+    rows.filter((row) => row.code !== movedCode && hasPlacement(row)),
+    "semi1",
+  );
+
+  if (desiredPlace <= 0) {
+    const placedCodes = new Set(alreadyPlaced.map((row) => row.code));
+    const renumbered = rows.map((row) => {
+      if (row.code === movedCode) {
+        return { ...row, place: "" };
+      }
+      if (!placedCodes.has(row.code)) {
+        return row;
+      }
+      return {
+        ...row,
+        place: String(alreadyPlaced.findIndex((placed) => placed.code === row.code) + 1),
+      };
+    });
+
+    return sortResultRows(renumbered, "semi1");
+  }
+
+  const nextPlaced = [...alreadyPlaced];
+  const insertIndex = Math.min(Math.max(desiredPlace - 1, 0), nextPlaced.length);
+  nextPlaced.splice(insertIndex, 0, { ...target, place: "" });
+
+  const nextPlaceByCode = nextPlaced.reduce<Record<string, string>>((acc, row, index) => {
+    acc[row.code] = String(index + 1);
+    return acc;
+  }, {});
+
+  return sortResultRows(
+    rows.map((row) => nextPlaceByCode[row.code] ? { ...row, place: nextPlaceByCode[row.code] } : row),
+    "semi1",
+  );
+}
+
 function draftStorageKey(roomSlug: string, stageKey: StageKey) {
   return `admin_results_${roomSlug}_${stageKey}`;
 }
@@ -236,7 +279,6 @@ export function AdminControlRoom() {
     manualRescue: false,
   });
   const [timeNow, setTimeNow] = useState(Date.now());
-  const [autoPublish, setAutoPublish] = useState(true);
   const [draftDirty, setDraftDirty] = useState(false);
   const suppressResultsRefreshCountRef = useRef(0);
   const draftVersionRef = useRef(0);
@@ -251,7 +293,7 @@ export function AdminControlRoom() {
           loginText: "Введи ключ или отдельный логин организатора, чтобы открыть панель управления.",
           loginButton: "Открыть панель",
           keyPlaceholder: "Ключ организатора",
-          roomsLabel: "Комната",
+          roomsLabel: "Комната-превью",
           stageLabel: "Этап",
           scoringLabel: "Профиль очков",
           mainAdmin: "Главный админ",
@@ -260,6 +302,7 @@ export function AdminControlRoom() {
           logoutButton: "Выйти",
           openStage: "Открыть этап",
           closeStage: "Закрыть этап",
+          closeStageConfirm: "Закрыть голосование для этого этапа во всех комнатах?",
           countdownTitle: "Обратный отсчёт",
           countdownStart: "Запустить 5 минут",
           countdownStop: "Остановить отсчёт",
@@ -271,7 +314,7 @@ export function AdminControlRoom() {
           countdownCheckDeadline: "Понимаю, что в ноль этап закроется автоматически.",
           countdownCheckManual: "Понимаю, что опоздавшим потом нужен личный допуск.",
           countdownConfirmAction: "Запустить отсчёт",
-          publishButton: "Опубликовать итоги",
+          publishButton: "Отправить результаты",
           loadPublished: "Загрузить опубликованное",
           clearResults: "Сбросить итоги",
           clearResultsConfirm: "Сбросить опубликованные итоги этого этапа во всех комнатах?",
@@ -285,9 +328,9 @@ export function AdminControlRoom() {
           locked: "Зафиксировано",
           revealed: "Опубликовано итогов",
           lineup: "Список стран",
-          resultsDesk: "Итоги этапа",
-          resultsDeskText: "Сначала заполни официальные места и очки. После публикации эти данные увидят все комнаты.",
-          semiResultsDeskText: "Для полуфинала достаточно указать официальные места всем странам. Детальные очки можно добавить позже, если они понадобятся.",
+          resultsDesk: "Официальные результаты",
+          resultsDeskText: "Финальные баллы публикуются глобально: после Enter или кнопки «Отправить результаты» их увидят все комнаты.",
+          semiResultsDeskText: "Места полуфинала публикуются глобально: введи место и нажми Enter. Если место занято, остальные страны автоматически сдвинутся ниже.",
           juryLabel: "Жюри",
           teleLabel: "Зрители",
           totalLabel: "Итого",
@@ -328,7 +371,7 @@ export function AdminControlRoom() {
           roomHub: "Хаб комнаты",
           authFailed: "Не удалось войти в панель организатора.",
           reloadFailed: "Не удалось обновить данные комнаты.",
-          publishedOk: "Итоги этапа опубликованы.",
+          publishedOk: "Официальные результаты отправлены во все комнаты.",
           stageOpenOk: "Этап открыт для всех комнат.",
           stageCloseOk: "Этап закрыт для всех комнат.",
           countdownStartedOk: "Обратный отсчёт запущен для всех комнат.",
@@ -348,7 +391,7 @@ export function AdminControlRoom() {
           participantsTab: "Участники",
           technicalTab: "Техблок",
           officialRoomsTitle: "Официальные слоты этапов",
-          officialRoomsText: "Эти слоты помогают быстро открыть нужную комнату для полуфинала или финала. Публикация официальных результатов всё равно остаётся глобальной для всех комнат.",
+          officialRoomsText: "Эти слоты помогают быстро открыть нужную комнату для полуфинала или финала. Официальные результаты публикуются глобально для всех комнат.",
           roomsListTitle: "Все комнаты",
           roomSearchPlaceholder: "Найти комнату",
           openRoomAdmin: "Открыть",
@@ -372,7 +415,7 @@ export function AdminControlRoom() {
           loginText: "Enter the organizer key or dedicated organizer login to open the admin panel.",
           loginButton: "Open panel",
           keyPlaceholder: "Organizer key",
-          roomsLabel: "Room",
+          roomsLabel: "Preview room",
           stageLabel: "Stage",
           scoringLabel: "Scoring profile",
           mainAdmin: "Main admin",
@@ -381,6 +424,7 @@ export function AdminControlRoom() {
           logoutButton: "Log out",
           openStage: "Open stage",
           closeStage: "Close stage",
+          closeStageConfirm: "Close voting for this stage in every room?",
           countdownTitle: "Countdown",
           countdownStart: "Start 5-minute countdown",
           countdownStop: "Stop countdown",
@@ -392,7 +436,7 @@ export function AdminControlRoom() {
           countdownCheckDeadline: "I understand the stage will auto-close at zero.",
           countdownCheckManual: "I understand late people will need a personal override afterwards.",
           countdownConfirmAction: "Start countdown",
-          publishButton: "Publish results",
+          publishButton: "Send results",
           loadPublished: "Load published",
           clearResults: "Clear results",
           clearResultsConfirm: "Clear published results for this stage in every room?",
@@ -406,9 +450,9 @@ export function AdminControlRoom() {
           locked: "Locked",
           revealed: "Published results",
           lineup: "Country list",
-          resultsDesk: "Stage results",
-          resultsDeskText: "Enter the official places and points first. Once published, every room will see these results.",
-          semiResultsDeskText: "For semi-finals, official places for every country are enough. Detailed points can be added later if needed.",
+          resultsDesk: "Official results",
+          resultsDeskText: "Final points publish globally: after Enter or the “Send results” button every room will see them.",
+          semiResultsDeskText: "Semi-final places publish globally: enter a place and press Enter. If the place is taken, the following countries move down automatically.",
           juryLabel: "Jury",
           teleLabel: "Tele",
           totalLabel: "Total",
@@ -449,7 +493,7 @@ export function AdminControlRoom() {
           roomHub: "Room hub",
           authFailed: "Unable to open the admin session.",
           reloadFailed: "Unable to refresh room data.",
-          publishedOk: "Stage results published.",
+          publishedOk: "Official results sent to every room.",
           stageOpenOk: "Stage opened for all rooms.",
           stageCloseOk: "Stage closed for all rooms.",
           countdownStartedOk: "Countdown started for all rooms.",
@@ -469,7 +513,7 @@ export function AdminControlRoom() {
           participantsTab: "Participants",
           technicalTab: "Technical",
           officialRoomsTitle: "Official stage slots",
-          officialRoomsText: "These slots make it quick to open the room used for each semi-final or final. Official result publishing still remains global for every room.",
+          officialRoomsText: "These slots make it quick to open the room used for each semi-final or final. Official result publishing is global for every room.",
           roomsListTitle: "All rooms",
           roomSearchPlaceholder: "Find room",
           openRoomAdmin: "Open",
@@ -490,7 +534,7 @@ export function AdminControlRoom() {
   const adminUx = useMemo(() => (
     language === "ru"
       ? {
-          stageTabsHint: "Выбери этап, который сейчас ведёшь: данные и публикация переключаются вместе с вкладкой.",
+          stageTabsHint: "Выбери этап, который сейчас ведёшь. Официальные итоги отправляются глобально во все комнаты.",
           scoringUnifiedTitle: "Единая система очков",
           scoringUnifiedHint: "Этот профиль применяется ко всем комнатам, чтобы статистика сезона считалась одинаково.",
           scoringRecommended: "Рекомендую «Стандартный»: финал считает близость к месту и даёт бонусы за победителя, топ-3 и топ-10; полуфиналы отдельно считают проход в финал.",
@@ -504,13 +548,10 @@ export function AdminControlRoom() {
             classic: "Простой 3-2-1",
             precision: "Точный",
           } as Record<string, string>,
-          autoPublish: "Публиковать автоматически",
-          autoPublishOn: "Автопубликация включена",
-          autoPublishOff: "Черновик публикуется только кнопкой",
-          autoPublishHintFinal: "В финале каждое введённое значение сразу уходит на экран результатов.",
-          autoPublishHintSemi: "В полуфинале каждое введённое место сразу уходит на экран результатов.",
-          autoPublished: "Изменения опубликованы на экране.",
-          draftSaved: "Черновик сохранён. До публикации зрители его не видят.",
+          publishMode: "Публикация по Enter",
+          publishHintFinal: "Вводи Жюри, Зрителей или Сумму спокойно: зрители увидят изменения только после Enter или кнопки отправки.",
+          publishHintSemi: "Введи место и нажми Enter: занятое место сдвинет остальные страны ниже, дублей не будет.",
+          draftSaved: "Черновик сохранён. До Enter или отправки зрители его не видят.",
           semiWaiting: "Полуфинал пока в черновике: заполни места всем странам без дублей.",
           countryColumn: "Страна",
           publishedColumn: "На экране",
@@ -518,7 +559,7 @@ export function AdminControlRoom() {
           roomToolsText: "Здесь можно кикнуть участника, вернуть доступ, сбросить ответы, закрыть временную комнату или полностью очистить её данные.",
         }
       : {
-          stageTabsHint: "Choose the stage you are running now: data and publishing follow the selected tab.",
+          stageTabsHint: "Choose the stage you are running now. Official results are sent globally to every room.",
           scoringUnifiedTitle: "Unified scoring",
           scoringUnifiedHint: "This profile is applied to every room so season stats are counted consistently.",
           scoringRecommended: "Recommended: Standard. The final uses placement accuracy plus winner/top bonuses; semi-finals score qualification separately.",
@@ -532,13 +573,10 @@ export function AdminControlRoom() {
             classic: "Simple 3-2-1",
             precision: "Precision",
           } as Record<string, string>,
-          autoPublish: "Publish automatically",
-          autoPublishOn: "Auto-publish is on",
-          autoPublishOff: "Draft publishes only by button",
-          autoPublishHintFinal: "In the final, every entered value is pushed to the results screen immediately.",
-          autoPublishHintSemi: "In semi-finals, every entered place is pushed to the results screen immediately.",
-          autoPublished: "Changes published to the screen.",
-          draftSaved: "Draft saved. Viewers do not see it until publishing.",
+          publishMode: "Publish on Enter",
+          publishHintFinal: "Enter Jury, Tele, or Total calmly: viewers see changes only after Enter or the send button.",
+          publishHintSemi: "Enter a place and press Enter: an occupied place moves following countries down, without duplicates.",
+          draftSaved: "Draft saved. Viewers do not see it until Enter or sending.",
           semiWaiting: "Semi-final is still a draft: fill every place without duplicates.",
           countryColumn: "Country",
           publishedColumn: "On screen",
@@ -555,6 +593,10 @@ export function AdminControlRoom() {
       .filter((stage) => officialRooms[stage.key] === roomSlug)
       .map((stage) => stage.key)
   ), [officialRooms]);
+  const selectedOfficialStageKeys = useMemo(
+    () => selectedRoom ? getOfficialStageKeysForRoom(selectedRoom) : [],
+    [getOfficialStageKeysForRoom, selectedRoom],
+  );
   const filteredRooms = useMemo(() => {
     const query = roomSearch.trim().toLowerCase();
     if (!query) return rooms;
@@ -595,10 +637,11 @@ export function AdminControlRoom() {
       duplicates,
     };
   }, [rows]);
-  function buildPublishPayload(options: { quiet?: boolean; allowEmpty?: boolean } = {}) {
+  function buildPublishPayload(options: { quiet?: boolean; allowEmpty?: boolean; sourceRows?: EditableResultRow[] } = {}) {
+    const rowsForPublish = sortResultRows(options.sourceRows || rows, selectedStage);
     const activeRows = isSemiStage
-      ? rankedRows.filter((row) => hasPlacement(row))
-      : rankedRows.filter((row) => hasRowData(row));
+      ? rowsForPublish.filter((row) => hasPlacement(row))
+      : rowsForPublish.filter((row) => hasRowData(row));
     if (!activeRows.length) {
       if (isSemiStage && options.allowEmpty) {
         return {
@@ -885,67 +928,32 @@ export function AdminControlRoom() {
         };
       });
 
-      const sorted = sortResultRows(next, selectedStage);
       if (selectedRoom) {
-        writeDraft(selectedRoom, selectedStage, sorted);
+        writeDraft(selectedRoom, selectedStage, next);
       }
-      return sorted;
+      return next;
     });
   }
 
-  function handleResultInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Enter") {
-      event.currentTarget.blur();
-      void handlePublishResults();
+  async function handleResultInputCommit(code: string, field: "place" | "jury" | "tele" | "total") {
+    if (!selectedRoom) return;
+
+    let rowsToPublish = rows;
+    if (isSemiStage && field === "place") {
+      rowsToPublish = reorderSemiRows(rows, code);
+      setRows(rowsToPublish);
+      writeDraft(selectedRoom, selectedStage, rowsToPublish);
     }
+
+    await handlePublishResults(rowsToPublish, { allowEmpty: isSemiStage });
   }
 
-  useEffect(() => {
-    if (!autoPublish || !draftDirty || !authenticated || !isMainAdmin || !selectedRoom || loadingPanel) {
-      return;
+  function handleResultInputKeyDown(event: KeyboardEvent<HTMLInputElement>, code: string, field: "place" | "jury" | "tele" | "total") {
+    if (event.key === "Enter") {
+      event.currentTarget.blur();
+      void handleResultInputCommit(code, field);
     }
-
-    const payload = buildPublishPayload({ quiet: true, allowEmpty: true });
-    if (!payload.ok) {
-      setStatusText(payload.wait ? payload.message : adminUx.draftSaved);
-      return;
-    }
-
-    suppressResultsRefreshCountRef.current += 1;
-    const publishVersion = draftVersionRef.current;
-    setPendingAction("auto-publish-results");
-    setError("");
-    publishStageResults({
-      roomSlug: selectedRoom,
-      stage: selectedStage,
-      ranking: payload.ranking,
-      breakdown: payload.breakdown,
-    })
-      .then(() => {
-        clearDraft(selectedRoom, selectedStage);
-        if (draftVersionRef.current === publishVersion) {
-          setDraftDirty(false);
-        }
-        setStatusText(adminUx.autoPublished);
-        setSnapshot((current) => current ? {
-          ...current,
-          stageOverview: {
-            ...current.stageOverview,
-            [selectedStage]: {
-              ...current.stageOverview[selectedStage],
-              revealedCount: payload.ranking.length,
-            },
-          },
-        } : current);
-      })
-      .catch((publishError) => {
-        console.error(publishError);
-        setError(publishError instanceof Error ? publishError.message : copy.reloadFailed);
-      })
-      .finally(() => {
-        setPendingAction(null);
-      });
-  }, [adminUx, authenticated, autoPublish, copy.reloadFailed, draftDirty, isMainAdmin, loadingPanel, rankedRows, rows.length, selectedRoom, selectedStage]);
+  }
 
   async function handleAdminLogin() {
     const key = adminKey.trim();
@@ -1008,6 +1016,9 @@ export function AdminControlRoom() {
 
   async function handleStageToggle(open: boolean) {
     if (!selectedRoom) return;
+    if (!open && !window.confirm(copy.closeStageConfirm)) {
+      return;
+    }
 
     setPendingAction(open ? "stage-open" : "stage-close");
     setError("");
@@ -1122,10 +1133,10 @@ export function AdminControlRoom() {
     }
   }
 
-  async function handlePublishResults() {
+  async function handlePublishResults(sourceRows?: EditableResultRow[], options: { allowEmpty?: boolean } = {}) {
     if (!selectedRoom) return;
 
-    const payload = buildPublishPayload();
+    const payload = buildPublishPayload({ sourceRows, allowEmpty: options.allowEmpty });
     if (!payload.ok) {
       setError(payload.message);
       return;
@@ -1462,6 +1473,12 @@ export function AdminControlRoom() {
               <span className="hidden max-w-[24rem] truncate text-sm text-arenaMuted md:inline">
                 {selectedRoomMeta?.name || selectedRoom} · {getStageLabel(selectedStage)}
               </span>
+              {selectedOfficialStageKeys.map((stageKey) => (
+                <span key={`nav-official-${stageKey}`} className="show-chip hidden bg-emerald-400/10 text-[10px] uppercase tracking-[0.18em] text-emerald-100 md:inline-flex">
+                  <Check size={13} />
+                  {copy.officialRoom}: {getStageLabel(stageKey)}
+                </span>
+              ))}
             </div>
 
             <div className="show-panel flex min-w-0 gap-1 overflow-x-auto p-1">
@@ -1511,6 +1528,12 @@ export function AdminControlRoom() {
                   <Activity size={14} />
                   {selectedRoom ? copy.socketLive : copy.socketIdle}
                 </span>
+                {selectedOfficialStageKeys.map((stageKey) => (
+                  <span key={`hero-official-${stageKey}`} className="show-chip bg-emerald-400/10 text-[11px] uppercase tracking-[0.22em] text-emerald-100">
+                    <Check size={14} />
+                    {copy.officialRoom}: {getStageLabel(stageKey)}
+                  </span>
+                ))}
                 <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
                   <ShieldCheck size={14} />
                   {isMainAdmin ? copy.mainAdmin : copy.roomAdmin}
@@ -1752,10 +1775,22 @@ export function AdminControlRoom() {
             <div className="show-card p-4 md:p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.roomStats}</p>
-                  <h2 className="display-copy mt-2 text-2xl font-black">{selectedRoomMeta?.name || selectedRoom}</h2>
+                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">
+                    {activeAdminTab === "voting"
+                      ? (language === "ru" ? "Глобальный эфир" : "Global broadcast")
+                      : copy.roomStats}
+                  </p>
+                  <h2 className="display-copy mt-2 text-2xl font-black">
+                    {activeAdminTab === "voting"
+                      ? (language === "ru" ? "Официальные данные для всех комнат" : "Official data for every room")
+                      : selectedRoomMeta?.name || selectedRoom}
+                  </h2>
                   <p className="mt-2 text-sm text-arenaMuted">
-                    {snapshot?.predictionWindows[selectedStage] ? copy.stageWindowOpen : copy.stageWindowClosed}
+                    {activeAdminTab === "voting"
+                      ? (language === "ru"
+                        ? `Этап: ${getStageLabel(selectedStage)}. Комната-превью: ${selectedRoomMeta?.name || selectedRoom}.`
+                        : `Stage: ${getStageLabel(selectedStage)}. Preview room: ${selectedRoomMeta?.name || selectedRoom}.`)
+                      : snapshot?.predictionWindows[selectedStage] ? copy.stageWindowOpen : copy.stageWindowClosed}
                   </p>
                 </div>
                 {isMainAdmin ? (
@@ -1897,7 +1932,7 @@ export function AdminControlRoom() {
                 <label className="show-panel p-3">
                   <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{showCopy.statusLabel}</p>
                   <input
-                    className="arena-input mt-2 h-11"
+                    className="arena-input admin-show-input mt-2"
                     value={showStatusDraft}
                     placeholder={language === "ru" ? "Например: объявляем финалистов" : "For example: announcing qualifiers"}
                     onChange={(event) => setShowStatusDraft(event.target.value)}
@@ -1907,7 +1942,7 @@ export function AdminControlRoom() {
                 <label className="show-panel p-3">
                   <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{showCopy.currentActLabel}</p>
                   <select
-                    className="arena-input mt-2 h-11"
+                    className="arena-input admin-show-input admin-show-select mt-2"
                     value={showCurrentActCode}
                     onChange={(event) => setShowCurrentActCode(event.target.value)}
                   >
@@ -1923,7 +1958,7 @@ export function AdminControlRoom() {
                 <label className="show-panel p-3">
                   <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{showCopy.highlightLabel}</p>
                   <select
-                    className="arena-input mt-2 h-11"
+                    className="arena-input admin-show-input admin-show-select mt-2"
                     value={showHighlightMode}
                     onChange={(event) => setShowHighlightMode((event.target.value || "") as ShowHighlightMode | "")}
                   >
@@ -1958,9 +1993,7 @@ export function AdminControlRoom() {
                   <h2 className="display-copy mt-2 text-2xl font-black">{getStageLabel(selectedStage)}</h2>
                   <p className="mt-2 text-sm text-arenaMuted">{resultsDeskText}</p>
                   <p className="mt-2 text-sm text-arenaBeam">
-                    {autoPublish
-                      ? (isSemiStage ? adminUx.autoPublishHintSemi : adminUx.autoPublishHintFinal)
-                      : adminUx.autoPublishOff}
+                    {isSemiStage ? adminUx.publishHintSemi : adminUx.publishHintFinal}
                   </p>
                   {isSemiStage && qualificationCutoff ? (
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -1979,14 +2012,15 @@ export function AdminControlRoom() {
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    className={`arena-button-secondary px-5 py-3 text-sm ${autoPublish ? "border-arenaBeam/35 text-white" : ""}`}
-                    onClick={() => setAutoPublish((current) => !current)}
-                  >
-                    {autoPublish ? <Unlock size={16} /> : <Lock size={16} />}
-                    {autoPublish ? adminUx.autoPublishOn : adminUx.autoPublish}
-                  </button>
+                  <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaBeam">
+                    <Check size={14} />
+                    {adminUx.publishMode}
+                  </span>
+                  {draftDirty ? (
+                    <span className="show-chip text-[11px] uppercase tracking-[0.2em] text-arenaMuted">
+                      {adminUx.draftSaved}
+                    </span>
+                  ) : null}
                   <button type="button" className="arena-button-secondary px-5 py-3 text-sm" onClick={() => void handleLoadPublished()}>
                     <RotateCcw size={16} />
                     {copy.loadPublished}
@@ -2054,21 +2088,21 @@ export function AdminControlRoom() {
                         {isSemiStage ? (
                           <label className="grid gap-1 text-xs text-arenaMuted">
                             <span className="label-copy uppercase tracking-[0.2em]">{copy.placeLabel}</span>
-                            <input className="arena-input h-9" inputMode="numeric" value={row.place} onChange={(event) => setRowValue(row.code, "place", event.target.value)} onKeyDown={handleResultInputKeyDown} />
+                            <input className="arena-input h-9" inputMode="numeric" value={row.place} onChange={(event) => setRowValue(row.code, "place", event.target.value)} onKeyDown={(event) => handleResultInputKeyDown(event, row.code, "place")} />
                           </label>
                         ) : (
                           <>
                             <label className="grid gap-1 text-xs text-arenaMuted">
                               <span className="label-copy uppercase tracking-[0.2em]">{copy.juryLabel}</span>
-                              <input className="arena-input h-9" inputMode="numeric" value={row.jury} onChange={(event) => setRowValue(row.code, "jury", event.target.value)} onKeyDown={handleResultInputKeyDown} />
+                              <input className="arena-input h-9" inputMode="numeric" value={row.jury} onChange={(event) => setRowValue(row.code, "jury", event.target.value)} onKeyDown={(event) => handleResultInputKeyDown(event, row.code, "jury")} />
                             </label>
                             <label className="grid gap-1 text-xs text-arenaMuted">
                               <span className="label-copy uppercase tracking-[0.2em]">{copy.teleLabel}</span>
-                              <input className="arena-input h-9" inputMode="numeric" value={row.tele} onChange={(event) => setRowValue(row.code, "tele", event.target.value)} onKeyDown={handleResultInputKeyDown} />
+                              <input className="arena-input h-9" inputMode="numeric" value={row.tele} onChange={(event) => setRowValue(row.code, "tele", event.target.value)} onKeyDown={(event) => handleResultInputKeyDown(event, row.code, "tele")} />
                             </label>
                             <label className="grid gap-1 text-xs text-arenaMuted">
                               <span className="label-copy uppercase tracking-[0.2em]">{copy.totalLabel}</span>
-                              <input className="arena-input h-9" inputMode="numeric" value={row.total} onChange={(event) => setRowValue(row.code, "total", event.target.value)} onKeyDown={handleResultInputKeyDown} />
+                              <input className="arena-input h-9" inputMode="numeric" value={row.total} onChange={(event) => setRowValue(row.code, "total", event.target.value)} onKeyDown={(event) => handleResultInputKeyDown(event, row.code, "total")} />
                             </label>
                           </>
                         )}

@@ -40,6 +40,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   const [mobilePlayersMode, setMobilePlayersMode] = useState<"focus" | "all">("focus");
   const [desktopBoardMode, setDesktopBoardMode] = useState<"split" | "players">("split");
   const [fullscreenActive, setFullscreenActive] = useState(false);
+  const [softFullscreenActive, setSoftFullscreenActive] = useState(false);
   const [selectedActCode, setSelectedActCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -120,6 +121,14 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   }, [results]);
 
   useEffect(() => {
+    if (!Object.values(movement).some((delta) => typeof delta === "number" && delta !== 0)) {
+      return;
+    }
+    const timeout = window.setTimeout(() => setMovement({}), 1300);
+    return () => window.clearTimeout(timeout);
+  }, [movement]);
+
+  useEffect(() => {
     const nextMovement = leaders.reduce<Record<string, number | null>>((acc, row) => {
       const previousRank = previousLeaderRanks.current[row.id];
       acc[row.id] = previousRank ? previousRank - row.rank : null;
@@ -132,6 +141,14 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
       return acc;
     }, {});
   }, [leaders]);
+
+  useEffect(() => {
+    if (!Object.values(leaderMovement).some((delta) => typeof delta === "number" && delta !== 0)) {
+      return;
+    }
+    const timeout = window.setTimeout(() => setLeaderMovement({}), 1300);
+    return () => window.clearTimeout(timeout);
+  }, [leaderMovement]);
 
   const text = language === "ru"
     ? {
@@ -331,9 +348,18 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         await document.exitFullscreen();
         return;
       }
-      await document.documentElement.requestFullscreen();
+      if (softFullscreenActive) {
+        setSoftFullscreenActive(false);
+        return;
+      }
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+        return;
+      }
+      setSoftFullscreenActive(true);
     } catch (fullscreenError) {
       console.error(fullscreenError);
+      setSoftFullscreenActive((current) => !current);
     }
   };
 
@@ -391,7 +417,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
       <motion.div
         key={row.id}
         layout="position"
-        className={`show-panel live-results-row live-room-player-row ${isMoving ? "live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${dense ? "h-[3.1rem] px-2 py-[0.15rem]" : compact ? "px-3 py-2" : "p-3 md:p-4"} flex items-center ${dense ? "gap-1.5" : "gap-3 md:gap-4"} ${
+        className={`show-panel scoreboard-motion-row live-results-row live-room-player-row ${isMoving ? "scoreboard-motion-row-moving live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${dense ? "h-[3.1rem] px-2 py-[0.15rem]" : compact ? "px-3 py-2" : "p-3 md:p-4"} flex items-center ${dense ? "gap-1.5" : "gap-3 md:gap-4"} ${
           isCurrentUser
             ? "border-cyan-300/20 bg-[linear-gradient(135deg,rgba(129,236,255,0.075),transparent_56%),rgba(255,255,255,0.04)] shadow-[0_0_0_1px_rgba(129,236,255,0.08),0_24px_40px_rgba(44,86,120,0.2)]"
             : ""
@@ -449,7 +475,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         onClick={() => setSelectedActCode(act.code)}
         layout="position"
         transition={rowTransition}
-        className={`show-panel live-results-row ${desktopRowClass} text-left transition hover:border-cyan-200/18 focus:outline-none focus:ring-2 focus:ring-arenaBeam/35 ${isMoving ? "live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${isCutoffRow ? "live-cutoff-row" : ""} ${isBelowCutoffRow ? "live-cutoff-below-row" : ""} ${!isSemi && act.revealed ? "live-final-row" : ""} ${!isSemi && isMoving ? "live-final-row-moving" : ""} ${
+        className={`show-panel scoreboard-motion-row live-results-row ${desktopRowClass} text-left transition hover:border-cyan-200/18 focus:outline-none focus:ring-2 focus:ring-arenaBeam/35 ${isMoving ? "scoreboard-motion-row-moving live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${isCutoffRow ? "live-cutoff-row" : ""} ${isBelowCutoffRow ? "live-cutoff-below-row" : ""} ${!isSemi && act.revealed ? "live-final-row" : ""} ${!isSemi && isMoving ? "live-final-row-moving" : ""} ${
           isQualifier
             ? "border-emerald-300/12 bg-[linear-gradient(135deg,rgba(70,220,165,0.065),transparent_52%),rgba(255,255,255,0.03)]"
             : ""
@@ -520,7 +546,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         onClick={() => setSelectedActCode(act.code)}
         layout="position"
         transition={rowTransition}
-        className={`show-panel-muted flex min-w-0 items-center gap-3 px-3 py-2.5 text-left transition hover:border-cyan-200/18 focus:outline-none focus:ring-2 focus:ring-arenaBeam/35 ${
+        className={`show-panel-muted scoreboard-motion-row flex min-w-0 items-center gap-3 px-3 py-2.5 text-left transition hover:border-cyan-200/18 focus:outline-none focus:ring-2 focus:ring-arenaBeam/35 ${movement[act.code] ? "scoreboard-motion-row-moving" : ""} ${
           isSemi && isQualifier
             ? "border-emerald-300/12 bg-[linear-gradient(135deg,rgba(70,220,165,0.065),transparent_52%),rgba(255,255,255,0.03)]"
             : ""
@@ -556,7 +582,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   };
 
   return (
-    <div className="grid gap-5">
+    <div className={`grid gap-5 ${softFullscreenActive ? "fixed inset-0 z-[9999] overflow-y-auto bg-[#090917] p-3 md:p-5" : ""}`}>
       <section className={`${desktopCompactTop ? "show-panel px-4 py-3 md:px-5" : `show-card ${isPhone ? "p-3" : "p-5 md:p-6 xl:p-7"}`}`}>
         {!isPhone && !desktopCompactTop ? <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaDanger">{text.kicker}</p> : null}
 
@@ -638,10 +664,10 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
                 type="button"
                 onClick={toggleFullscreen}
                 className="show-chip text-[11px] uppercase tracking-[0.18em] text-arenaText transition hover:border-cyan-200/20 hover:text-white"
-                aria-label={fullscreenActive ? (language === "ru" ? "Выйти из полноэкранного режима" : "Exit fullscreen") : (language === "ru" ? "На весь экран" : "Fullscreen")}
-                title={fullscreenActive ? (language === "ru" ? "Выйти из полноэкранного режима" : "Exit fullscreen") : (language === "ru" ? "На весь экран" : "Fullscreen")}
+                aria-label={fullscreenActive || softFullscreenActive ? (language === "ru" ? "Выйти из полноэкранного режима" : "Exit fullscreen") : (language === "ru" ? "На весь экран" : "Fullscreen")}
+                title={fullscreenActive || softFullscreenActive ? (language === "ru" ? "Выйти из полноэкранного режима" : "Exit fullscreen") : (language === "ru" ? "На весь экран" : "Fullscreen")}
               >
-                {fullscreenActive ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                {fullscreenActive || softFullscreenActive ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
                 {language === "ru" ? "Экран" : "Screen"}
               </button>
             </div>
