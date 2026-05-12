@@ -61,6 +61,14 @@ function rowToNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function countryCodeToFlagEmoji(code: string) {
+  const normalized = code.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(normalized)) return normalized;
+  return Array.from(normalized)
+    .map((letter) => String.fromCodePoint(0x1f1e6 + letter.charCodeAt(0) - 65))
+    .join("");
+}
+
 function isSemiStageValue(stageKey: StageKey) {
   return stageKey === "semi1" || stageKey === "semi2";
 }
@@ -2057,6 +2065,9 @@ export function AdminControlRoom() {
 
                       <div className="min-w-0">
                         <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.08] text-xl leading-none" title={row.code}>
+                            {countryCodeToFlagEmoji(row.code)}
+                          </span>
                           <span className="show-chip px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-arenaMuted">{row.code}</span>
                           {isSemiStage && hasPlacement(row) && qualificationCutoff ? (
                             <span className={`show-chip px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] ${rowToNumber(row.place) <= qualificationCutoff ? "text-emerald-100" : "text-arenaMuted"}`}>
@@ -2124,15 +2135,16 @@ export function AdminControlRoom() {
               <p className="mt-2 text-sm text-arenaMuted">{adminUx.roomToolsText}</p>
             </div>
 
-            <div className="show-scroll grid max-h-[min(26rem,48vh)] gap-1.5 overflow-y-auto pr-1">
+            <div className="show-scroll grid max-h-[min(30rem,58vh)] gap-1.5 overflow-y-auto pr-1">
               {users.map((user) => (
-                <div key={user.id} className="show-panel px-2 py-1.5">
-                  <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+                <div key={user.id} className="show-panel px-3 py-2">
+                  <div className="grid gap-2 2xl:grid-cols-[minmax(0,1fr)_auto] 2xl:items-center">
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                         <span className={`show-chip px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] ${user.removed ? "border-rose-300/20 bg-rose-400/15 text-rose-100" : "text-arenaBeam"}`}>
                           {user.removed ? copy.removedState : copy.activeState}
                         </span>
+                        <p className="min-w-0 max-w-[18rem] truncate text-sm font-semibold text-white md:text-base">{getDisplayName(user.name)}</p>
                         {user.submittedStages.map((stage) => (
                           <span key={`${user.id}-${stage}`} className="show-chip px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-arenaMuted">
                             {getStageLabel(stage)}
@@ -2145,14 +2157,13 @@ export function AdminControlRoom() {
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-1 truncate text-base font-semibold text-white">{getDisplayName(user.name)}</p>
-                      <p className="mt-1 truncate text-xs text-arenaMuted">{user.firstName} {user.lastName}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-arenaMuted">{user.firstName} {user.lastName}</p>
                     </div>
 
-                  <div className="grid gap-1.5 sm:grid-cols-2 xl:w-[18rem]">
+                  <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4 2xl:w-[28rem]">
                     <button
                       type="button"
-                      className="arena-button-secondary px-3 py-1.5 text-[11px]"
+                      className="arena-button-secondary min-h-9 px-3 py-1.5 text-[11px]"
                       disabled={Boolean(pendingAction)}
                       onClick={() => void handleParticipantAction(`reset-stage-${user.id}`, () => resetParticipant(selectedRoom, user.id, selectedStage), copy.participantReset(selectedStage))}
                     >
@@ -2160,7 +2171,7 @@ export function AdminControlRoom() {
                     </button>
                     <button
                       type="button"
-                      className="arena-button-secondary px-3 py-1.5 text-[11px]"
+                      className="arena-button-secondary min-h-9 px-3 py-1.5 text-[11px]"
                       disabled={Boolean(pendingAction)}
                       onClick={() => void handleParticipantAction(`reset-all-${user.id}`, () => resetParticipant(selectedRoom, user.id), copy.participantReset(null))}
                     >
@@ -2170,7 +2181,7 @@ export function AdminControlRoom() {
                       user.submissionOverrides[selectedStage] ? (
                         <button
                           type="button"
-                          className="arena-button-secondary px-3 py-1.5 text-[11px] sm:col-span-2"
+                          className="arena-button-secondary min-h-9 px-3 py-1.5 text-[11px]"
                           disabled={Boolean(pendingAction)}
                           onClick={() => void handleParticipantLatePass(user.id, true)}
                         >
@@ -2180,7 +2191,7 @@ export function AdminControlRoom() {
                       ) : (
                         <button
                           type="button"
-                          className="arena-button-primary h-9 px-3 text-[11px] sm:col-span-2"
+                          className="arena-button-primary min-h-9 px-3 text-[11px]"
                           disabled={Boolean(pendingAction)}
                           onClick={() => void handleParticipantLatePass(user.id)}
                         >
@@ -2192,7 +2203,7 @@ export function AdminControlRoom() {
                     {user.removed ? (
                       <button
                         type="button"
-                        className="arena-button-primary h-9 px-3 text-[11px] sm:col-span-2"
+                        className="arena-button-primary min-h-9 px-3 text-[11px]"
                         disabled={Boolean(pendingAction)}
                         onClick={() => void handleParticipantAction(`restore-${user.id}`, () => restoreParticipant(selectedRoom, user.id), copy.participantRestored)}
                       >
@@ -2201,7 +2212,7 @@ export function AdminControlRoom() {
                     ) : (
                       <button
                         type="button"
-                        className="rounded-full bg-rose-500/15 px-3 py-1.5 text-[11px] font-semibold text-rose-100 transition hover:bg-rose-500/25 sm:col-span-2"
+                        className="min-h-9 rounded-full bg-rose-500/15 px-3 py-1.5 text-[11px] font-semibold text-rose-100 transition hover:bg-rose-500/25"
                         disabled={Boolean(pendingAction)}
                         onClick={() => {
                           const confirmed = window.confirm(language === "ru" ? "Удалить участника из комнаты?" : "Remove this participant from the room?");
