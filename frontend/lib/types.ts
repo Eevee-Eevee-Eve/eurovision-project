@@ -145,6 +145,7 @@ export interface AccountProfile {
   emoji: string;
   avatarUrl: string | null;
   avatarTheme: AvatarTheme;
+  authProviders?: string[];
   publicDisplayMode: PublicDisplayMode;
   publicDisplayOptIn: boolean;
   consents: {

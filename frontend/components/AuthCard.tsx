@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { loginAccount, registerAccount, requestPasswordReset, resetPassword } from "../lib/api";
+import { getOAuthStartUrl, loginAccount, registerAccount, requestPasswordReset, resetPassword } from "../lib/api";
 import { getAccountCopy } from "../lib/account-copy";
 import { getLegalConfig, getLegalCopy } from "../lib/legal";
 import type { PublicDisplayMode } from "../lib/types";
@@ -47,6 +47,7 @@ export function AuthCard({
   const [error, setError] = useState("");
   const [statusText, setStatusText] = useState("");
   const [resetPreview, setResetPreview] = useState<string | null>(null);
+  const [returnTo, setReturnTo] = useState("/");
   const resetDisabledText = language === "ru"
     ? "Восстановление пароля по почте сейчас недоступно. Если нужно вернуть доступ, напиши организатору."
     : "Password recovery email is not available right now. Contact the organizer if you need access restored.";
@@ -68,6 +69,10 @@ export function AuthCard({
       setMode("applyReset");
     }
   }, [resetToken]);
+
+  useEffect(() => {
+    setReturnTo(`${window.location.pathname}${window.location.search}`);
+  }, []);
 
   const modeCopy = useMemo(() => {
     if (mode === "register") {
@@ -326,6 +331,26 @@ export function AuthCard({
             </Link>
           ) : null}
         </div>
+
+        {!forcedMode && mode !== "requestReset" && mode !== "applyReset" ? (
+          <div className="grid gap-3 border-t border-white/10 pt-4 sm:grid-cols-2">
+            <a
+              className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm"
+              href={getOAuthStartUrl("google", { roomSlug, returnTo })}
+            >
+              Continue with Google
+            </a>
+            <a
+              className="arena-button-secondary inline-flex h-12 items-center justify-center px-5 text-sm"
+              href={getOAuthStartUrl("yandex", { roomSlug, returnTo })}
+            >
+              Continue with Yandex
+            </a>
+            <p className="sm:col-span-2 text-xs leading-6 text-arenaMuted">
+              We only request basic profile data: email, name, provider ID, and avatar when available.
+            </p>
+          </div>
+        ) : null}
       </div>
     </section>
   );

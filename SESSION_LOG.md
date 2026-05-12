@@ -42,6 +42,24 @@
   - protected room access remains separate from account auth
   - admin session still works independently of user session
 
+### 2026-05-12 Google/Yandex OAuth implementation pass
+
+- added local backend `.env` loading so `backend/backend_core/.env` works for OAuth secrets
+- moved accidentally entered OAuth secrets out of tracked `.env.example`; `.env` is now ignored by Git
+- added Google OAuth start/callback routes with scopes limited to `openid email profile`
+- added Yandex OAuth start/callback routes with scopes limited to `login:info login:email login:avatar`
+- OAuth sign-in now maps provider identity into the existing internal account model and reuses `esc_session`
+- existing email/password login remains available
+- provider tokens are not persisted; only provider subject, email, and link timestamps are stored
+- frontend `AuthCard` now shows Google and Yandex sign-in buttons
+- verification:
+  - `node --check backend/backend_core/server.js` passed
+  - `node --check backend/backend_core/data-store.js` passed
+  - `node node_modules/typescript/bin/tsc --noEmit` passed in `frontend`
+  - OAuth start-route smoke test passed: Google and Yandex both return `302` to the correct provider authorization URL
+  - `next build` could not complete because local `frontend/node_modules/next` appears broken: `EISDIR ... next/dist/pages/_app.js`
+- still intentionally uncommitted/unrelated: `backend/backend_core/data/app-state.json`
+
 ## 2026-04-02
 
 ### Semi-Final Qualification Pass

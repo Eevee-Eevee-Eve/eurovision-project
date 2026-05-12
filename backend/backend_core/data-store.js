@@ -323,20 +323,23 @@ function buildAccountRecord(payload) {
   const displayName = sanitizeText(payload.displayName, 64);
   const emoji = sanitizeText(payload.emoji, 16) || 'EU';
   const publicDisplayMode = sanitizeDisplayMode(payload.publicDisplayMode);
-  const { salt, hash } = hashPassword(payload.password);
+  const passwordData = payload.password ? hashPassword(payload.password) : null;
   const now = new Date().toISOString();
   const account = {
     id: uuidv4(),
     email,
-    passwordSalt: salt,
-    passwordHash: hash,
+    passwordSalt: passwordData?.salt || null,
+    passwordHash: passwordData?.hash || null,
     firstName,
     lastName,
     displayName,
     emoji,
-    avatarUrl: null,
+    avatarUrl: sanitizeText(payload.avatarUrl, 512) || null,
     publicDisplayMode,
     publicDisplayOptIn: Boolean(payload.publicDisplayOptIn),
+    oauthIdentities: payload.oauthIdentities && typeof payload.oauthIdentities === 'object'
+      ? payload.oauthIdentities
+      : {},
     consents: {
       policyVersion: POLICY_VERSION,
       privacyAcceptedAt: now,
@@ -364,6 +367,7 @@ function toAccountProfile(account) {
     avatarTheme: getAvatarTheme(account.id, label),
     publicDisplayMode: account.publicDisplayMode,
     publicDisplayOptIn: account.publicDisplayOptIn,
+    authProviders: Object.keys(account.oauthIdentities || {}),
     consents: account.consents,
     createdAt: account.createdAt,
     updatedAt: account.updatedAt,
