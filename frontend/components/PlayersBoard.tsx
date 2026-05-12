@@ -92,6 +92,14 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
     }, {});
   }, [rows]);
 
+  useEffect(() => {
+    if (!Object.values(movement).some((delta) => typeof delta === "number" && delta !== 0)) {
+      return;
+    }
+    const timeout = window.setTimeout(() => setMovement({}), 1300);
+    return () => window.clearTimeout(timeout);
+  }, [movement]);
+
   function getMatchCount(row: LeaderboardEntry) {
     if (boardKey === "overall") {
       return (Object.keys(row.stages) as StageKey[]).reduce((sum, stage) => sum + row.stages[stage].exactMatches.length, 0);
@@ -189,6 +197,8 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
 
         {rows.map((row) => {
           const featured = !isPhone && row.rank === 1;
+          const rowDelta = movement[row.id] ?? null;
+          const isMoving = typeof rowDelta === "number" && rowDelta !== 0;
           const stageList = (Object.keys(row.stages) as StageKey[]).map((stage) => {
             const meta = row.stages[stage];
             const tone = meta.locked
@@ -209,7 +219,7 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
               key={row.id}
               layout="position"
               transition={rowTransition}
-              className={`show-card overflow-hidden ${featured ? "p-5 md:p-6 xl:col-span-2" : "p-4 md:p-5"}`}
+              className={`show-card scoreboard-motion-row ${isMoving ? "scoreboard-motion-row-moving" : ""} overflow-hidden ${featured ? "p-5 md:p-6 xl:col-span-2" : "p-4 md:p-5"}`}
             >
               <div className={`flex gap-4 ${featured ? "items-start" : "items-center"}`}>
                 <div className={`show-rank shrink-0 ${isPhone ? "h-14 w-14" : featured ? "h-20 w-20" : "h-16 w-16"}`}>
@@ -229,7 +239,7 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
                     <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaBeam">
                       {getBoardLabel(boardKey)}
                     </span>
-                    <MovementPill delta={movement[row.id] ?? null} />
+                    <MovementPill delta={rowDelta} />
                   </div>
 
                   <h3 className={`display-copy mt-3 font-black ${isPhone ? "text-xl" : featured ? "text-3xl" : "text-2xl"}`}>{getDisplayName(row.name)}</h3>

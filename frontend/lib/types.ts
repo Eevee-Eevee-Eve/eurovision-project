@@ -285,6 +285,13 @@ export type NoteTone =
   | "song"
   | "energy"
   | "memorable"
+  | "top10"
+  | "jury"
+  | "televote"
+  | "risk"
+  | "borderline"
+  | "grower"
+  | "meme"
   | "skip";
 
 export interface ActNote {

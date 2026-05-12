@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       lang="ru"
       className={`${displayFont.variable} ${bodyFont.variable} ${labelFont.variable} bg-arenaBg text-arenaText scroll-smooth`}
     >
-      <body className="antialiased">
+      <body className="theme-broadcast antialiased">
         <LanguageProvider>
           <AccountProvider>
             {children}

@@ -9,6 +9,13 @@ import { useLanguage } from "./LanguageProvider";
 import { MovementPill } from "./MovementPill";
 import { UserAvatar } from "./UserAvatar";
 
+const rowTransition = {
+  type: "spring",
+  stiffness: 260,
+  damping: 28,
+  mass: 0.82,
+} as const;
+
 function buildRankMap(rows: LeaderboardEntry[]) {
   return rows.reduce<Record<string, number>>((acc, row) => {
     acc[row.id] = row.rank;
@@ -80,6 +87,14 @@ export default function Leaderboard({
     previousRanks.current = buildRankMap(rows);
   }, [rows]);
 
+  useEffect(() => {
+    if (!Object.values(movement).some((delta) => typeof delta === "number" && delta !== 0)) {
+      return;
+    }
+    const timeout = window.setTimeout(() => setMovement({}), 1300);
+    return () => window.clearTimeout(timeout);
+  }, [movement]);
+
   return (
     <section className="show-card p-5 md:p-6">
       <div className="flex items-center justify-between gap-4">
@@ -104,11 +119,15 @@ export default function Leaderboard({
       ) : null}
 
       <div className="mt-5 grid gap-3">
-        {rows.slice(0, limit).map((row) => (
+        {rows.slice(0, limit).map((row) => {
+          const rowDelta = movement[row.id] ?? null;
+          const isMoving = typeof rowDelta === "number" && rowDelta !== 0;
+          return (
           <motion.div
             key={row.id}
-            layout
-            className="show-panel p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
+            layout="position"
+            transition={rowTransition}
+            className={`show-panel scoreboard-motion-row p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.08] ${isMoving ? "scoreboard-motion-row-moving" : ""}`}
           >
             <div className="flex items-center gap-3">
               <UserAvatar
@@ -123,7 +142,7 @@ export default function Leaderboard({
                   <span className="show-chip label-copy px-3 py-1.5 text-[11px] uppercase tracking-[0.24em] text-arenaBeam">
                     #{row.rank}
                   </span>
-                  <MovementPill delta={movement[row.id] ?? null} />
+                  <MovementPill delta={rowDelta} />
                 </div>
                 <p className="mt-2 truncate text-lg font-semibold text-white">{getDisplayName(row.name)}</p>
               </div>
@@ -133,7 +152,8 @@ export default function Leaderboard({
               </div>
             </div>
           </motion.div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
