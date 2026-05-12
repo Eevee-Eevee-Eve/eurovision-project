@@ -1,7 +1,33 @@
 # Session Log
 
 > Latest update:
-> Production is live on `morozoveuroparty.ru`. The active workstream is the companion UX in `vote/acts`: modal sheet, notes, draft ranking state, and responsive layout.
+> Production is live on `morozoveuroparty.ru`. The active workstream is authorization/account/session flow coordination.
+
+### 2026-05-12 auth coordination note
+
+- active work area: authorization/account/session flow
+- before continuing from another PC or another Codex chat, read this entry plus:
+  - `PROJECT_CONTEXT.md`
+  - `KNOWN_ISSUES.md`
+  - `README.md`
+  - `frontend/components/AuthCard.tsx`
+  - `frontend/components/AccountProvider.tsx`
+  - `frontend/lib/api.ts`
+  - backend account/session routes and state helpers
+- do not commit real secrets, session cookies, reset tokens, or local production state
+- current local status before auth edits: `main` matches `origin/main`, with an unrelated local change in `backend/backend_core/data/app-state.json`
+- recommended workflow for auth changes:
+  - work on a dedicated branch, not directly on `main`
+  - commit and push before switching machines
+  - update this log with the intent, changed files, and verification result
+- auth verification checklist:
+  - register account
+  - login existing account
+  - logout
+  - session refresh after page reload
+  - password reset behavior when enabled/disabled
+  - protected room access remains separate from account auth
+  - admin session still works independently of user session
 
 ## 2026-04-02
 
