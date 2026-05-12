@@ -1656,8 +1656,8 @@ body.theme-broadcast {
   --esc-panel-hi: rgba(31, 36, 76, 0.82);
   --esc-cyan: #00d4cc;
   --esc-blue: #0040ee;
-  --esc-pink: #f10d59;
-  --esc-candy: #ff3ede;
+  --esc-pink: #ff4fd8;
+  --esc-candy: #ff7af0;
   --esc-yellow: #ffca1d;
   --esc-text: #f3f3ff;
   --esc-muted: rgba(235, 237, 255, 0.68);
@@ -1675,6 +1675,7 @@ body.theme-broadcast {
 
 .theme-broadcast .text-arenaPulse {
   color: var(--esc-pink) !important;
+  text-shadow: 0 0 12px rgba(255, 79, 216, 0.22);
 }
 
 .theme-broadcast .text-arenaBeam {
