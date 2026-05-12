@@ -1733,11 +1733,13 @@ body.theme-broadcast {
 .theme-broadcast .stats-tab-button-active {
   color: #fff;
   background:
-    linear-gradient(135deg, rgba(0, 212, 204, 0.16), rgba(0, 64, 238, 0.12), rgba(241, 13, 89, 0.14)),
+    linear-gradient(135deg, rgba(0, 212, 204, 0.24), rgba(0, 64, 238, 0.14) 48%, rgba(241, 13, 89, 0.22)),
     rgba(255, 255, 255, 0.09);
   box-shadow:
+    0 0 0 1px rgba(0, 212, 204, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 12px 26px rgba(0, 0, 0, 0.22);
+    0 12px 26px rgba(0, 0, 0, 0.22),
+    0 0 22px rgba(0, 212, 204, 0.08);
 }
 
 .theme-broadcast .site-nav-link-return,
@@ -1798,12 +1800,22 @@ body.theme-broadcast {
 
 .theme-broadcast .arena-button-secondary,
 .theme-broadcast .arena-button-danger,
-.theme-broadcast .stats-tab-button,
 .theme-broadcast .room-section-link:not(.room-section-link-active),
 .theme-broadcast .site-nav-link:not(.site-nav-link-return):not(.site-nav-link-active),
 .theme-broadcast .site-mobile-link:not(.site-mobile-link-return):not(.site-mobile-link-active) {
   box-shadow: none;
   text-shadow: none;
+}
+
+.theme-broadcast .arena-button-secondary:hover:not(:disabled),
+.theme-broadcast .stats-tab-button:hover,
+.theme-broadcast .room-section-link:not(.room-section-link-active):hover,
+.theme-broadcast .site-nav-link:not(.site-nav-link-return):not(.site-nav-link-active):hover,
+.theme-broadcast .site-mobile-link:not(.site-mobile-link-return):not(.site-mobile-link-active):hover {
+  background:
+    linear-gradient(135deg, rgba(0, 212, 204, 0.1), rgba(241, 13, 89, 0.085)),
+    rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 1px rgba(0, 212, 204, 0.08);
 }
 
 .theme-broadcast .arena-input {
@@ -1845,8 +1857,19 @@ body.theme-broadcast {
 .theme-broadcast .show-chip {
   border-color: rgba(0, 212, 204, 0.1);
   background:
-    linear-gradient(135deg, rgba(0, 212, 204, 0.055), rgba(241, 13, 89, 0.035)),
+    linear-gradient(135deg, rgba(0, 212, 204, 0.08), rgba(241, 13, 89, 0.06)),
     rgba(255, 255, 255, 0.055);
+}
+
+.theme-broadcast .show-chip.text-arenaPulse,
+.theme-broadcast .show-chip.text-arenaBeam {
+  border-color: rgba(255, 202, 29, 0.18);
+  background:
+    linear-gradient(135deg, rgba(0, 212, 204, 0.16), rgba(0, 64, 238, 0.09), rgba(241, 13, 89, 0.14)),
+    rgba(255, 255, 255, 0.07);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 18px rgba(255, 202, 29, 0.08);
 }
 
 .theme-broadcast .show-rank {
@@ -1854,6 +1877,16 @@ body.theme-broadcast {
   background:
     linear-gradient(180deg, rgba(0, 212, 204, 0.12), rgba(0, 64, 238, 0.055)),
     rgba(27, 31, 70, 0.92);
+}
+
+.theme-broadcast .live-podium-1 .show-rank {
+  border-color: rgba(255, 202, 29, 0.22);
+  background:
+    linear-gradient(135deg, rgba(255, 202, 29, 0.18), rgba(241, 13, 89, 0.11)),
+    rgba(27, 31, 70, 0.94);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 20px rgba(255, 202, 29, 0.1);
 }
 
 .theme-broadcast .live-podium-1 {
