@@ -60,6 +60,22 @@
   - `next build` could not complete because local `frontend/node_modules/next` appears broken: `EISDIR ... next/dist/pages/_app.js`
 - still intentionally uncommitted/unrelated: `backend/backend_core/data/app-state.json`
 
+### 2026-05-12 OAuth production deploy
+
+- deployed Google/Yandex OAuth changes to the Timeweb server at `90.156.225.223`
+- production path: `/opt/eurovision_project`
+- deployment method: copied updated code files and rebuilt with `docker compose up -d --build backend frontend`
+- created pre-deploy backend state/uploads backup:
+  - `/opt/eurovision_private_backups/state/backend-state-20260512-100451-before-oauth.tar.gz`
+- added production OAuth secrets to `/opt/eurovision_project/deploy-secrets.local.env`
+- production verification:
+  - `docker compose ps` shows backend and frontend up
+  - backend logs show `Eurovision backend is running on port 4000`
+  - `https://morozoveuroparty.ru/` returns `200`
+  - `https://api.morozoveuroparty.ru/api/auth/oauth/google/start` returns `302` to Google with `openid email profile`
+  - `https://api.morozoveuroparty.ru/api/auth/oauth/yandex/start` returns `302` to Yandex with `login:info login:email login:avatar`
+- local deploy SSH key is stored outside Git and `.deploy-keys/` is ignored
+
 ## 2026-04-02
 
 ### Semi-Final Qualification Pass
