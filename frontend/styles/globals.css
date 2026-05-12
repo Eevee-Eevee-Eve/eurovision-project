@@ -1702,15 +1702,15 @@ body.theme-broadcast {
   content: "";
   position: absolute;
   inset: 0 0 0 auto;
-  width: min(44rem, 44%);
+  width: min(36rem, 38%);
   pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(10, 13, 54, 0), rgba(10, 13, 54, 0.18) 28%, rgba(10, 13, 54, 0.62) 100%),
-    linear-gradient(180deg, rgba(10, 13, 54, 0.08), rgba(10, 13, 54, 0.78)),
-    url("/stats-assets/country-heroes/se.jpg") 42% 34% / cover no-repeat;
-  opacity: 0.28;
-  filter: saturate(1.05) contrast(1.04);
-  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.82) 24%, rgba(0, 0, 0, 0.96) 100%);
+    radial-gradient(circle at 50% 48%, rgba(0, 212, 204, 0.18), transparent 55%),
+    radial-gradient(circle at 62% 56%, rgba(241, 13, 89, 0.14), transparent 58%),
+    url("/brand-assets/eurovision-70-logo.webp") center / contain no-repeat;
+  opacity: 0.34;
+  filter: saturate(1.04) contrast(1.03);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.78) 22%, rgba(0, 0, 0, 0.96) 100%);
 }
 
 .theme-broadcast .site-header-inner,
@@ -1908,9 +1908,10 @@ body.theme-broadcast {
   }
 
   .theme-broadcast .home-hero-compact::after {
-    width: 100%;
-    opacity: 0.12;
-    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.72), transparent 82%);
+    width: 56%;
+    opacity: 0.14;
+    background-size: contain;
+    mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.7) 40%, rgba(0, 0, 0, 0.92) 100%);
   }
 }
 
