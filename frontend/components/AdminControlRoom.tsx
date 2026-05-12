@@ -61,14 +61,6 @@ function rowToNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function countryCodeToFlagEmoji(code: string) {
-  const normalized = code.trim().toUpperCase();
-  if (!/^[A-Z]{2}$/.test(normalized)) return normalized;
-  return Array.from(normalized)
-    .map((letter) => String.fromCodePoint(0x1f1e6 + letter.charCodeAt(0) - 65))
-    .join("");
-}
-
 function isSemiStageValue(stageKey: StageKey) {
   return stageKey === "semi1" || stageKey === "semi2";
 }
@@ -2065,8 +2057,17 @@ export function AdminControlRoom() {
 
                       <div className="min-w-0">
                         <div className="flex min-w-0 flex-wrap items-center gap-2">
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.08] text-xl leading-none" title={row.code}>
-                            {countryCodeToFlagEmoji(row.code)}
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/[0.08]" title={row.code}>
+                            {row.flagUrl ? (
+                              <img
+                                src={resolveMediaUrl(row.flagUrl) || row.flagUrl}
+                                alt=""
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="text-[10px] font-black uppercase tracking-[0.08em] text-arenaMuted">{row.code}</span>
+                            )}
                           </span>
                           <span className="show-chip px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-arenaMuted">{row.code}</span>
                           {isSemiStage && hasPlacement(row) && qualificationCutoff ? (
