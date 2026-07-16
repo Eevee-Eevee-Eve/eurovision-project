@@ -119,6 +119,8 @@ Containers will be available on:
 
 The production state backup contains accounts, rooms, predictions, results, statistics, achievements, and uploaded avatars. It is downloaded from the Docker volume, verified, and encrypted locally with AES-256 before the plaintext archive is removed.
 
+By default, encrypted copies are written both to `D:\MorozovEuroParty-Backups\encrypted` when drive `D:` is available and to `%USERPROFILE%\MorozovEuroParty-Backups\encrypted` on drive `C:`.
+
 ```powershell
 .\scripts\backup-prod-state.ps1 -PasswordFile "$env:USERPROFILE\.config\morozoveuroparty\backup.key"
 ```

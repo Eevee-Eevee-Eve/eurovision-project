@@ -5,6 +5,7 @@ param(
     [string]$ProjectPath = "/opt/eurovision_project",
     [string]$RemoteBackupDir = "/opt/eurovision_private_backups/state",
     [string]$DownloadDirectory = "",
+    [string]$SecondaryDownloadDirectory = "$env:USERPROFILE\MorozovEuroParty-Backups\encrypted",
     [string]$PasswordFile = ""
 )
 
@@ -80,6 +81,18 @@ $plainPath = Join-Path $tempDirectory $archiveName
 $verificationPath = Join-Path $tempDirectory "verify-$archiveName"
 $encryptedPath = Join-Path $DownloadDirectory $encryptedName
 $hashPath = "$encryptedPath.sha256"
+$secondaryEncryptedPath = if ($SecondaryDownloadDirectory.Trim()) {
+    Join-Path $SecondaryDownloadDirectory $encryptedName
+}
+else {
+    ""
+}
+$secondaryHashPath = if ($secondaryEncryptedPath) {
+    "$secondaryEncryptedPath.sha256"
+}
+else {
+    ""
+}
 $remotePlainPath = "$RemoteBackupDir/$archiveName"
 $remoteTarget = "$User@$HostName"
 
@@ -97,6 +110,9 @@ printf '%s\n' "$remotePlainPath"
 "@
 
 New-Item -ItemType Directory -Force -Path $DownloadDirectory | Out-Null
+if ($SecondaryDownloadDirectory.Trim()) {
+    New-Item -ItemType Directory -Force -Path $SecondaryDownloadDirectory | Out-Null
+}
 New-Item -ItemType Directory -Force -Path $tempDirectory | Out-Null
 
 try {
@@ -135,11 +151,19 @@ try {
 
     $hash = (Get-FileHash -LiteralPath $encryptedPath -Algorithm SHA256).Hash.ToLowerInvariant()
     Set-Content -LiteralPath $hashPath -Value "$hash  $encryptedName" -Encoding ASCII
+    if ($secondaryEncryptedPath) {
+        Copy-Item -LiteralPath $encryptedPath -Destination $secondaryEncryptedPath -Force
+        Copy-Item -LiteralPath $hashPath -Destination $secondaryHashPath -Force
+    }
 
     ssh -i $KeyPath -o BatchMode=yes $remoteTarget "rm -f '$createdRemotePath'"
 
     Write-Host "Encrypted backup created and verified:"
     Write-Host $encryptedPath
+    if ($secondaryEncryptedPath) {
+        Write-Host "Secondary copy:"
+        Write-Host $secondaryEncryptedPath
+    }
     Write-Host "Accounts, rooms, predictions, statistics, achievements, and uploads are included."
 }
 finally {
