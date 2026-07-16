@@ -1,6 +1,7 @@
 import { io } from "socket.io-client";
 import type {
   ActEntry,
+  AdminPredictionAuditPayload,
   AdminRoomSnapshot,
   AdminSessionPayload,
   AdminUserEntry,
@@ -10,6 +11,7 @@ import type {
   BoardKey,
   LeaderboardEntry,
   PublicDisplayMode,
+  PlayerArchivePayload,
   RoomDetails,
   RoomSummary,
   SeasonStatsPayload,
@@ -47,6 +49,7 @@ export function getApiBase() {
 async function readJson<T>(path: string, init?: RequestInit) {
   const response = await fetch(`${getApiBase()}${path}`, {
     credentials: "include",
+    cache: "no-store",
     ...init,
   });
   const payload = await response.json().catch(() => ({}));
@@ -82,7 +85,7 @@ async function sendJson<T>(path: string, init?: RequestInit) {
 }
 
 export async function fetchRooms() {
-  return readJson<{ defaultRoom: string; rooms: RoomSummary[] }>("/api/rooms");
+  return readJson<{ defaultRoom: string; rooms: RoomSummary[]; officialRooms?: Record<StageKey, string> }>("/api/rooms");
 }
 
 export async function createTemporaryRoom(payload: {
@@ -134,6 +137,11 @@ export async function fetchSeasonStats(roomSlug: string) {
   return readJson<SeasonStatsPayload>(`/api/stats/season?room=${roomSlug}`);
 }
 
+export async function fetchPlayerArchive(roomSlug: string, playerId: string) {
+  const query = new URLSearchParams({ room: roomSlug, playerId });
+  return readJson<PlayerArchivePayload>(`/api/stats/player?${query.toString()}`);
+}
+
 export async function fetchLeaderboard(roomSlug: string, boardKey: BoardKey = "overall") {
   const stageQuery = boardKey === "overall" ? "" : `&stage=${boardKey}`;
   return readJson<LeaderboardEntry[]>(`/api/leaderboard?room=${roomSlug}${stageQuery}`);
@@ -181,6 +189,10 @@ export async function logoutAdminSession() {
 
 export async function fetchAdminRoomState(roomSlug: string) {
   return readJson<AdminRoomSnapshot>(`/api/admin/room-state?room=${roomSlug}`);
+}
+
+export async function fetchAdminPredictionAudit(roomSlug: string, stage: StageKey) {
+  return readJson<AdminPredictionAuditPayload>(`/api/admin/prediction-audit?room=${roomSlug}&stage=${stage}`);
 }
 
 export async function fetchAdminUsers(roomSlug: string) {
@@ -256,6 +268,14 @@ export async function publishStageResults(payload: {
   });
 }
 
+export async function completeStageResults(stage: StageKey) {
+  return sendJson<{ ok: true; stage: StageKey; stageCompletedAt: Record<StageKey, string | null> }>("/api/admin/stage/complete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ stage }),
+  });
+}
+
 export async function completeContest() {
   return sendJson<{ ok: true; contestCompletedAt: string }>("/api/admin/contest/complete", {
     method: "POST",
@@ -315,6 +335,14 @@ export async function grantParticipantSubmissionOverride(roomSlug: string, accou
 export async function revokeParticipantSubmissionOverride(roomSlug: string, accountId: string, stage: StageKey) {
   return sendJson<{ ok: true; roomSlug: string; accountId: string; stage: StageKey }>(`/api/users/${accountId}/submit-override?room=${roomSlug}&stage=${stage}`, {
     method: "DELETE",
+  });
+}
+
+export async function remindMissingSubmissions(roomSlug: string, stage: StageKey) {
+  return sendJson<{ ok: true; roomSlug: string; stage: StageKey; missingCount: number; sentAt: string }>("/api/admin/submission-reminder", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ roomSlug, stage }),
   });
 }
 
@@ -384,7 +412,7 @@ export async function resetPassword(token: string, password: string) {
 }
 
 export async function changePassword(currentPassword: string, nextPassword: string) {
-  return sendJson<{ ok: true }>("/api/auth/change-password", {
+  return sendJson<{ ok: true; account: AccountProfile }>("/api/auth/change-password", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ currentPassword, nextPassword }),

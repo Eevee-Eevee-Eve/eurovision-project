@@ -53,6 +53,8 @@ const {
   getRoomBySlug: getCatalogRoomBySlug,
   getStageLineupMeta,
 } = require('./catalog');
+
+const PRIMARY_STATS_STAGE = 'final';
 const {
   POLICY_VERSION,
   SESSION_COOKIE_NAME,
@@ -112,6 +114,7 @@ const STAGE_COUNTDOWN_DEFAULT_MINUTES = 5;
 const SUBMISSION_OVERRIDE_DEFAULT_MINUTES = 5;
 const MAX_STAGE_COUNTDOWN_MINUTES = 30;
 const MAX_SUBMISSION_OVERRIDE_MINUTES = 30;
+const MAX_PREDICTION_AUDIT_ENTRIES = 2500;
 const OAUTH_STATE_TTL_MS = 1000 * 60 * 10;
 const oauthStates = new Map();
 
@@ -180,7 +183,7 @@ const io = new IOServer(server, {
 
 function createStageBuckets(factory) {
   return STAGE_KEYS.reduce((acc, stage) => {
-    acc[stage] = factory();
+    acc[stage] = factory(stage);
     return acc;
   }, {});
 }
@@ -290,6 +293,10 @@ if (!state.roomAccessSessions || typeof state.roomAccessSessions !== 'object') {
   state.roomAccessSessions = {};
 }
 state.contestCompletedAt = state.contestCompletedAt || null;
+state.stageCompletedAt = createStageBuckets((stage) => (
+  typeof state.stageCompletedAt?.[stage] === 'string' ? state.stageCompletedAt[stage] : null
+));
+state.predictionAudit = Array.isArray(state.predictionAudit) ? state.predictionAudit : [];
 const roomPresence = new Map();
 const stageCountdownTimers = new Map();
 
@@ -392,6 +399,10 @@ function getGlobalStageCountdowns() {
   return normalizeStageCountdownsShape(state.globalStageCountdowns);
 }
 
+function isStageCompleted(stageKey) {
+  return Boolean(stageKey && state.stageCompletedAt?.[stageKey]);
+}
+
 function syncAllRoomPredictionWindows() {
   const windows = getGlobalPredictionWindows();
   getAllRooms().forEach((room) => {
@@ -438,6 +449,14 @@ function clearStageSubmissionOverrides(stageKey, roomSlug = null) {
     if (room?.submissionOverrides?.[stageKey]) {
       room.submissionOverrides[stageKey] = {};
     }
+  });
+}
+
+function hasStageSubmissionOverrides(stageKey, roomSlug = null) {
+  const targetRooms = roomSlug ? [getRoomBySlug(roomSlug)].filter(Boolean) : getAllRooms();
+  return targetRooms.some((roomMeta) => {
+    const room = getRoomState(roomMeta.slug);
+    return Object.keys(room?.submissionOverrides?.[stageKey] || {}).length > 0;
   });
 }
 
@@ -544,6 +563,7 @@ function normalizeDynamicRoomShape(room) {
 function toPublicRoomSummary(room) {
   if (!room) return null;
   const publicRoom = applyRoomOverride(room);
+  const completedStages = createStageBuckets((stage) => state.stageCompletedAt[stage] || null);
   return {
     slug: publicRoom.slug,
     name: publicRoom.name,
@@ -555,6 +575,8 @@ function toPublicRoomSummary(room) {
     isTemporary: Boolean(publicRoom.isTemporary),
     passwordRequired: Boolean(publicRoom.passwordRequired),
     eventCompletedAt: publicRoom.eventCompletedAt || null,
+    stageCompletedAt: completedStages[publicRoom.defaultStage] || null,
+    completedStages,
   };
 }
 
@@ -946,6 +968,30 @@ function persistState() {
   pruneExpiredAdminSessions();
   pruneExpiredSubmissionOverrides();
   saveState(state);
+}
+
+function getClientIp(req) {
+  const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return forwarded || req.ip || req.socket?.remoteAddress || '';
+}
+
+function hashAuditValue(value) {
+  return crypto.createHash('sha256').update(String(value || '')).digest('hex').slice(0, 16);
+}
+
+function hashRanking(ranking) {
+  return hashAuditValue(Array.isArray(ranking) ? ranking.join('|') : '');
+}
+
+function appendPredictionAudit(entry) {
+  state.predictionAudit.push({
+    id: crypto.randomBytes(8).toString('hex'),
+    at: new Date().toISOString(),
+    ...entry,
+  });
+  if (state.predictionAudit.length > MAX_PREDICTION_AUDIT_ENTRIES) {
+    state.predictionAudit.splice(0, state.predictionAudit.length - MAX_PREDICTION_AUDIT_ENTRIES);
+  }
 }
 
 function normalizeRoomSlug(value, { allowDefault = false } = {}) {
@@ -1614,6 +1660,10 @@ function buildPublicLeaderboardId(roomSlug, userId) {
   return crypto.createHash('sha256').update(`${roomSlug}:${userId}`).digest('hex').slice(0, 12);
 }
 
+function buildPublicAccountId(userId) {
+  return crypto.createHash('sha256').update(`account:${userId}`).digest('hex').slice(0, 16);
+}
+
 function compareLeaderboardRows(a, b) {
   return b.points - a.points
     || b.exactMatchCount - a.exactMatchCount
@@ -1623,7 +1673,11 @@ function compareLeaderboardRows(a, b) {
 }
 
 function getRoomPredictionWindows(room) {
-  return getGlobalPredictionWindows();
+  const windows = getGlobalPredictionWindows();
+  return STAGE_KEYS.reduce((acc, stage) => {
+    acc[stage] = Boolean(windows[stage]) && !isStageCompleted(stage);
+    return acc;
+  }, {});
 }
 
 function getRoomSubmissionCountdowns() {
@@ -1635,6 +1689,9 @@ function isStageWindowOpen(roomSlug, stageKey) {
 }
 
 function canSubmitPrediction(roomSlug, stageKey, accountId) {
+  if (isStageCompleted(stageKey)) {
+    return false;
+  }
   return isStageWindowOpen(roomSlug, stageKey) || Boolean(getSubmissionOverrideEndsAt(roomSlug, stageKey, accountId));
 }
 
@@ -1780,10 +1837,94 @@ function buildAdminRoomSnapshot(roomSlug) {
         submittedCount,
         lockedCount: isStageWindowOpen(roomSlug, stage) ? 0 : submittedCount,
         revealedCount: room.results[stage].length,
+        completedAt: state.stageCompletedAt[stage] || null,
         ...getStageLineupMeta(stage),
       };
       return acc;
     }, {}),
+  };
+}
+
+function buildAdminPredictionAudit(roomSlug, stageKey) {
+  const firstResultsAt = state.predictionAudit
+    .filter((entry) => entry.type === 'results_publish' && entry.stage === stageKey)
+    .filter((entry) => entry.roomSlug === roomSlug || entry.scopeRooms?.includes(roomSlug))
+    .map((entry) => entry.at)
+    .sort()[0] || null;
+  const stageClosedAt = state.stageCompletedAt?.[stageKey] || null;
+
+  const entries = state.predictionAudit
+    .filter((entry) => entry.stage === stageKey)
+    .filter((entry) => (
+      entry.roomSlug === roomSlug
+      || entry.scopeRooms?.includes(roomSlug)
+      || entry.type === 'stage_window'
+      || entry.type === 'stage_complete'
+    ))
+    .slice(-200)
+    .reverse()
+    .map((entry) => {
+      const account = entry.accountId ? getAccountById(entry.accountId) : null;
+      const displayName = account ? buildPublicName(account) : null;
+      const submittedAfterResults = Boolean(
+        entry.type === 'prediction_submit'
+        && entry.accepted
+        && firstResultsAt
+        && new Date(entry.at).getTime() > new Date(firstResultsAt).getTime()
+      );
+      const submittedAfterClosed = Boolean(
+        entry.type === 'prediction_submit'
+        && entry.accepted
+        && stageClosedAt
+        && new Date(entry.at).getTime() > new Date(stageClosedAt).getTime()
+      );
+
+      return {
+        id: entry.id,
+        at: entry.at,
+        type: entry.type,
+        roomSlug: entry.roomSlug || null,
+        stage: entry.stage,
+        accountId: entry.accountId || null,
+        accountName: displayName,
+        accepted: Boolean(entry.accepted),
+        reason: entry.reason || null,
+        overwritten: Boolean(entry.overwritten),
+        rankingLength: entry.rankingLength || 0,
+        rankingHash: entry.rankingHash || null,
+        ipHash: entry.ipHash || null,
+        userAgent: entry.userAgent || null,
+        open: typeof entry.open === 'boolean' ? entry.open : null,
+        updated: entry.updated || null,
+        suspicious: submittedAfterResults || submittedAfterClosed,
+        suspiciousReason: submittedAfterClosed
+          ? 'after_stage_fixed'
+          : submittedAfterResults
+            ? 'after_results_started'
+            : null,
+      };
+    });
+
+  const submissions = entries.filter((entry) => entry.type === 'prediction_submit');
+  const acceptedSubmissions = submissions.filter((entry) => entry.accepted);
+  const overwrittenAccountIds = new Set(acceptedSubmissions.filter((entry) => entry.overwritten).map((entry) => entry.accountId).filter(Boolean));
+  const suspiciousEntries = entries.filter((entry) => entry.suspicious);
+
+  return {
+    roomSlug,
+    stage: stageKey,
+    firstResultsAt,
+    stageClosedAt,
+    windowOpen: Boolean(getGlobalPredictionWindows()[stageKey]),
+    summary: {
+      entries: entries.length,
+      submissions: submissions.length,
+      acceptedSubmissions: acceptedSubmissions.length,
+      deniedSubmissions: submissions.length - acceptedSubmissions.length,
+      overwrittenAccounts: overwrittenAccountIds.size,
+      suspicious: suspiciousEntries.length,
+    },
+    entries,
   };
 }
 
@@ -1920,8 +2061,15 @@ function buildPlayerAchievements(roomSlug, row, leaderboard, context) {
   const room = getRoomState(roomSlug);
   const finalPrediction = room.predictions.final[row.id] || [];
   const finalResults = room.results.final || [];
-  const finalComplete = finalResults.length >= ACTS_BY_STAGE.final.length;
-  const finalCompared = row.stageBreakdowns.final.comparedEntries;
+  const finalComplete = isStageCompleted(PRIMARY_STATS_STAGE) && finalResults.length >= ACTS_BY_STAGE.final.length;
+  const finalBreakdown = row.stageBreakdowns.final;
+  const finalPoints = finalComplete ? finalBreakdown.points : 0;
+  const finalExactMatchCount = finalComplete ? finalBreakdown.exactMatches.length : 0;
+  const finalCloseMatchCount = finalComplete ? finalBreakdown.closeMatches : 0;
+  const finalCompared = finalComplete ? finalBreakdown.comparedEntries : 0;
+  const finalAverageDistance = finalCompared
+    ? Number((finalBreakdown.totalDistance / finalCompared).toFixed(2))
+    : null;
   const officialWinner = finalResults[0] || null;
   const predictedWinner = finalPrediction[0] || null;
   const submittedFinalCount = Object.keys(room.predictions.final || {}).length;
@@ -1933,13 +2081,15 @@ function buildPlayerAchievements(roomSlug, row, leaderboard, context) {
   const medianPoints = leaderboard.length
     ? [...leaderboard].sort((a, b) => a.points - b.points)[Math.floor((leaderboard.length - 1) / 2)].points
     : 0;
-  const completedStages = STAGE_KEYS.filter((stage) => room.results[stage].length >= ACTS_BY_STAGE[stage].length);
+  const completedStages = STAGE_KEYS.filter((stage) => (
+    isStageCompleted(stage) && room.results[stage].length >= ACTS_BY_STAGE[stage].length
+  ));
   const stagePoints = completedStages.map((stage) => row.stageBreakdowns[stage].points);
   const stageRanks = completedStages.map((stage) => context.stageRankMaps[stage]?.[row.id] || leaderboard.length);
   const finalTop10Matches = finalComplete ? intersectionCount(finalPrediction.slice(0, 10), finalResults.slice(0, 10)) : 0;
   const finalTop3Matches = finalComplete ? intersectionCount(finalPrediction.slice(0, 3), finalResults.slice(0, 3)) : 0;
   const bottom5Matches = finalComplete ? intersectionCount(finalPrediction.slice(-5), finalResults.slice(-5)) : 0;
-  const oneOffMatches = STAGE_KEYS.reduce((sum, stage) => sum + countOneOffMatches(room.predictions[stage][row.id] || [], room.results[stage] || []), 0);
+  const oneOffMatches = finalComplete ? countOneOffMatches(finalPrediction, finalResults) : 0;
   const autoFinalists = context.autoFinalists;
   const autoCompared = finalComplete
     ? autoFinalists.filter((code) => {
@@ -1965,9 +2115,9 @@ function buildPlayerAchievements(roomSlug, row, leaderboard, context) {
   }, 0);
 
   const rules = {
-    champion: buildAchievementProgress('champion', finalComplete && row.rank === 1 && row.points > 0),
+    champion: buildAchievementProgress('champion', finalComplete && row.rank === 1 && finalPoints > 0),
     oracle: buildAchievementProgress('oracle', finalComplete && predictedWinner === officialWinner),
-    sniper: buildAchievementProgress('sniper', row.exactMatchCount >= 5, row.exactMatchCount, 5),
+    sniper: buildAchievementProgress('sniper', finalExactMatchCount >= 5, finalExactMatchCount, 5),
     basement: buildAchievementProgress('basement', finalComplete && bottom5Matches >= 3, bottom5Matches, 3),
     thirteen: buildAchievementProgress('thirteen', finalComplete && finalPrediction[12] === finalResults[12]),
     obvious: buildAchievementProgress('obvious', finalComplete && predictedWinner === officialWinner && winnerPickShare >= 0.4, Math.round(winnerPickShare * 100), 40),
@@ -1975,21 +2125,21 @@ function buildPlayerAchievements(roomSlug, row, leaderboard, context) {
     topTenKing: buildAchievementProgress('topTenKing', finalComplete && finalTop10Matches >= 7, finalTop10Matches, 7),
     podiumSense: buildAchievementProgress('podiumSense', finalComplete && finalTop3Matches >= 2, finalTop3Matches, 2),
     madmanRight: buildAchievementProgress('madmanRight', finalComplete && submittedFinalCount >= 5 && predictedWinner === officialWinner && winnerPickShare <= 0.15, winnerPickShare ? Math.max(0, 15 - Math.round(winnerPickShare * 100)) : 0, 15),
-    millimeter: buildAchievementProgress('millimeter', finalCompared > 0 && context.bestAverageDistance != null && row.averageDistance === context.bestAverageDistance),
+    millimeter: buildAchievementProgress('millimeter', finalCompared > 0 && context.bestAverageDistance != null && finalAverageDistance === context.bestAverageDistance),
     closeCall: buildAchievementProgress('closeCall', oneOffMatches >= 8, oneOffMatches, 8),
-    dryMath: buildAchievementProgress('dryMath', row.rank <= topPlayerCount && row.averageDistance != null && row.averageDistance <= 5, row.averageDistance == null ? 0 : Math.max(0, 5 - row.averageDistance), 5),
-    noPanic: buildAchievementProgress('noPanic', completedStages.length >= 2 && stageRanks.every((rank) => rank <= Math.ceil(leaderboard.length / 2)), stageRanks.filter((rank) => rank <= Math.ceil(leaderboard.length / 2)).length, Math.max(2, completedStages.length)),
+    dryMath: buildAchievementProgress('dryMath', finalComplete && row.rank <= topPlayerCount && finalAverageDistance != null && finalAverageDistance <= 5, finalAverageDistance == null ? 0 : Math.max(0, 5 - finalAverageDistance), 5),
+    noPanic: buildAchievementProgress('noPanic', finalComplete && row.rank <= Math.ceil(leaderboard.length / 2), row.rank <= Math.ceil(leaderboard.length / 2) ? 1 : 0, 1),
     bottomWhisperer: buildAchievementProgress('bottomWhisperer', finalComplete && bottom5Matches >= 4, bottom5Matches, 4),
     lastRomantic: buildAchievementProgress('lastRomantic', finalComplete && finalPrediction[finalPrediction.length - 1] === finalResults[finalResults.length - 1]),
     antiHype: buildAchievementProgress('antiHype', finalComplete && overbackedCountry && groupFavoritePredictedPlace != null && groupFavoritePredictedPlace > 10, groupFavoritePredictedPlace || 0, 11),
     warnedYou: buildAchievementProgress('warnedYou', finalComplete && overbackedCountry && groupFavoritePredictedPlace != null && groupFavoritePredictedPlace >= groupFavoritePlace - 2, groupFavoritePredictedPlace || 0, Math.max(1, groupFavoritePlace || 1)),
     secondCurse: buildAchievementProgress('secondCurse', finalComplete && row.rank === 2),
-    almostChampion: buildAchievementProgress('almostChampion', finalComplete && leaderboard[1]?.id === row.id && leaderboard[0] && leaderboard[0].points - row.points <= 5, leaderboard[0] ? Math.max(0, 5 - (leaderboard[0].points - row.points)) : 0, 5),
-    chaosDiploma: buildAchievementProgress('chaosDiploma', finalCompared > 0 && row.averageDistance != null && row.averageDistance >= 8 && row.points >= medianPoints, row.points, Math.max(1, medianPoints)),
+    almostChampion: buildAchievementProgress('almostChampion', finalComplete && leaderboard[1]?.id === row.id && leaderboard[0] && leaderboard[0].points - finalPoints <= 5, leaderboard[0] ? Math.max(0, 5 - (leaderboard[0].points - finalPoints)) : 0, 5),
+    chaosDiploma: buildAchievementProgress('chaosDiploma', finalCompared > 0 && finalAverageDistance != null && finalAverageDistance >= 8 && finalPoints >= medianPoints, finalPoints, Math.max(1, medianPoints)),
     heartVote: buildAchievementProgress('heartVote', finalComplete && countryFanCodes.length > 0),
-    comeback: buildAchievementProgress('comeback', completedStages.length >= 2 && bestComeback >= 15, bestComeback, 15),
-    veteran: buildAchievementProgress('veteran', STAGE_KEYS.filter((stage) => Boolean(room.predictions[stage][row.id])).length >= 3, STAGE_KEYS.filter((stage) => Boolean(room.predictions[stage][row.id])).length, 3),
-    streak: buildAchievementProgress('streak', completedStages.length >= 2 && stageRanks.every((rank) => rank <= topPlayerCount), stageRanks.filter((rank) => rank <= topPlayerCount).length, Math.max(2, completedStages.length)),
+    comeback: buildAchievementProgress('comeback', finalComplete && completedStages.length >= 2 && bestComeback >= 15, bestComeback, 15),
+    veteran: buildAchievementProgress('veteran', finalComplete && Boolean(room.predictions.final[row.id]), room.predictions.final[row.id] ? 1 : 0, 1),
+    streak: buildAchievementProgress('streak', finalComplete && row.rank <= topPlayerCount, row.rank <= topPlayerCount ? 1 : 0, 1),
     countryFan: buildAchievementProgress('countryFan', finalComplete && countryFanCodes.length > 0),
     bigFive: buildAchievementProgress('bigFive', finalComplete && autoCompared >= Math.min(3, autoFinalists.length), autoCompared, Math.min(3, autoFinalists.length || 3)),
   };
@@ -2000,12 +2150,28 @@ function buildPlayerAchievements(roomSlug, row, leaderboard, context) {
 function buildSeasonStats(roomSlug) {
   const roomMeta = getRoomBySlug(roomSlug);
   const room = getRoomState(roomSlug);
-  const leaderboard = buildInternalLeaderboardRows(roomSlug);
-  const completedStages = STAGE_KEYS.filter((stage) => room.results[stage].length > 0);
+  const primaryStatsReady = isStageCompleted(PRIMARY_STATS_STAGE)
+    && room.results[PRIMARY_STATS_STAGE].length >= ACTS_BY_STAGE[PRIMARY_STATS_STAGE].length;
+  const primaryLeaderboard = buildInternalLeaderboardRows(roomSlug, PRIMARY_STATS_STAGE);
+  const leaderboard = primaryStatsReady
+    ? primaryLeaderboard
+    : [...primaryLeaderboard]
+      .sort((a, b) => a.name.localeCompare(b.name, 'ru'))
+      .map((row, index) => ({
+        ...row,
+        points: 0,
+        exactMatchCount: 0,
+        closeMatchCount: 0,
+        totalDistance: 0,
+        rank: index + 1,
+      }));
+  const completedStages = STAGE_KEYS.filter((stage) => isStageCompleted(stage));
   const averageDistances = leaderboard
     .map((row) => {
-      const comparedEntries = STAGE_KEYS.reduce((sum, stage) => sum + row.stageBreakdowns[stage].comparedEntries, 0);
-      return comparedEntries ? Number((row.totalDistance / comparedEntries).toFixed(2)) : null;
+      const breakdown = row.stageBreakdowns[PRIMARY_STATS_STAGE];
+      return primaryStatsReady && breakdown.comparedEntries
+        ? Number((breakdown.totalDistance / breakdown.comparedEntries).toFixed(2))
+        : null;
     })
     .filter((value) => value != null);
   const achievementContext = {
@@ -2036,18 +2202,22 @@ function buildSeasonStats(roomSlug) {
 
     const submittedStages = STAGE_KEYS.filter((stage) => stages[stage].submitted).length;
     const lockedStages = STAGE_KEYS.filter((stage) => stages[stage].locked).length;
-    const comparedEntries = STAGE_KEYS.reduce((sum, stage) => sum + stages[stage].comparedEntries, 0);
-    const averageDistance = comparedEntries ? Number((row.totalDistance / comparedEntries).toFixed(2)) : null;
+    const primaryBreakdown = row.stageBreakdowns[PRIMARY_STATS_STAGE];
+    const averageDistance = primaryStatsReady && primaryBreakdown.comparedEntries
+      ? Number((primaryBreakdown.totalDistance / primaryBreakdown.comparedEntries).toFixed(2))
+      : null;
     const bestStage = [...STAGE_KEYS]
       .sort((a, b) => stages[b].points - stages[a].points || stages[b].exactMatchCount - stages[a].exactMatchCount)[0] || null;
     const achievementProgress = buildPlayerAchievements(roomSlug, {
       ...row,
       averageDistance,
     }, leaderboard.map((leaderboardRow) => {
-      const rowComparedEntries = STAGE_KEYS.reduce((sum, stage) => sum + leaderboardRow.stageBreakdowns[stage].comparedEntries, 0);
+      const rowPrimaryBreakdown = leaderboardRow.stageBreakdowns[PRIMARY_STATS_STAGE];
       return {
         ...leaderboardRow,
-        averageDistance: rowComparedEntries ? Number((leaderboardRow.totalDistance / rowComparedEntries).toFixed(2)) : null,
+        averageDistance: primaryStatsReady && rowPrimaryBreakdown.comparedEntries
+          ? Number((rowPrimaryBreakdown.totalDistance / rowPrimaryBreakdown.comparedEntries).toFixed(2))
+          : null,
       };
     }), achievementContext);
     const visibleAchievementProgress = state.contestCompletedAt
@@ -2059,6 +2229,7 @@ function buildSeasonStats(roomSlug) {
 
     return {
       id: buildPublicLeaderboardId(roomSlug, row.id),
+      accountPublicId: buildPublicAccountId(row.id),
       rank: row.rank,
       name: row.name,
       emoji: row.emoji,
@@ -2084,6 +2255,8 @@ function buildSeasonStats(roomSlug) {
     seasonLabel: roomMeta?.seasonLabel || (roomMeta?.seasonYear ? `Season ${roomMeta.seasonYear}` : 'Current season'),
     scoringProfile: getScoringProfile(room.scoringProfile).key,
     contestCompletedAt: state.contestCompletedAt,
+    primaryStage: PRIMARY_STATS_STAGE,
+    primaryStatsReady,
     overview: {
       participants: players.length,
       completedStages: completedStages.length,
@@ -2092,6 +2265,68 @@ function buildSeasonStats(roomSlug) {
       leaderPoints: players[0]?.totalPoints || 0,
     },
     players,
+  };
+}
+
+function buildPublicPlayerArchive(roomSlug, publicPlayerId) {
+  const room = getRoomState(roomSlug);
+  const primaryStatsReady = isStageCompleted(PRIMARY_STATS_STAGE)
+    && room.results[PRIMARY_STATS_STAGE].length >= ACTS_BY_STAGE[PRIMARY_STATS_STAGE].length;
+  const leaderboard = buildInternalLeaderboardRows(roomSlug, PRIMARY_STATS_STAGE);
+  const row = leaderboard.find((leaderboardRow) => buildPublicLeaderboardId(roomSlug, leaderboardRow.id) === publicPlayerId);
+
+  if (!row) {
+    return null;
+  }
+
+  const stages = STAGE_KEYS.reduce((acc, stage) => {
+    const prediction = room.predictions[stage][row.id];
+    if (!prediction || !isStageCompleted(stage)) {
+      acc[stage] = null;
+      return acc;
+    }
+
+    const officialRows = buildStageResults(roomSlug, stage);
+    const officialRanks = officialRows.reduce((rankAcc, act) => {
+      rankAcc[act.code] = act.rank ?? null;
+      return rankAcc;
+    }, {});
+    const breakdown = row.stageBreakdowns[stage];
+
+    acc[stage] = {
+      stage,
+      completedAt: state.stageCompletedAt[stage] || null,
+      points: breakdown.points,
+      exactMatchCount: breakdown.exactMatches.length,
+      closeMatchCount: breakdown.closeMatches,
+      entries: prediction.map((code, index) => {
+        const act = getAct(stage, code);
+        return {
+          code,
+          predictedRank: index + 1,
+          officialRank: officialRanks[code] ?? null,
+          country: act?.country || code,
+          artist: act?.artist || code,
+          song: act?.song || '',
+          flagUrl: act?.flagUrl || '',
+        };
+      }),
+    };
+    return acc;
+  }, {});
+
+  return {
+    id: buildPublicLeaderboardId(roomSlug, row.id),
+    accountPublicId: buildPublicAccountId(row.id),
+    name: row.name,
+    emoji: row.emoji,
+    avatarUrl: row.avatarUrl,
+    avatarTheme: row.avatarTheme,
+    rank: row.rank,
+    totalPoints: primaryStatsReady ? row.points : 0,
+    exactMatchCount: primaryStatsReady ? row.exactMatchCount : 0,
+    closeMatchCount: primaryStatsReady ? row.closeMatchCount : 0,
+    stages,
   };
 }
 
@@ -2169,6 +2404,13 @@ function finalizeStageCountdown(stageKey) {
   state.globalStageCountdowns[stageKey] = null;
   clearStageSubmissionOverrides(stageKey);
   syncAllRoomPredictionWindows();
+  appendPredictionAudit({
+    type: 'stage_window',
+    roomSlug: null,
+    stage: stageKey,
+    open: false,
+    reason: 'countdown_finished',
+  });
   persistState();
   getAllRooms().forEach((room) => emitRoomMeta(room.slug));
 }
@@ -2370,8 +2612,10 @@ app.get('/api/auth/oauth/:provider/start', (req, res) => {
   if (!['google', 'yandex'].includes(provider)) {
     return res.status(404).json({ error: 'Unknown OAuth provider' });
   }
-  if (provider === 'google' && (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET)) {
-    return res.status(503).json({ error: 'Google sign-in is not configured' });
+  if (provider === 'google') {
+    return res.status(410).json({
+      error: 'Google sign-in is no longer available. Use email recovery to set a password for this account.',
+    });
   }
   if (provider === 'yandex' && (!YANDEX_CLIENT_ID || !YANDEX_CLIENT_SECRET)) {
     return res.status(503).json({ error: 'Yandex sign-in is not configured' });
@@ -2403,6 +2647,9 @@ app.get('/api/auth/oauth/:provider/callback', async (req, res) => {
   const provider = sanitizeText(req.params.provider, 16);
   if (!['google', 'yandex'].includes(provider)) {
     return redirectToAuthError(res, 'Unknown OAuth provider');
+  }
+  if (provider === 'google') {
+    return redirectToAuthError(res, 'Google sign-in is no longer available. Use email recovery to set a password for this account.');
   }
   if (req.query.error) {
     return redirectToAuthError(res, sanitizeText(req.query.error_description || req.query.error, 160));
@@ -2708,8 +2955,9 @@ app.post('/api/auth/reset-password', (req, res) => {
 app.post('/api/auth/change-password', requireAuth, (req, res) => {
   const currentPassword = String(req.body.currentPassword || '');
   const nextPassword = String(req.body.nextPassword || '');
+  const hasPassword = Boolean(req.account.passwordSalt && req.account.passwordHash);
 
-  if (!verifyPassword(req.account, currentPassword)) {
+  if (hasPassword && !verifyPassword(req.account, currentPassword)) {
     return res.status(400).json({ error: 'Current password is incorrect' });
   }
   if (!validatePassword(nextPassword)) {
@@ -2722,7 +2970,7 @@ app.post('/api/auth/change-password', requireAuth, (req, res) => {
   req.account.updatedAt = new Date().toISOString();
   persistState();
 
-  return res.json({ ok: true });
+  return res.json({ ok: true, account: toAccountProfile(req.account) });
 });
 
 app.get('/api/me', requireAuth, (req, res) => {
@@ -2839,6 +3087,7 @@ app.get('/api/rooms', (req, res) => {
   return res.json({
     defaultRoom: getDefaultRoomSlug(),
     rooms: getAllRooms().map(toPublicRoomSummary),
+    officialRooms: state.officialRooms,
   });
 });
 
@@ -2855,6 +3104,13 @@ app.post('/api/rooms', requireAuth, (req, res) => {
   }
   if (hasRoomNameConflict(name)) {
     return res.status(409).json({ error: 'A room with this name already exists', code: 'ROOM_NAME_TAKEN' });
+  }
+  if (isStageCompleted(defaultStage)) {
+    return res.status(409).json({
+      error: 'This stage is already closed. You can view results, but cannot create new rooms for it.',
+      code: 'STAGE_CLOSED',
+      stage: defaultStage,
+    });
   }
   if (getActiveDynamicRoomsForAccount(req.account.id).length >= MAX_TEMP_ROOMS_PER_ACCOUNT) {
     return res.status(409).json({
@@ -3127,23 +3383,78 @@ app.post('/api/predictions/me', requireAuth, (req, res) => {
     emitLeaderboard(roomSlug);
   }
 
+  const userId = req.account.id;
   if (!canSubmitPrediction(roomSlug, stageKey, req.account.id)) {
+    appendPredictionAudit({
+      type: 'prediction_submit',
+      roomSlug,
+      stage: stageKey,
+      accountId: userId,
+      accepted: false,
+      reason: isStageCompleted(stageKey) ? 'stage_completed' : 'submissions_closed',
+      windowOpen: Boolean(getGlobalPredictionWindows()[stageKey]),
+      stageCompletedAt: state.stageCompletedAt?.[stageKey] || null,
+      ipHash: hashAuditValue(getClientIp(req)),
+      userAgent: sanitizeText(req.headers['user-agent'], 180),
+    });
+    persistState();
     return res.status(403).json({ error: 'Predictions are closed for this stage' });
   }
 
   if (!lineupMeta.lineupReady) {
+    appendPredictionAudit({
+      type: 'prediction_submit',
+      roomSlug,
+      stage: stageKey,
+      accountId: req.account.id,
+      accepted: false,
+      reason: 'lineup_incomplete',
+      windowOpen: Boolean(getGlobalPredictionWindows()[stageKey]),
+      stageCompletedAt: state.stageCompletedAt?.[stageKey] || null,
+      ipHash: hashAuditValue(getClientIp(req)),
+      userAgent: sanitizeText(req.headers['user-agent'], 180),
+    });
+    persistState();
     return res.status(409).json({ error: 'The lineup for this stage is not complete yet' });
   }
 
-  const userId = req.account.id;
+  const hadPreviousPrediction = Boolean(room.predictions[stageKey][userId]);
 
   const validation = validateRanking(stageKey, req.body.ranking, { allowPartial: false });
   if (!validation.ok) {
+    appendPredictionAudit({
+      type: 'prediction_submit',
+      roomSlug,
+      stage: stageKey,
+      accountId: userId,
+      accepted: false,
+      reason: 'invalid_ranking',
+      rankingLength: Array.isArray(req.body.ranking) ? req.body.ranking.length : 0,
+      windowOpen: Boolean(getGlobalPredictionWindows()[stageKey]),
+      stageCompletedAt: state.stageCompletedAt?.[stageKey] || null,
+      ipHash: hashAuditValue(getClientIp(req)),
+      userAgent: sanitizeText(req.headers['user-agent'], 180),
+    });
+    persistState();
     return res.status(400).json({ error: validation.error });
   }
 
   room.predictions[stageKey][userId] = validation.ranking;
   delete room.locks[stageKey][userId];
+  appendPredictionAudit({
+    type: 'prediction_submit',
+    roomSlug,
+    stage: stageKey,
+    accountId: userId,
+    accepted: true,
+    overwritten: hadPreviousPrediction,
+    rankingLength: validation.ranking.length,
+    rankingHash: hashRanking(validation.ranking),
+    windowOpen: Boolean(getGlobalPredictionWindows()[stageKey]),
+    stageCompletedAt: state.stageCompletedAt?.[stageKey] || null,
+    ipHash: hashAuditValue(getClientIp(req)),
+    userAgent: sanitizeText(req.headers['user-agent'], 180),
+  });
 
   recomputeScores(roomSlug);
   persistState();
@@ -3191,6 +3502,15 @@ app.post('/api/results', requireMainAdmin, (req, res) => {
     return res.status(400).json({ error: breakdownValidation.error });
   }
 
+  const predictionWindowWasOpen = Boolean(getGlobalPredictionWindows()[stageKey]);
+  const countdownWasActive = Boolean(state.globalStageCountdowns[stageKey]);
+  const overridesWereActive = hasStageSubmissionOverrides(stageKey);
+  state.globalPredictionWindows[stageKey] = false;
+  state.globalStageCountdowns[stageKey] = null;
+  clearStageCountdownTimer(stageKey);
+  clearStageSubmissionOverrides(stageKey);
+  syncAllRoomPredictionWindows();
+
   const updatedRooms = [];
   getAllRooms().forEach((roomMeta) => {
     const targetRoom = getRoomState(roomMeta.slug);
@@ -3208,10 +3528,32 @@ app.post('/api/results', requireMainAdmin, (req, res) => {
     recomputeScores(roomMeta.slug);
     updatedRooms.push(roomMeta.slug);
   });
+  if (predictionWindowWasOpen || countdownWasActive || overridesWereActive) {
+    appendPredictionAudit({
+      type: 'stage_window',
+      roomSlug: null,
+      stage: stageKey,
+      open: false,
+      reason: 'auto_closed_by_results',
+      ipHash: hashAuditValue(getClientIp(req)),
+      userAgent: sanitizeText(req.headers['user-agent'], 180),
+    });
+  }
+  appendPredictionAudit({
+    type: 'results_publish',
+    roomSlug,
+    scopeRooms: updatedRooms,
+    stage: stageKey,
+    updated: validation.ranking.length,
+    rankingHash: hashRanking(validation.ranking),
+    ipHash: hashAuditValue(getClientIp(req)),
+    userAgent: sanitizeText(req.headers['user-agent'], 180),
+  });
   persistState();
   updatedRooms.forEach((updatedRoomSlug) => {
     emitLeaderboard(updatedRoomSlug);
     emitResults(updatedRoomSlug, stageKey);
+    emitRoomMeta(updatedRoomSlug);
   });
 
   return res.json({
@@ -3220,6 +3562,7 @@ app.post('/api/results', requireMainAdmin, (req, res) => {
     stage: stageKey,
     updated: validation.ranking.length,
     updatedRooms,
+    submissionsAutoClosed: predictionWindowWasOpen || countdownWasActive || overridesWereActive,
   });
 });
 
@@ -3238,6 +3581,14 @@ app.post('/api/toggle', requireMainAdmin, (req, res) => {
   clearStageCountdownTimer(stageKey);
   clearStageSubmissionOverrides(stageKey);
   syncAllRoomPredictionWindows();
+  appendPredictionAudit({
+    type: 'stage_window',
+    roomSlug: roomSlug || null,
+    stage: stageKey,
+    open: nextOpen,
+    ipHash: hashAuditValue(getClientIp(req)),
+    userAgent: sanitizeText(req.headers['user-agent'], 180),
+  });
   persistState();
   getAllRooms().forEach((room) => emitRoomMeta(room.slug));
 
@@ -3296,11 +3647,75 @@ app.post('/api/admin/stage-countdown', requireMainAdmin, (req, res) => {
   });
 });
 
+app.post('/api/admin/stage/complete', requireMainAdmin, (req, res) => {
+  const stageKey = normalizeStage(req.body.stage || req.query.stage);
+  if (!stageKey) {
+    return res.status(400).json({ error: 'Unknown stage' });
+  }
+
+  const officialRoomSlug = state.officialRooms?.[stageKey] || getDefaultRoomSlug();
+  const officialRoom = officialRoomSlug ? getRoomState(officialRoomSlug) : null;
+  const officialRanking = officialRoom?.results?.[stageKey] || [];
+  const officialBreakdown = officialRoom?.resultBreakdown?.[stageKey] || {};
+  const fallbackRoom = getAllRooms()
+    .map((roomMeta) => ({ roomMeta, room: getRoomState(roomMeta.slug) }))
+    .find(({ room }) => room.results[stageKey].length >= ACTS_BY_STAGE[stageKey].length);
+  const sourceRoom = officialRanking.length >= ACTS_BY_STAGE[stageKey].length
+    ? officialRoom
+    : fallbackRoom?.room || null;
+  const sourceRanking = sourceRoom?.results?.[stageKey] || [];
+  const sourceBreakdown = sourceRoom === officialRoom
+    ? officialBreakdown
+    : sourceRoom?.resultBreakdown?.[stageKey] || {};
+
+  if (sourceRanking.length < ACTS_BY_STAGE[stageKey].length) {
+    return res.status(409).json({
+      error: 'Publish the full stage ranking before fixing the stage',
+      missingRooms: officialRoomSlug ? [officialRoomSlug] : [],
+      code: 'STAGE_RESULTS_INCOMPLETE',
+    });
+  }
+
+  state.stageCompletedAt[stageKey] = new Date().toISOString();
+  state.globalPredictionWindows[stageKey] = false;
+  state.globalStageCountdowns[stageKey] = null;
+  clearStageCountdownTimer(stageKey);
+  clearStageSubmissionOverrides(stageKey);
+  syncAllRoomPredictionWindows();
+  getAllRooms().forEach((roomMeta) => {
+    const targetRoom = getRoomState(roomMeta.slug);
+    targetRoom.results[stageKey] = [...sourceRanking];
+    targetRoom.resultBreakdown[stageKey] = { ...sourceBreakdown };
+    recomputeScores(roomMeta.slug);
+  });
+  appendPredictionAudit({
+    type: 'stage_complete',
+    roomSlug: officialRoomSlug || null,
+    scopeRooms: getAllRooms().map((roomMeta) => roomMeta.slug),
+    stage: stageKey,
+    updated: sourceRanking.length,
+    rankingHash: hashRanking(sourceRanking),
+    ipHash: hashAuditValue(getClientIp(req)),
+    userAgent: sanitizeText(req.headers['user-agent'], 180),
+  });
+  persistState();
+  getAllRooms().forEach((roomMeta) => {
+    emitLeaderboard(roomMeta.slug);
+    emitResults(roomMeta.slug, stageKey);
+    emitRoomMeta(roomMeta.slug);
+  });
+
+  return res.json({
+    ok: true,
+    stage: stageKey,
+    stageCompletedAt: state.stageCompletedAt,
+  });
+});
+
 app.post('/api/admin/contest/complete', requireMainAdmin, (req, res) => {
-  const finalRoom = getRoomState(DEFAULT_ROOM_SLUG);
-  const finalReady = finalRoom.results.final.length >= ACTS_BY_STAGE.final.length;
-  if (!finalReady) {
-    return res.status(409).json({ error: 'Publish the full final ranking before completing the contest' });
+  const missingStages = STAGE_KEYS.filter((stage) => !isStageCompleted(stage));
+  if (missingStages.length) {
+    return res.status(409).json({ error: 'Fix every stage before completing the contest', missingStages });
   }
 
   state.contestCompletedAt = new Date().toISOString();
@@ -3518,6 +3933,20 @@ app.get('/api/admin/room-state', requireRoomAdmin, (req, res) => {
   return res.json(buildAdminRoomSnapshot(roomSlug));
 });
 
+app.get('/api/admin/prediction-audit', requireRoomAdmin, (req, res) => {
+  const roomSlug = normalizeRoomSlug(req.query.room);
+  const stageKey = normalizeStage(req.query.stage);
+
+  if (!roomSlug) {
+    return res.status(404).json({ error: 'Unknown room' });
+  }
+  if (!stageKey) {
+    return res.status(400).json({ error: 'Unknown stage' });
+  }
+
+  return res.json(buildAdminPredictionAudit(roomSlug, stageKey));
+});
+
 app.post('/api/admin/scoring', requireMainAdmin, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.body.roomSlug || req.query.room);
   const scoringProfile = getScoringProfile(req.body.scoringProfile).key;
@@ -3555,6 +3984,32 @@ app.get('/api/users', requireRoomAdmin, (req, res) => {
   touchRoomActivity(roomSlug);
 
   return res.json(buildAdminUserList(roomSlug));
+});
+
+app.post('/api/admin/submission-reminder', requireRoomAdmin, (req, res) => {
+  const roomSlug = normalizeRoomSlug(req.body.roomSlug || req.query.room);
+  const stageKey = normalizeStage(req.body.stage || req.query.stage);
+  if (!roomSlug) {
+    return res.status(404).json({ error: 'Unknown room' });
+  }
+  if (!stageKey) {
+    return res.status(400).json({ error: 'Unknown stage' });
+  }
+
+  const room = getRoomState(roomSlug);
+  const missingCount = Object.keys(room.users).filter((accountId) => !room.predictions[stageKey][accountId]).length;
+  const payload = {
+    roomSlug,
+    stage: stageKey,
+    missingCount,
+    sentAt: new Date().toISOString(),
+  };
+  io.to(roomSlug).emit('submissionReminder', payload);
+
+  return res.json({
+    ok: true,
+    ...payload,
+  });
 });
 
 app.post('/api/users/:id/reset', requireRoomAdmin, (req, res) => {
@@ -3629,6 +4084,27 @@ app.get('/api/stats/season', (req, res) => {
   }
 
   return res.json(buildSeasonStats(roomSlug));
+});
+
+app.get('/api/stats/player', (req, res) => {
+  const roomSlug = normalizeRoomSlug(req.query.room);
+  const publicPlayerId = sanitizeText(req.query.playerId, 32);
+  if (!roomSlug) {
+    return res.status(404).json({ error: 'Unknown room' });
+  }
+  if (!publicPlayerId) {
+    return res.status(400).json({ error: 'Player id is required' });
+  }
+  if (!enforceRoomAccess(roomSlug, req, res)) {
+    return;
+  }
+
+  const archive = buildPublicPlayerArchive(roomSlug, publicPlayerId);
+  if (!archive) {
+    return res.status(404).json({ error: 'Player not found' });
+  }
+
+  return res.json(archive);
 });
 
 app.get(['/', '/index.html'], (req, res) => {

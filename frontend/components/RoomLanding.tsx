@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { ArrowRight, Copy, MonitorPlay, NotebookPen, Trash2 } from "lucide-react";
+import { ArrowRight, Copy, Lock, MonitorPlay, NotebookPen, Trash2, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { deleteTemporaryRoom, fetchActs, fetchRoom } from "../lib/api";
@@ -73,6 +73,8 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
   }
 
   const defaultStage = room?.defaultStage || "semi1";
+  const stageCompletedAt = room?.stageCompletedAt || room?.completedStages?.[defaultStage] || null;
+  const roomClosed = Boolean(stageCompletedAt);
   const roomName = getRoomName(roomSlug, room?.name || roomSlug);
   const previewActs = stagePreviewActs.slice(0, isPhone ? 2 : 3);
 
@@ -222,19 +224,23 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
   );
 
   const actionCards = (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className={`grid gap-3 ${roomClosed ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
       <Link
         href={`/${roomSlug}/vote/${defaultStage}`}
-        className="show-panel room-lobby-action room-lobby-vote p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.08] md:p-5"
+        className={`show-panel room-lobby-action room-lobby-vote p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.08] md:p-5 ${roomClosed ? "room-lobby-closed-action" : ""}`}
       >
         <div className="inline-flex rounded-full bg-white/5 p-2.5 text-arenaPulse md:p-3">
-          <NotebookPen size={isPhone ? 16 : 20} />
+          {roomClosed ? <Lock size={isPhone ? 16 : 20} /> : <NotebookPen size={isPhone ? 16 : 20} />}
         </div>
         <p className={`display-copy mt-4 font-black text-white ${isPhone ? "text-[1.7rem] leading-none" : "text-xl md:mt-5 md:text-2xl"}`}>
-          {text.vote}
+          {roomClosed ? (language === "ru" ? "Мой прогноз" : "My ballot") : text.vote}
         </p>
         <p className={`mt-2 text-arenaMuted ${isPhone ? "text-sm leading-6" : "line-clamp-3 text-xs leading-6 md:mt-3 md:text-sm md:leading-7"}`}>
-          {voteCardText}
+          {roomClosed
+            ? (language === "ru"
+              ? "Этап закрыт: порядок больше нельзя менять, но можно открыть свой отправленный прогноз."
+              : "This stage is closed: you can no longer edit, but you can review your submitted ballot.")
+            : voteCardText}
         </p>
         <div className="mt-3 inline-flex items-center gap-2 text-xs text-white md:mt-4 md:text-sm">
           <span>{text.open}</span>
@@ -260,6 +266,29 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
           <ArrowRight size={15} />
         </div>
       </Link>
+
+      {roomClosed ? (
+        <Link
+          href={`/${roomSlug}/players/${defaultStage}`}
+          className="show-panel room-lobby-action p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.08] md:p-5"
+        >
+          <div className="inline-flex rounded-full bg-white/5 p-2.5 text-arenaBeam md:p-3">
+            <Users size={isPhone ? 16 : 20} />
+          </div>
+          <p className={`display-copy mt-4 font-black text-white ${isPhone ? "text-[1.7rem] leading-none" : "text-xl md:mt-5 md:text-2xl"}`}>
+            {language === "ru" ? "Игроки" : "Players"}
+          </p>
+          <p className={`mt-2 text-arenaMuted ${isPhone ? "text-sm leading-6" : "line-clamp-3 text-xs leading-6 md:mt-3 md:text-sm md:leading-7"}`}>
+            {language === "ru"
+              ? "Кто был в комнате, сколько набрал и как поменялись места после официальных итогов."
+              : "See who played in the room, points scored, and the final stage standings."}
+          </p>
+          <div className="mt-3 inline-flex items-center gap-2 text-xs text-white md:mt-4 md:text-sm">
+            <span>{text.open}</span>
+            <ArrowRight size={15} />
+          </div>
+        </Link>
+      ) : null}
     </div>
   );
 
@@ -275,6 +304,12 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
             <p className="mt-3 max-w-2xl text-sm leading-7 text-arenaMuted">{text.description}</p>
 
             <div className="mt-4 flex flex-wrap gap-2">
+              {roomClosed ? (
+                <span className="show-chip room-closed-chip text-amber-100">
+                  <Lock size={13} />
+                  {language === "ru" ? "Этап завершён" : "Stage completed"}
+                </span>
+              ) : null}
               {room?.passwordRequired ? (
                 <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
                   {text.privateRoom}
@@ -346,11 +381,19 @@ export function RoomLanding({ roomSlug }: { roomSlug: string }) {
                 <p className="mt-4 text-sm leading-7 text-arenaMuted md:text-base">
                   {text.description}
                 </p>
-                {room?.passwordRequired ? (
+                {roomClosed || room?.passwordRequired ? (
                   <div className="mt-5 flex flex-wrap gap-2">
-                    <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
-                      {text.privateRoom}
-                    </span>
+                    {roomClosed ? (
+                      <span className="show-chip room-closed-chip text-amber-100">
+                        <Lock size={13} />
+                        {language === "ru" ? "Этап завершён" : "Stage completed"}
+                      </span>
+                    ) : null}
+                    {room?.passwordRequired ? (
+                      <span className="show-chip text-[11px] uppercase tracking-[0.22em] text-arenaMuted">
+                        {text.privateRoom}
+                      </span>
+                    ) : null}
                   </div>
                 ) : null}
               </div>

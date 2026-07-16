@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Radio } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createRoomSocket, fetchLeaderboard } from "../lib/api";
@@ -10,10 +10,14 @@ import { MovementPill } from "./MovementPill";
 import { UserAvatar } from "./UserAvatar";
 
 const rowTransition = {
-  type: "spring",
-  stiffness: 260,
-  damping: 28,
-  mass: 0.82,
+  type: "tween",
+  duration: 1.55,
+  ease: [0.2, 0, 0, 1],
+} as const;
+
+const reducedRowTransition = {
+  type: "tween",
+  duration: 0,
 } as const;
 
 function buildRankMap(rows: LeaderboardEntry[]) {
@@ -38,6 +42,8 @@ export default function Leaderboard({
   const [error, setError] = useState("");
   const previousRanks = useRef<Record<string, number>>({});
   const { copy, getBoardLabel, getDisplayName, language } = useLanguage();
+  const prefersReducedMotion = useReducedMotion();
+  const layoutTransition = prefersReducedMotion ? reducedRowTransition : rowTransition;
   const emptyMessage = language === "ru"
     ? "Пока нет участников или отправленных бюллетеней. Таблица появится, как только в комнате начнется игра."
     : "No participants or submitted ballots yet. The table will appear as soon as players join the room.";
@@ -88,12 +94,12 @@ export default function Leaderboard({
   }, [rows]);
 
   useEffect(() => {
-    if (!Object.values(movement).some((delta) => typeof delta === "number" && delta !== 0)) {
+    if (prefersReducedMotion || !Object.values(movement).some((delta) => typeof delta === "number" && delta !== 0)) {
       return;
     }
-    const timeout = window.setTimeout(() => setMovement({}), 1300);
+    const timeout = window.setTimeout(() => setMovement({}), 2300);
     return () => window.clearTimeout(timeout);
-  }, [movement]);
+  }, [movement, prefersReducedMotion]);
 
   return (
     <section className="show-card p-5 md:p-6">
@@ -126,8 +132,8 @@ export default function Leaderboard({
           <motion.div
             key={row.id}
             layout="position"
-            transition={rowTransition}
-            className={`show-panel scoreboard-motion-row p-4 transition hover:-translate-y-0.5 hover:bg-white/[0.08] ${isMoving ? "scoreboard-motion-row-moving" : ""}`}
+            transition={layoutTransition}
+            className={`show-panel scoreboard-motion-row p-4 transition-colors hover:bg-white/[0.08] ${isMoving ? "live-player-row-moving" : ""}`}
           >
             <div className="flex items-center gap-3">
               <UserAvatar

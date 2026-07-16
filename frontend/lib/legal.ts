@@ -3,6 +3,7 @@ import type { UiLanguage } from "./types";
 type LegalConfig = {
   operatorName: string;
   operatorContact: string;
+  operatorTelegramUrl: string;
   dataRegion: string;
   retentionNotice: string;
   publicDisplayNotice: string;
@@ -16,12 +17,13 @@ type LegalConfig = {
 const RAW_LEGAL_CONFIG = {
   operatorName: process.env.NEXT_PUBLIC_OPERATOR_NAME?.trim() || "",
   operatorContact: process.env.NEXT_PUBLIC_OPERATOR_CONTACT?.trim() || "",
+  operatorTelegramUrl: process.env.NEXT_PUBLIC_OPERATOR_TELEGRAM?.trim() || "https://t.me/SergeiMorozov",
   dataRegion: process.env.NEXT_PUBLIC_DATA_REGION?.trim() || "",
   retentionNotice: process.env.NEXT_PUBLIC_DATA_RETENTION?.trim() || "",
   publicDisplayNotice: process.env.NEXT_PUBLIC_PUBLIC_DISPLAY_NOTICE?.trim() || "",
 };
 
-const LEGAL_DEFAULTS: Record<UiLanguage, Omit<LegalConfig, "requiredStorage">> = {
+const LEGAL_DEFAULTS: Record<UiLanguage, Omit<LegalConfig, "requiredStorage" | "operatorTelegramUrl">> = {
   ru: {
     operatorName: "Организатор «Евровидения у Морозовых 2026»",
     operatorContact: "Свяжитесь с организатором через приглашение или общий чат вечеринки.",
@@ -140,6 +142,7 @@ export function getLegalConfig(language: UiLanguage): LegalConfig {
   return {
     operatorName: RAW_LEGAL_CONFIG.operatorName || defaults.operatorName,
     operatorContact: RAW_LEGAL_CONFIG.operatorContact || defaults.operatorContact,
+    operatorTelegramUrl: RAW_LEGAL_CONFIG.operatorTelegramUrl,
     dataRegion: localizeConfiguredValue(
       language,
       RAW_LEGAL_CONFIG.dataRegion,

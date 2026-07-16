@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Maximize2, Minimize2, Sparkles, Trophy, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createRoomSocket, fetchLeaderboard, fetchRoom, fetchStageResults } from "../lib/api";
@@ -13,11 +13,21 @@ import { UserAvatar } from "./UserAvatar";
 import { useLanguage } from "./LanguageProvider";
 import { ArtistProfileModal } from "./ArtistProfileModal";
 
-const rowTransition = {
-  type: "spring",
-  stiffness: 260,
-  damping: 30,
-  mass: 0.8,
+const countryRowTransition = {
+  type: "tween",
+  duration: 1.22,
+  ease: [0.2, 0, 0, 1],
+} as const;
+
+const playerRowTransition = {
+  type: "tween",
+  duration: 1.55,
+  ease: [0.2, 0, 0, 1],
+} as const;
+
+const reducedRowTransition = {
+  type: "tween",
+  duration: 0,
 } as const;
 
 const STAGE_COLUMN_COUNT = 2;
@@ -34,8 +44,10 @@ function splitStageColumns(rows: ActEntry[], columnCount = STAGE_COLUMN_COUNT) {
 export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stageKey: StageKey }) {
   const [room, setRoom] = useState<RoomDetails | null>(null);
   const [results, setResults] = useState<ActEntry[]>([]);
+  const [displayResults, setDisplayResults] = useState<ActEntry[]>([]);
   const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
   const [movement, setMovement] = useState<Record<string, number | null>>({});
+  const [countryHighlight, setCountryHighlight] = useState<Record<string, boolean>>({});
   const [leaderMovement, setLeaderMovement] = useState<Record<string, number | null>>({});
   const [mobilePlayersMode, setMobilePlayersMode] = useState<"focus" | "all">("focus");
   const [desktopBoardMode, setDesktopBoardMode] = useState<"split" | "players">("split");
@@ -46,11 +58,116 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   const [error, setError] = useState("");
   const previousRanks = useRef<Record<string, number>>({});
   const previousLeaderRanks = useRef<Record<string, number>>({});
+  const displayResultsRef = useRef<ActEntry[]>([]);
+  const countryMoveTimeout = useRef<number | null>(null);
+  const countryClearTimeout = useRef<number | null>(null);
   const { getCountryName, getDisplayName, getStageLabel, language } = useLanguage();
   const { account } = useAccount();
   const { isPhone, isTablet, isDesktop } = useDeviceTier();
+  const prefersReducedMotion = useReducedMotion();
+  const countryTransition = prefersReducedMotion ? reducedRowTransition : countryRowTransition;
+  const playerTransition = prefersReducedMotion ? reducedRowTransition : playerRowTransition;
   const isSemi = stageKey === "semi1" || stageKey === "semi2";
   const isFinal = stageKey === "final";
+  const activeShowState = room?.showState?.stageKey === stageKey ? room.showState : null;
+  const activeShowStatus = activeShowState?.statusText || "";
+  const activeShowHighlight = activeShowState?.highlightMode || null;
+  const activeShowActCode = activeShowState?.currentActCode || "";
+  const stageAccentActive = activeShowHighlight === "stage";
+
+  const commitDisplayResults = (nextResults: ActEntry[]) => {
+    displayResultsRef.current = nextResults;
+    setDisplayResults(nextResults);
+  };
+
+  const commitRankSnapshot = (nextResults: ActEntry[]) => {
+    previousRanks.current = nextResults.reduce<Record<string, number>>((acc, act) => {
+      if (act.rank) {
+        acc[act.code] = act.rank;
+      }
+      return acc;
+    }, {});
+  };
+
+  const clearCountryTimers = () => {
+    if (countryMoveTimeout.current) {
+      window.clearTimeout(countryMoveTimeout.current);
+      countryMoveTimeout.current = null;
+    }
+    if (countryClearTimeout.current) {
+      window.clearTimeout(countryClearTimeout.current);
+      countryClearTimeout.current = null;
+    }
+  };
+
+  const applyResultsUpdate = (nextResults: ActEntry[], animate = true) => {
+    clearCountryTimers();
+    setResults(nextResults);
+
+    const currentResults = displayResultsRef.current;
+    const hasRenderedResults = currentResults.length > 0 || Object.keys(previousRanks.current).length > 0;
+    if (!animate || prefersReducedMotion || !hasRenderedResults) {
+      setMovement({});
+      setCountryHighlight({});
+      commitDisplayResults(nextResults);
+      commitRankSnapshot(nextResults);
+      return;
+    }
+
+    const currentByCode = new Map(currentResults.map((act) => [act.code, act]));
+    const nextByCode = new Map(nextResults.map((act) => [act.code, act]));
+    const nextMovement = nextResults.reduce<Record<string, number | null>>((acc, act) => {
+      const previousRank = previousRanks.current[act.code] ?? currentByCode.get(act.code)?.rank;
+      acc[act.code] = previousRank && act.rank ? previousRank - act.rank : null;
+      return acc;
+    }, {});
+
+    const nextHighlight: Record<string, boolean> = {};
+    const hasVisibleChange = nextResults.some((act) => {
+      const current = currentByCode.get(act.code);
+      const rankDelta = nextMovement[act.code];
+      const changed = Boolean(rankDelta)
+        || current?.totalPoints !== act.totalPoints
+        || current?.juryPoints !== act.juryPoints
+        || current?.telePoints !== act.telePoints
+        || current?.revealed !== act.revealed;
+      if (changed) {
+        nextHighlight[act.code] = true;
+      }
+      return changed;
+    });
+
+    if (!hasVisibleChange) {
+      setMovement({});
+      setCountryHighlight({});
+      commitDisplayResults(nextResults);
+      commitRankSnapshot(nextResults);
+      return;
+    }
+
+    const heldResults = currentResults.length
+      ? [
+          ...currentResults.map((act) => nextByCode.get(act.code) || act),
+          ...nextResults.filter((act) => !currentByCode.has(act.code)),
+        ]
+      : nextResults;
+
+    commitDisplayResults(heldResults);
+    setMovement(nextMovement);
+    setCountryHighlight(nextHighlight);
+    commitRankSnapshot(nextResults);
+
+    countryMoveTimeout.current = window.setTimeout(() => {
+      commitDisplayResults(nextResults);
+    }, 620);
+
+    countryClearTimeout.current = window.setTimeout(() => {
+      setMovement({});
+      setCountryHighlight({});
+      countryMoveTimeout.current = null;
+      countryClearTimeout.current = null;
+    }, 2920);
+  };
 
   useEffect(() => {
     let active = true;
@@ -65,7 +182,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
 
         if (!active) return;
         setRoom(roomPayload);
-        setResults(resultsPayload.results);
+        applyResultsUpdate(resultsPayload.results, false);
         setLeaders(leaderboardPayload);
         setLoading(false);
         setError("");
@@ -82,7 +199,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     const socket = createRoomSocket(roomSlug);
     socket.on("resultsUpdate", (payload: { stage: StageKey; results: ActEntry[] }) => {
       if (payload.stage !== stageKey) return;
-      setResults(payload.results);
+      applyResultsUpdate(payload.results);
       setLoading(false);
     });
     socket.on("leaderboardUpdate", (payload: LeaderboardEntry[]) => {
@@ -95,38 +212,10 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
 
     return () => {
       active = false;
+      clearCountryTimers();
       socket.close();
     };
-  }, [language, roomSlug, stageKey]);
-
-  useEffect(() => {
-    const nextMovement = results.reduce<Record<string, number | null>>((acc, act) => {
-      if (!act.rank) {
-        acc[act.code] = null;
-        return acc;
-      }
-
-      const previousRank = previousRanks.current[act.code];
-      acc[act.code] = previousRank ? previousRank - act.rank : null;
-      return acc;
-    }, {});
-
-    setMovement(nextMovement);
-    previousRanks.current = results.reduce<Record<string, number>>((acc, act) => {
-      if (act.rank) {
-        acc[act.code] = act.rank;
-      }
-      return acc;
-    }, {});
-  }, [results]);
-
-  useEffect(() => {
-    if (!Object.values(movement).some((delta) => typeof delta === "number" && delta !== 0)) {
-      return;
-    }
-    const timeout = window.setTimeout(() => setMovement({}), 1300);
-    return () => window.clearTimeout(timeout);
-  }, [movement]);
+  }, [language, prefersReducedMotion, roomSlug, stageKey]);
 
   useEffect(() => {
     const nextMovement = leaders.reduce<Record<string, number | null>>((acc, row) => {
@@ -143,12 +232,25 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   }, [leaders]);
 
   useEffect(() => {
-    if (!Object.values(leaderMovement).some((delta) => typeof delta === "number" && delta !== 0)) {
+    if (prefersReducedMotion || !Object.values(leaderMovement).some((delta) => typeof delta === "number" && delta !== 0)) {
       return;
     }
-    const timeout = window.setTimeout(() => setLeaderMovement({}), 1300);
+    const timeout = window.setTimeout(() => setLeaderMovement({}), 2300);
     return () => window.clearTimeout(timeout);
-  }, [leaderMovement]);
+  }, [leaderMovement, prefersReducedMotion]);
+
+  useEffect(() => {
+    if (!activeShowState) return;
+    if (activeShowHighlight === "players") {
+      setDesktopBoardMode("players");
+    }
+    if (activeShowHighlight === "results" || activeShowHighlight === "stage" || activeShowHighlight === "current_act") {
+      setDesktopBoardMode("split");
+    }
+    if (activeShowHighlight === "current_act" && activeShowActCode) {
+      setSelectedActCode(activeShowActCode);
+    }
+  }, [activeShowActCode, activeShowHighlight, activeShowState]);
 
   const text = language === "ru"
     ? {
@@ -242,12 +344,12 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
 
   const sortedResults = useMemo(
     () =>
-      [...results].sort((left, right) => {
+      [...displayResults].sort((left, right) => {
         const leftRank = left.rank ?? Number.POSITIVE_INFINITY;
         const rightRank = right.rank ?? Number.POSITIVE_INFINITY;
         return leftRank - rightRank;
       }),
-    [results]
+    [displayResults]
   );
 
   const qualifierRows = useMemo(
@@ -417,7 +519,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
       <motion.div
         key={row.id}
         layout="position"
-        className={`show-panel scoreboard-motion-row live-results-row live-room-player-row ${isMoving ? "scoreboard-motion-row-moving live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${dense ? "h-[3.1rem] px-2 py-[0.15rem]" : compact ? "px-3 py-2" : "p-3 md:p-4"} flex items-center ${dense ? "gap-1.5" : "gap-3 md:gap-4"} ${
+        className={`show-panel scoreboard-motion-row live-results-row live-room-player-row ${isMoving ? "live-player-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${dense ? "h-[3.1rem] px-2 py-[0.15rem]" : compact ? "px-3 py-2" : "p-3 md:p-4"} flex items-center ${dense ? "gap-1.5" : "gap-3 md:gap-4"} ${
           isCurrentUser
             ? "border-cyan-300/20 bg-[linear-gradient(135deg,rgba(129,236,255,0.075),transparent_56%),rgba(255,255,255,0.04)] shadow-[0_0_0_1px_rgba(129,236,255,0.08),0_24px_40px_rgba(44,86,120,0.2)]"
             : ""
@@ -429,7 +531,10 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
             "0 0 0 1px rgba(129,236,255,0.08), 0 22px 36px rgba(44,86,120,0.18)",
           ],
         } : undefined}
-        transition={isCurrentUser ? { layout: rowTransition, duration: 3.2, repeat: Infinity, ease: "easeInOut" } : rowTransition}
+        transition={isCurrentUser && !prefersReducedMotion ? {
+          layout: playerTransition,
+          boxShadow: { duration: 3.2, repeat: Infinity, ease: "easeInOut" },
+        } : playerTransition}
       >
         <div className={`show-rank shrink-0 ${isTopThree ? "live-top3-rank" : ""} ${dense ? "h-[2rem] w-[2rem] text-[13px]" : compact ? "h-[2.125rem] w-[2.125rem] text-sm" : "h-10 w-10 text-base md:h-12 md:w-12 md:text-lg"} font-black text-arenaText`}>
           {row.rank}
@@ -442,14 +547,11 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
           textClass="text-sm"
         />
         <div className="min-w-0 flex-1">
-          <p className={`truncate font-semibold text-white ${dense ? "text-[12px] leading-4" : compact ? "text-[15px]" : "text-base md:text-lg"}`}>{getDisplayName(row.name)}</p>
-          {isDesktop && (compact || dense) ? null : (
-            <p className={`${compact ? "text-[12px]" : "text-sm"} text-arenaMuted`}>
-              {row.points} {text.points}
-            </p>
-          )}
+          <p className={`truncate font-bold text-white ${dense ? "text-[13px] leading-4" : compact ? "text-[16px]" : "text-base md:text-lg"}`}>{getDisplayName(row.name)}</p>
         </div>
-        <MovementPill delta={rowDelta} compact={compact || dense} />
+        <div className={`live-player-score-pill shrink-0 ${dense ? "h-[2rem] min-w-[3.4rem] px-2" : compact ? "h-[2.25rem] min-w-[4.2rem] px-3" : "h-10 min-w-[5rem] px-4"}`}>
+          <span className={`live-player-score-value tabular-nums text-white ${dense ? "text-[15px]" : compact ? "text-[18px]" : "text-xl"}`}>{row.points}</span>
+        </div>
       </motion.div>
     );
   };
@@ -458,12 +560,14 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
     const isQualifier = isSemi && typeof act.rank === "number" && act.rank > 0 && (!qualificationCutoff || act.rank <= qualificationCutoff);
     const rowDelta = movement[act.code] ?? null;
     const isMoving = typeof rowDelta === "number" && rowDelta !== 0;
+    const isHighlighted = Boolean(countryHighlight[act.code]);
     const isTopThree = typeof act.rank === "number" && act.rank > 0 && act.rank <= 3;
     const isCutoffRow = isSemi && qualificationCutoff != null && act.rank === qualificationCutoff;
     const isBelowCutoffRow = isSemi && qualificationCutoff != null && act.rank === qualificationCutoff + 1;
     const podiumClass = act.rank === 1 ? "live-podium-1" : act.rank === 2 ? "live-podium-2" : act.rank === 3 ? "live-podium-3" : "";
     const flagUrl = resolveMediaUrl(act.flagUrl);
     const countryName = getCountryName(act.code, act.country);
+    const isShowFocused = activeShowHighlight === "current_act" && activeShowActCode === act.code;
     const desktopRowClass = isFinal
       ? "live-final-readable-row flex items-center gap-2 px-2.5 py-1.5 md:px-3"
       : "flex h-[3.05rem] items-center gap-1.5 px-2 py-[0.15rem] md:px-2 md:py-[0.2rem]";
@@ -474,8 +578,8 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         type="button"
         onClick={() => setSelectedActCode(act.code)}
         layout="position"
-        transition={rowTransition}
-        className={`show-panel scoreboard-motion-row live-results-row ${desktopRowClass} text-left transition hover:border-cyan-200/18 focus:outline-none focus:ring-2 focus:ring-arenaBeam/35 ${isMoving ? "scoreboard-motion-row-moving live-results-row-moving" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${isCutoffRow ? "live-cutoff-row" : ""} ${isBelowCutoffRow ? "live-cutoff-below-row" : ""} ${!isSemi && act.revealed ? "live-final-row" : ""} ${!isSemi && isMoving ? "live-final-row-moving" : ""} ${
+        transition={countryTransition}
+        className={`show-panel scoreboard-motion-row live-results-row ${desktopRowClass} text-left transition-colors hover:border-cyan-200/18 focus:outline-none focus:ring-2 focus:ring-arenaBeam/35 ${isHighlighted ? "scoreboard-motion-row-moving live-results-row-moving" : ""} ${isShowFocused ? "live-show-focus-row" : ""} ${isTopThree ? `live-top3-row ${podiumClass}` : ""} ${isCutoffRow ? "live-cutoff-row" : ""} ${isBelowCutoffRow ? "live-cutoff-below-row" : ""} ${!isSemi && act.revealed ? "live-final-row" : ""} ${!isSemi && isHighlighted ? "live-final-row-moving" : ""} ${
           isQualifier
             ? "border-emerald-300/12 bg-[linear-gradient(135deg,rgba(70,220,165,0.065),transparent_52%),rgba(255,255,255,0.03)]"
             : ""
@@ -525,7 +629,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
           </div>
         </div>
         {!isSemi && act.totalPoints != null ? (
-          <div className={`ml-1 shrink-0 text-right ${isFinal ? "w-[3.2rem]" : "w-[3.2rem]"} ${isMoving ? "live-final-points live-final-points-hot" : "live-final-points"}`}>
+          <div className={`ml-1 shrink-0 text-right ${isFinal ? "w-[3.2rem]" : "w-[3.2rem]"} ${isHighlighted ? "live-final-points live-final-points-hot" : "live-final-points"}`}>
             <p className="label-copy text-[7px] uppercase tracking-[0.16em] text-arenaMuted">
               {text.finalPoints}
             </p>
@@ -538,6 +642,8 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
 
   const renderCompactStageRow = (act: ActEntry) => {
     const isQualifier = typeof act.rank === "number" && act.rank > 0 && (!qualificationCutoff || act.rank <= qualificationCutoff);
+    const isShowFocused = activeShowHighlight === "current_act" && activeShowActCode === act.code;
+    const isHighlighted = Boolean(countryHighlight[act.code]);
 
     return (
       <motion.button
@@ -545,8 +651,8 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
         type="button"
         onClick={() => setSelectedActCode(act.code)}
         layout="position"
-        transition={rowTransition}
-        className={`show-panel-muted scoreboard-motion-row flex min-w-0 items-center gap-3 px-3 py-2.5 text-left transition hover:border-cyan-200/18 focus:outline-none focus:ring-2 focus:ring-arenaBeam/35 ${movement[act.code] ? "scoreboard-motion-row-moving" : ""} ${
+        transition={countryTransition}
+        className={`show-panel-muted scoreboard-motion-row flex min-w-0 items-center gap-3 px-3 py-2.5 text-left transition-colors hover:border-cyan-200/18 focus:outline-none focus:ring-2 focus:ring-arenaBeam/35 ${isHighlighted ? "scoreboard-motion-row-moving" : ""} ${isShowFocused ? "live-show-focus-row" : ""} ${
           isSemi && isQualifier
             ? "border-emerald-300/12 bg-[linear-gradient(135deg,rgba(70,220,165,0.065),transparent_52%),rgba(255,255,255,0.03)]"
             : ""
@@ -583,7 +689,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
 
   return (
     <div className={`grid gap-5 ${softFullscreenActive ? "fixed inset-0 z-[9999] overflow-y-auto bg-[#090917] p-3 md:p-5" : ""}`}>
-      <section className={`${desktopCompactTop ? "show-panel px-4 py-3 md:px-5" : `show-card ${isPhone ? "p-3" : "p-5 md:p-6 xl:p-7"}`}`}>
+      <section className={`${desktopCompactTop ? "show-panel px-4 py-3 md:px-5" : `show-card ${isPhone ? "p-3" : "p-5 md:p-6 xl:p-7"}`} ${stageAccentActive ? "live-show-stage-accent" : ""}`}>
         {!isPhone && !desktopCompactTop ? <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaDanger">{text.kicker}</p> : null}
 
         {isPhone ? (
@@ -602,6 +708,11 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
                 {text.progressLabel}: {progressValue}
               </span>
             </div>
+            {activeShowStatus ? (
+              <div className="live-show-status mt-3 rounded-[1rem] px-3 py-2 text-sm font-semibold text-white">
+                {activeShowStatus}
+              </div>
+            ) : null}
           </div>
         ) : desktopCompactTop ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -660,6 +771,11 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
                   {text.leaderLabel}: {getDisplayName(leaders[0].name)}
                 </span>
               ) : null}
+              {activeShowStatus ? (
+                <span className="show-chip live-show-status max-w-[22rem] truncate text-[11px] uppercase tracking-[0.14em] text-white">
+                  {activeShowStatus}
+                </span>
+              ) : null}
               <button
                 type="button"
                 onClick={toggleFullscreen}
@@ -688,6 +804,11 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
               <p className="mt-4 max-w-3xl text-sm leading-7 text-arenaMuted md:text-base">
                 {text.desktopDescription}
               </p>
+              {activeShowStatus ? (
+                <div className="live-show-status mt-4 inline-flex max-w-3xl rounded-[1.2rem] px-4 py-3 text-base font-semibold text-white">
+                  {activeShowStatus}
+                </div>
+              ) : null}
             </div>
 
             <div className="flex max-w-xl flex-wrap gap-2 xl:justify-end">

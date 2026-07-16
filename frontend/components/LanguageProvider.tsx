@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   getBoardLabel,
   getCopy,
@@ -33,13 +33,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const value = {
+  const setLanguage = useCallback((nextLanguage: Language) => {
+    setLanguageState(nextLanguage);
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
+  }, []);
+
+  const value = useMemo(() => ({
     language,
-    setLanguage: (nextLanguage: Language) => {
-      setLanguageState(nextLanguage);
-      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
-    },
-  };
+    setLanguage,
+  }), [language, setLanguage]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
@@ -50,20 +52,44 @@ export function useLanguage() {
     throw new Error("useLanguage must be used within LanguageProvider");
   }
 
-  const copy = getCopy(context.language);
+  const { language } = context;
+  const copy = useMemo(() => getCopy(language), [language]);
+  const getStageLabelValue = useCallback((stageKey: StageKey) => getStageLabel(language, stageKey), [language]);
+  const getBoardLabelValue = useCallback((boardKey: BoardKey) => getBoardLabel(language, boardKey), [language]);
+  const getCountryNameValue = useCallback((code: string, fallback: string) => getCountryName(language, code, fallback), [language]);
+  const getDisplayNameValue = useCallback((fallback: string) => localizeTextForLanguage(language, fallback), [language]);
+  const getRoomNameValue = useCallback((roomSlug: string, fallback: string) => getRoomName(language, roomSlug, fallback), [language]);
+  const getRoomTaglineValue = useCallback((roomSlug: string, fallback: string) => getRoomTagline(language, roomSlug, fallback), [language]);
+  const getRoomCityLabelValue = useCallback((roomSlug: string, fallback: string) => getRoomCityLabel(language, roomSlug, fallback), [language]);
+  const getActFactsValue = useCallback((act: ActEntry) => getLocalizedActFacts(language, act), [language]);
+  const getActBlurbValue = useCallback((act: ActEntry) => getLocalizedActBlurb(language, act), [language]);
+  const getActContextValue = useCallback((act: ActEntry) => getLocalizedActContext(language, act), [language]);
 
-  return {
+  return useMemo(() => ({
     ...context,
     copy,
-    getStageLabel: (stageKey: StageKey) => getStageLabel(context.language, stageKey),
-    getBoardLabel: (boardKey: BoardKey) => getBoardLabel(context.language, boardKey),
-    getCountryName: (code: string, fallback: string) => getCountryName(context.language, code, fallback),
-    getDisplayName: (fallback: string) => localizeTextForLanguage(context.language, fallback),
-    getRoomName: (roomSlug: string, fallback: string) => getRoomName(context.language, roomSlug, fallback),
-    getRoomTagline: (roomSlug: string, fallback: string) => getRoomTagline(context.language, roomSlug, fallback),
-    getRoomCityLabel: (roomSlug: string, fallback: string) => getRoomCityLabel(context.language, roomSlug, fallback),
-    getActFacts: (act: ActEntry) => getLocalizedActFacts(context.language, act),
-    getActBlurb: (act: ActEntry) => getLocalizedActBlurb(context.language, act),
-    getActContext: (act: ActEntry) => getLocalizedActContext(context.language, act),
-  };
+    getStageLabel: getStageLabelValue,
+    getBoardLabel: getBoardLabelValue,
+    getCountryName: getCountryNameValue,
+    getDisplayName: getDisplayNameValue,
+    getRoomName: getRoomNameValue,
+    getRoomTagline: getRoomTaglineValue,
+    getRoomCityLabel: getRoomCityLabelValue,
+    getActFacts: getActFactsValue,
+    getActBlurb: getActBlurbValue,
+    getActContext: getActContextValue,
+  }), [
+    context,
+    copy,
+    getActBlurbValue,
+    getActContextValue,
+    getActFactsValue,
+    getBoardLabelValue,
+    getCountryNameValue,
+    getDisplayNameValue,
+    getRoomCityLabelValue,
+    getRoomNameValue,
+    getRoomTaglineValue,
+    getStageLabelValue,
+  ]);
 }

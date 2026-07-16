@@ -1,11 +1,11 @@
 'use client';
 
-import { closestCenter, DndContext, KeyboardSensor, PointerSensor, type DragEndEvent, useSensor, useSensors } from "@dnd-kit/core";
+import { AutoScrollActivator, closestCenter, DndContext, KeyboardSensor, MeasuringStrategy, MouseSensor, TouchSensor, type DragEndEvent, type DragMoveEvent, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { ArrowDown, ArrowUp, BookOpen, Check, CheckCircle2, ChevronDown, GripVertical, Info, ListChecks, Lock, RotateCcw, Send, Tags, Trophy } from "lucide-react";
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   createRoomSocket,
   fetchActs,
@@ -61,6 +61,25 @@ function formatCountdown(ms: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function getDragClientY(event: DragMoveEvent) {
+  const source = event.activatorEvent;
+  const pointerSource = source as MouseEvent | PointerEvent;
+
+  if (typeof pointerSource.clientY === "number") {
+    return pointerSource.clientY + event.delta.y;
+  }
+
+  const touchSource = source as TouchEvent;
+  const touch = touchSource.touches?.[0] || touchSource.changedTouches?.[0];
+
+  return touch ? touch.clientY + event.delta.y : null;
+}
+
+function getPageScrollElement() {
+  if (typeof document === "undefined") return null;
+  return document.scrollingElement || document.documentElement || document.body;
 }
 
 type PlaceOption = {
@@ -202,6 +221,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   const { account, loading: accountLoading } = useAccount();
   const { getActBlurb, getActContext, getActFacts, getCountryName, getStageLabel, language } = useLanguage();
   const { isPhone } = useDeviceTier();
+  const dragScrollFrameRef = useRef<number | null>(null);
+  const dragScrollSpeedRef = useRef(0);
+  const dragClientYRef = useRef<number | null>(null);
   const [room, setRoom] = useState<RoomDetails | null>(null);
   const [acts, setActs] = useState<ActEntry[]>([]);
   const [ranking, setRanking] = useState<string[]>([]);
@@ -211,12 +233,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   const [hasSubmittedPrediction, setHasSubmittedPrediction] = useState(false);
   const [submissionOpen, setSubmissionOpen] = useState(false);
   const [submissionOverrideEndsAt, setSubmissionOverrideEndsAt] = useState<string | null>(null);
+  const [submitReceiptEndsAt, setSubmitReceiptEndsAt] = useState<string | null>(null);
   const [selectedActCode, setSelectedActCode] = useState<string | null>(null);
   const [lightboxActCode, setLightboxActCode] = useState<string | null>(null);
   const [placePickerOpen, setPlacePickerOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [statusText, setStatusText] = useState("");
+  const [reminderText, setReminderText] = useState("");
   const [membershipError, setMembershipError] = useState("");
   const [lineupReady, setLineupReady] = useState(true);
   const [expectedEntries, setExpectedEntries] = useState(0);
@@ -270,6 +294,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           submitTitle: "Отправить результаты",
           submitText: "Когда порядок готов, отправь его. Пока этап открыт, можно менять выбор и отправлять новую версию.",
           submitButton: "Отправить результаты",
+          submittedButton: "Отправлено на сервер",
+          resubmitButton: "Отправить заново",
+          submittedBadge: "Ответ уже на сервере",
+          submittedText: "Твой порядок уже сохранён. Пока этап открыт, можно переставить артистов и отправить обновлённую версию.",
+          draftBadge: "Изменения пока только на этом устройстве",
+          draftText: "В зачёт идёт последняя отправленная версия.",
+          reminderTitle: "Не забудь отправить результат",
+          reminderText: "Проверь порядок и нажми «Отправить результаты», чтобы ответ ушёл на сервер.",
           submitDisabledNoAccount: "Войди на главной, чтобы сохранить порядок",
           submitDisabledClosed: "Сейчас окно голосования закрыто",
           submitDisabledLineup: "Этап ещё не собран полностью",
@@ -361,6 +393,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           submitTitle: "Submit results",
           submitText: "When the order is ready, submit it. While the stage is open, you can still send an updated version.",
           submitButton: "Submit results",
+          submittedButton: "Sent to server",
+          resubmitButton: "Update submission",
+          submittedBadge: "Answer sent to server",
+          submittedText: "This version is already counted. While the stage is open, you can reorder and submit an updated answer.",
+          draftBadge: "Draft exists only on this device",
+          draftText: "Only the version sent to the server counts.",
+          reminderTitle: "Organizer is waiting for your answer",
+          reminderText: "Check your order and tap Submit so the answer reaches the server.",
           submitDisabledNoAccount: "Sign in on the homepage first",
           submitDisabledClosed: "Voting is closed right now",
           submitDisabledLineup: "The stage lineup is not complete yet",
@@ -452,9 +492,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     [defaultRanking, ranking],
   );
   const dragSensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 6,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        distance: 6,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -502,8 +547,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   function persistRanking(nextRanking: string[]) {
     const normalized = normalizeRanking(acts, nextRanking);
     setRanking(normalized);
+    setSubmitReceiptEndsAt(null);
     if (acts.length) {
-      saveRanking(roomSlug, stageKey, normalized);
+      saveRanking(roomSlug, stageKey, normalized, defaultRanking);
     }
   }
 
@@ -578,6 +624,56 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
   function placeArtistAt(code: string, nextIndex: number) {
     persistRanking(moveCodeToIndex(ranking, code, nextIndex));
+  }
+
+  function stopDragAutoScroll() {
+    dragScrollSpeedRef.current = 0;
+    dragClientYRef.current = null;
+    if (dragScrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(dragScrollFrameRef.current);
+      dragScrollFrameRef.current = null;
+    }
+  }
+
+  function runDragAutoScroll() {
+    if (typeof window === "undefined") return;
+    const speed = dragScrollSpeedRef.current;
+
+    if (!speed) {
+      dragScrollFrameRef.current = null;
+      return;
+    }
+
+    const scroller = getPageScrollElement();
+    const previousTop = scroller?.scrollTop ?? window.scrollY;
+
+    if (scroller) {
+      scroller.scrollTop = previousTop + speed;
+    }
+
+    const nextTop = scroller?.scrollTop ?? window.scrollY;
+    if (nextTop === previousTop) {
+      window.scrollBy(0, speed);
+      if (document.body && document.body !== scroller) {
+        document.body.scrollTop += speed;
+      }
+    }
+
+    dragScrollFrameRef.current = window.requestAnimationFrame(runDragAutoScroll);
+  }
+
+  function scheduleDragAutoScroll(speed: number) {
+    if (typeof window === "undefined") return;
+    dragScrollSpeedRef.current = speed;
+
+    if (!speed) {
+      stopDragAutoScroll();
+      return;
+    }
+
+    if (dragScrollFrameRef.current === null) {
+      dragScrollFrameRef.current = window.requestAnimationFrame(runDragAutoScroll);
+    }
   }
 
   function getCurrentPlaceLabel(code: string) {
@@ -662,6 +758,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   }
 
   function handleOrderDragEnd(event: DragEndEvent) {
+    stopDragAutoScroll();
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -672,6 +769,48 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     if (!nextIndex) return;
     placeArtistAt(activeCode, nextIndex - 1);
   }
+
+  function handleOrderDragMove(event: DragMoveEvent) {
+    if (typeof window === "undefined") return;
+    const clientY = dragClientYRef.current ?? getDragClientY(event);
+    if (clientY === null) return;
+
+    const edgeSize = Math.min(150, Math.max(92, window.innerHeight * 0.24));
+    const maxSpeed = isPhone ? 24 : 18;
+    let speed = 0;
+
+    if (clientY < edgeSize) {
+      speed = -Math.ceil(((edgeSize - clientY) / edgeSize) * maxSpeed);
+    } else if (clientY > window.innerHeight - edgeSize) {
+      speed = Math.ceil(((clientY - (window.innerHeight - edgeSize)) / edgeSize) * maxSpeed);
+    }
+
+    scheduleDragAutoScroll(speed);
+  }
+
+  function handleOrderDragCancel() {
+    stopDragAutoScroll();
+  }
+
+  useEffect(() => {
+    const updatePointerY = (event: PointerEvent) => {
+      dragClientYRef.current = event.clientY;
+    };
+    const updateTouchY = (event: TouchEvent) => {
+      const touch = event.touches[0] || event.changedTouches[0];
+      if (touch) {
+        dragClientYRef.current = touch.clientY;
+      }
+    };
+
+    window.addEventListener("pointermove", updatePointerY, { passive: true });
+    window.addEventListener("touchmove", updateTouchY, { passive: true });
+
+    return () => {
+      window.removeEventListener("pointermove", updatePointerY);
+      window.removeEventListener("touchmove", updateTouchY);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -692,13 +831,15 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         setRoom(roomPayload);
         setSubmissionOpen(Boolean(roomPayload.predictionWindows?.[stageKey]));
         setSubmissionOverrideEndsAt(null);
+        setSubmitReceiptEndsAt(null);
         setActs(actsPayload.acts);
         setLineupReady(actsPayload.lineupReady);
         setExpectedEntries(actsPayload.expectedEntries);
         setCurrentEntries(actsPayload.currentEntries);
 
+        const defaultFetchedRanking = createDefaultRanking(actsPayload.acts);
         const storedNotes = loadNotes(roomSlug, stageKey);
-        const storedRanking = loadRanking(roomSlug, stageKey);
+        const storedRanking = loadRanking(roomSlug, stageKey, defaultFetchedRanking);
         setNotes(storedNotes);
         saveNotes(roomSlug, stageKey, storedNotes);
 
@@ -710,9 +851,9 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               actsPayload.acts,
               predictionPayload.ranking.length ? predictionPayload.ranking : storedRanking,
             );
-            const baseline = normalized.length ? normalized : createDefaultRanking(actsPayload.acts);
+            const baseline = normalized.length ? normalized : defaultFetchedRanking;
             setRanking(baseline);
-            saveRanking(roomSlug, stageKey, baseline);
+            saveRanking(roomSlug, stageKey, baseline, defaultFetchedRanking);
             setHasSubmittedPrediction(predictionPayload.ranking.length > 0);
             setSubmissionOpen(Boolean(predictionPayload.canSubmit));
             setSubmissionOverrideEndsAt(predictionPayload.overrideEndsAt || null);
@@ -720,10 +861,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
             console.error(predictionError);
             if (!active) return;
             const fallback = normalizeRanking(actsPayload.acts, storedRanking);
-            const baseline = fallback.length ? fallback : createDefaultRanking(actsPayload.acts);
+            const baseline = fallback.length ? fallback : defaultFetchedRanking;
             setRanking(baseline);
             if (storedRanking.length > 0) {
-              saveRanking(roomSlug, stageKey, baseline);
+              saveRanking(roomSlug, stageKey, baseline, defaultFetchedRanking);
             }
             setHasSubmittedPrediction(false);
             setSubmissionOpen(Boolean(roomPayload.predictionWindows?.[stageKey]));
@@ -731,10 +872,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
           }
         } else {
           const fallback = normalizeRanking(actsPayload.acts, storedRanking);
-          const baseline = fallback.length ? fallback : createDefaultRanking(actsPayload.acts);
+          const baseline = fallback.length ? fallback : defaultFetchedRanking;
           setRanking(baseline);
           if (storedRanking.length > 0) {
-            saveRanking(roomSlug, stageKey, baseline);
+            saveRanking(roomSlug, stageKey, baseline, defaultFetchedRanking);
           }
           setHasSubmittedPrediction(false);
           setSubmissionOpen(Boolean(roomPayload.predictionWindows?.[stageKey]));
@@ -765,10 +906,10 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     if (!arraysEqual(normalized, ranking)) {
       setRanking(normalized);
       if (ranking.length > 0) {
-        saveRanking(roomSlug, stageKey, normalized);
+        saveRanking(roomSlug, stageKey, normalized, defaultRanking);
       }
     }
-  }, [acts, ranking, roomSlug, stageKey]);
+  }, [acts, defaultRanking, ranking, roomSlug, stageKey]);
 
   useEffect(() => {
     const socket = createRoomSocket(roomSlug);
@@ -798,11 +939,20 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
         setSubmissionOverrideEndsAt(null);
       }
     });
+    socket.on("submissionReminder", (payload: { roomSlug: string; stage: StageKey; missingCount: number; sentAt: string }) => {
+      if (payload.roomSlug !== roomSlug || payload.stage !== stageKey || hasSubmittedPrediction) {
+        return;
+      }
+      setReminderText(`${text.reminderTitle}. ${text.reminderText}`);
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate?.([120, 60, 120]);
+      }
+    });
 
     return () => {
       socket.close();
     };
-  }, [account, roomSlug, stageKey]);
+  }, [account, hasSubmittedPrediction, roomSlug, stageKey, text.reminderText, text.reminderTitle]);
 
   const activeCountdownEndsAt = submissionOverrideEndsAt || stageCountdown?.endsAt || null;
   const hasPersonalExtension = Boolean(submissionOverrideEndsAt && !globalStageOpen);
@@ -810,9 +960,13 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     ? Math.max(0, new Date(activeCountdownEndsAt).getTime() - timeNow)
     : 0;
   const countdownLabel = activeCountdownEndsAt ? formatCountdown(countdownRemainingMs) : null;
+  const submitReceiptRemainingMs = submitReceiptEndsAt
+    ? Math.max(0, new Date(submitReceiptEndsAt).getTime() - timeNow)
+    : 0;
+  const submitReceiptLabel = submitReceiptRemainingMs > 0 ? formatCountdown(submitReceiptRemainingMs) : null;
 
   useEffect(() => {
-    if (!activeCountdownEndsAt) {
+    if (!activeCountdownEndsAt && !submitReceiptEndsAt) {
       return;
     }
     setTimeNow(Date.now());
@@ -822,7 +976,21 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     return () => {
       window.clearInterval(interval);
     };
-  }, [activeCountdownEndsAt]);
+  }, [activeCountdownEndsAt, submitReceiptEndsAt]);
+
+  useEffect(() => {
+    if (!submitReceiptEndsAt) return;
+    const timeout = window.setTimeout(() => {
+      setSubmitReceiptEndsAt(null);
+    }, Math.max(0, new Date(submitReceiptEndsAt).getTime() - Date.now()));
+    return () => window.clearTimeout(timeout);
+  }, [submitReceiptEndsAt]);
+
+  useEffect(() => {
+    return () => {
+      stopDragAutoScroll();
+    };
+  }, []);
 
   const filteredActs = useMemo(() => {
     const value = deferredQuery.trim().toLowerCase();
@@ -854,6 +1022,12 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   const countdownUrgent = countdownRemainingMs > 0 && countdownRemainingMs <= 60_000;
   const submitButtonText = submitting
     ? "..."
+    : submitReceiptLabel
+      ? `${text.submittedButton} · ${submitReceiptLabel}`
+    : hasSubmittedPrediction && submitDisabledReason
+      ? text.submittedButton
+      : hasSubmittedPrediction
+        ? text.resubmitButton
     : countdownLabel
       ? `${text.submitButton} · ${countdownLabel}`
       : text.submitButton;
@@ -867,9 +1041,11 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     setSubmitting(true);
     setError("");
     setStatusText("");
+    setReminderText("");
     try {
       await submitMyPrediction(roomSlug, stageKey, ranking);
       setHasSubmittedPrediction(true);
+      setSubmitReceiptEndsAt(new Date(Date.now() + 5000).toISOString());
       setStatusText(text.submitSuccess);
     } catch (submitError) {
       console.error(submitError);
@@ -971,7 +1147,32 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
         {filteredActs.length === 0 ? <section className="show-card p-5 text-sm text-arenaMuted">{text.emptyActs}</section> : null}
 
-        <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={handleOrderDragEnd}>
+        <DndContext
+          sensors={dragSensors}
+          collisionDetection={closestCenter}
+          autoScroll={{
+            enabled: true,
+            activator: AutoScrollActivator.Pointer,
+            acceleration: isPhone ? 18 : 10,
+            interval: 5,
+            threshold: {
+              x: 0.08,
+              y: isPhone ? 0.32 : 0.2,
+            },
+            layoutShiftCompensation: {
+              x: false,
+              y: true,
+            },
+          }}
+          measuring={{
+            droppable: {
+              strategy: MeasuringStrategy.Always,
+            },
+          }}
+          onDragMove={handleOrderDragMove}
+          onDragEnd={handleOrderDragEnd}
+          onDragCancel={handleOrderDragCancel}
+        >
           <SortableContext items={filteredActs.map((act) => act.code)} strategy={verticalListSortingStrategy}>
             <section className="grid gap-3">
               {filteredActs.flatMap((act) => {
@@ -1017,6 +1218,14 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
               </div>
             ) : null}
             <div className={`flex flex-col gap-3 ${isPhone ? "" : "lg:items-end"}`}>
+              <div className={`w-full rounded-[1.15rem] border px-3 py-2.5 text-left ${hasSubmittedPrediction ? "border-emerald-300/16 bg-emerald-400/10" : "border-amber-200/14 bg-amber-300/10"} ${isPhone ? "" : "lg:max-w-md"}`}>
+                <p className={`text-xs font-black uppercase tracking-[0.18em] ${hasSubmittedPrediction ? "text-emerald-100" : "text-amber-100"}`}>
+                  {hasSubmittedPrediction ? text.submittedBadge : text.draftBadge}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-arenaMuted">
+                  {hasSubmittedPrediction ? text.submittedText : text.draftText}
+                </p>
+              </div>
               {!account ? (
                 <Link
                   href="/"
@@ -1101,6 +1310,7 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
 
       {error ? <div className="rounded-[1.4rem] bg-rose-400/10 px-4 py-3 text-sm text-rose-100">{error}</div> : null}
       {statusText ? <div className="rounded-[1.4rem] bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">{statusText}</div> : null}
+      {reminderText ? <div className="rounded-[1.4rem] border border-amber-200/15 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">{reminderText}</div> : null}
       {membershipError ? <div className="rounded-[1.4rem] bg-amber-400/10 px-4 py-3 text-sm text-amber-100">{membershipError}</div> : null}
 
       {!lineupReady ? (

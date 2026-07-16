@@ -167,9 +167,10 @@ export function AccountStudio() {
     setError("");
     setStatusText("");
     try {
-      await changePassword(currentPassword, nextPassword);
+      const payload = await changePassword(currentPassword, nextPassword);
       setCurrentPassword("");
       setNextPassword("");
+      setAccount(payload.account);
       setStatusText(accountCopy.account.passwordChanged);
     } catch (passwordError) {
       console.error(passwordError);
@@ -210,6 +211,24 @@ export function AccountStudio() {
   }
 
   const resolvedAvatarUrl = resolveMediaUrl(account.avatarUrl);
+  const hasPassword = account.hasPassword !== false;
+  const securityCopy = language === "ru"
+    ? {
+        passwordMissingTitle: "Создай пароль для этого аккаунта",
+        passwordMissingText: "Google-вход отключён. Задай пароль здесь, и аккаунт сохранит всю статистику, комнаты и аватар.",
+        passwordReadyText: accountCopy.account.securityText,
+        setPassword: "Создать пароль",
+        providers: "Привязанные способы входа",
+        yandexHint: "Если войдёшь через Яндекс с тем же email, он привяжется к этому аккаунту автоматически.",
+      }
+    : {
+        passwordMissingTitle: "Create a password for this account",
+        passwordMissingText: "Google sign-in is disabled. Set a password here to keep this account, stats, rooms, and avatar.",
+        passwordReadyText: accountCopy.account.securityText,
+        setPassword: "Create password",
+        providers: "Linked sign-in methods",
+        yandexHint: "If you sign in with Yandex using the same email, it will link to this account automatically.",
+      };
   const openAvatarPreview = () => {
     if (resolvedAvatarUrl) {
       setAvatarPreviewOpen(true);
@@ -321,12 +340,25 @@ export function AccountStudio() {
 
         <div className="show-card p-5 md:p-6">
           <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaPulse">{accountCopy.account.securityTitle}</p>
-          <p className="mt-3 text-sm text-arenaMuted">{accountCopy.account.securityText}</p>
+          <p className="mt-3 text-sm text-arenaMuted">{hasPassword ? securityCopy.passwordReadyText : securityCopy.passwordMissingText}</p>
+          {!hasPassword ? (
+            <div className="mt-4 rounded-[1.4rem] border border-arenaBeam/20 bg-arenaBeam/10 px-4 py-3 text-sm text-arenaMuted">
+              <p className="font-semibold text-white">{securityCopy.passwordMissingTitle}</p>
+              <p className="mt-2">{securityCopy.yandexHint}</p>
+            </div>
+          ) : null}
+          {account.authProviders?.length ? (
+            <p className="mt-3 text-xs uppercase tracking-[0.18em] text-arenaMuted">
+              {securityCopy.providers}: <span className="text-arenaBeam">{account.authProviders.join(", ")}</span>
+            </p>
+          ) : null}
           <div className="mt-5 grid gap-3">
-            <input className="arena-input" type="password" placeholder={accountCopy.auth.currentPassword} value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} />
+            {hasPassword ? (
+              <input className="arena-input" type="password" placeholder={accountCopy.auth.currentPassword} value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} />
+            ) : null}
             <input className="arena-input" type="password" placeholder={accountCopy.auth.newPassword} value={nextPassword} onChange={(event) => setNextPassword(event.target.value)} />
             <button type="button" className="arena-button-primary h-12 px-6 text-sm" disabled={pending} onClick={handlePasswordChange}>
-              {accountCopy.account.changePassword}
+              {hasPassword ? accountCopy.account.changePassword : securityCopy.setPassword}
             </button>
           </div>
         </div>
@@ -350,6 +382,14 @@ export function AccountStudio() {
             <div className="show-panel p-4">
               <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{legalCopy.contactLabel}</p>
               <p className="mt-2 text-sm text-white">{legalConfig.operatorContact}</p>
+              <a
+                href={legalConfig.operatorTelegramUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex text-sm font-semibold text-arenaBeam underline-offset-4 hover:underline"
+              >
+                Telegram: @SergeiMorozov
+              </a>
             </div>
             <div className="show-panel p-4 md:col-span-2">
               <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{legalCopy.accountConsentTimeline}</p>

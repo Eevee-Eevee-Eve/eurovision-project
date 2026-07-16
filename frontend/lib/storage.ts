@@ -35,6 +35,10 @@ export function rankingStorageKey(roomSlug: string, stageKey: StageKey) {
   return `esc-room-ranking:${roomSlug}:${stageKey}`;
 }
 
+export function rankingLineupStorageKey(roomSlug: string, stageKey: StageKey) {
+  return `esc-room-ranking-lineup:${roomSlug}:${stageKey}`;
+}
+
 export function rankingPlacedActsKey(roomSlug: string, stageKey: StageKey) {
   return `esc-room-ranking-placed:${roomSlug}:${stageKey}`;
 }
@@ -53,14 +57,33 @@ export function saveUser(roomSlug: string, user: StoredUser) {
   window.localStorage.setItem(userStorageKey(roomSlug), JSON.stringify(user));
 }
 
-export function loadRanking(roomSlug: string, stageKey: StageKey) {
-  if (typeof window === "undefined") return [];
-  return safeJsonParse<string[]>(window.localStorage.getItem(rankingStorageKey(roomSlug, stageKey)), []);
+function buildLineupSignature(lineup?: string[]) {
+  return Array.isArray(lineup) && lineup.length ? lineup.join("|") : null;
 }
 
-export function saveRanking(roomSlug: string, stageKey: StageKey, ranking: string[]) {
+export function loadRanking(roomSlug: string, stageKey: StageKey, lineup?: string[]) {
+  if (typeof window === "undefined") return [];
+  const storedRanking = safeJsonParse<string[]>(window.localStorage.getItem(rankingStorageKey(roomSlug, stageKey)), []);
+  const expectedSignature = buildLineupSignature(lineup);
+  if (expectedSignature) {
+    const storedSignature = window.localStorage.getItem(rankingLineupStorageKey(roomSlug, stageKey));
+    if (storedSignature !== expectedSignature) {
+      window.localStorage.removeItem(rankingStorageKey(roomSlug, stageKey));
+      window.localStorage.removeItem(rankingPlacedActsKey(roomSlug, stageKey));
+      window.localStorage.setItem(rankingLineupStorageKey(roomSlug, stageKey), expectedSignature);
+      return [];
+    }
+  }
+  return storedRanking;
+}
+
+export function saveRanking(roomSlug: string, stageKey: StageKey, ranking: string[], lineup?: string[]) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(rankingStorageKey(roomSlug, stageKey), JSON.stringify(ranking));
+  const signature = buildLineupSignature(lineup);
+  if (signature) {
+    window.localStorage.setItem(rankingLineupStorageKey(roomSlug, stageKey), signature);
+  }
 }
 
 export function loadPlacedActs(roomSlug: string, stageKey: StageKey) {
@@ -80,6 +103,7 @@ export function clearRanking(roomSlug: string, stageKey: StageKey) {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(rankingStorageKey(roomSlug, stageKey));
   window.localStorage.removeItem(rankingPlacedActsKey(roomSlug, stageKey));
+  window.localStorage.removeItem(rankingLineupStorageKey(roomSlug, stageKey));
 }
 
 export function loadNotes(roomSlug: string, stageKey: StageKey) {

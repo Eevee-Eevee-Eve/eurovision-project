@@ -1,8 +1,10 @@
 'use client';
 
 import Link from "next/link";
+import type { CSSProperties, FormEvent } from "react";
 import {
   Activity,
+  ArrowRight,
   Award,
   BadgeCheck,
   BarChart3,
@@ -52,8 +54,16 @@ type Achievement = {
   tone: string;
 };
 
+type AchievementArt = {
+  primary: string;
+  secondary: string;
+  accent: string;
+  pattern: "crown" | "target" | "pulse" | "diamond" | "wave" | "star";
+};
+
 type RegisteredPlayer = {
   id: string;
+  accountPublicId?: string;
   name: string;
   avatarUrl?: string | null;
   avatarTheme?: AvatarTheme | null;
@@ -315,9 +325,47 @@ const ACHIEVEMENTS: Achievement[] = [
   },
 ];
 
+const ACHIEVEMENT_ART: Record<string, AchievementArt> = {
+  champion: { primary: "#f8d56d", secondary: "#ff7ab6", accent: "#fff4bf", pattern: "crown" },
+  oracle: { primary: "#ff63c2", secondary: "#7dd3fc", accent: "#ffe4f5", pattern: "star" },
+  sniper: { primary: "#81ecff", secondary: "#3b82f6", accent: "#d9fbff", pattern: "target" },
+  basement: { primary: "#a78bfa", secondary: "#334155", accent: "#ebe5ff", pattern: "diamond" },
+  thirteen: { primary: "#34d399", secondary: "#22d3ee", accent: "#d1fae5", pattern: "star" },
+  obvious: { primary: "#7dd3fc", secondary: "#06b6d4", accent: "#ecfeff", pattern: "pulse" },
+  almostVanga: { primary: "#c084fc", secondary: "#ff63c2", accent: "#f5d0fe", pattern: "wave" },
+  topTenKing: { primary: "#bef264", secondary: "#34d399", accent: "#f7fee7", pattern: "crown" },
+  podiumSense: { primary: "#fde68a", secondary: "#fb923c", accent: "#fff7cc", pattern: "crown" },
+  madmanRight: { primary: "#fb7185", secondary: "#f97316", accent: "#ffe4e6", pattern: "pulse" },
+  millimeter: { primary: "#5eead4", secondary: "#22d3ee", accent: "#ccfbf1", pattern: "target" },
+  closeCall: { primary: "#818cf8", secondary: "#38bdf8", accent: "#e0e7ff", pattern: "target" },
+  dryMath: { primary: "#cbd5e1", secondary: "#64748b", accent: "#f8fafc", pattern: "diamond" },
+  noPanic: { primary: "#86efac", secondary: "#14b8a6", accent: "#dcfce7", pattern: "pulse" },
+  bottomWhisperer: { primary: "#a78bfa", secondary: "#6366f1", accent: "#ede9fe", pattern: "wave" },
+  lastRomantic: { primary: "#fda4af", secondary: "#ef4444", accent: "#ffe4e6", pattern: "wave" },
+  antiHype: { primary: "#fb923c", secondary: "#ef4444", accent: "#ffedd5", pattern: "pulse" },
+  warnedYou: { primary: "#facc15", secondary: "#f97316", accent: "#fef9c3", pattern: "star" },
+  secondCurse: { primary: "#e5e7eb", secondary: "#94a3b8", accent: "#ffffff", pattern: "diamond" },
+  almostChampion: { primary: "#e879f9", secondary: "#8b5cf6", accent: "#fae8ff", pattern: "diamond" },
+  chaosDiploma: { primary: "#60a5fa", secondary: "#ff63c2", accent: "#dbeafe", pattern: "wave" },
+  heartVote: { primary: "#f472b6", secondary: "#fb7185", accent: "#fce7f3", pattern: "wave" },
+  comeback: { primary: "#fb923c", secondary: "#fde047", accent: "#ffedd5", pattern: "pulse" },
+  veteran: { primary: "#67e8f9", secondary: "#818cf8", accent: "#cffafe", pattern: "star" },
+  streak: { primary: "#6ee7b7", secondary: "#a3e635", accent: "#ecfccb", pattern: "pulse" },
+  countryFan: { primary: "#38bdf8", secondary: "#2563eb", accent: "#dbeafe", pattern: "wave" },
+  bigFive: { primary: "#fde047", secondary: "#f59e0b", accent: "#fef9c3", pattern: "crown" },
+};
+
+const DEFAULT_ACHIEVEMENT_ART: AchievementArt = {
+  primary: "#81ecff",
+  secondary: "#ff63c2",
+  accent: "#ffffff",
+  pattern: "star",
+};
+
 function playerFromSeason(player: PlayerSeasonStats, roomName: string): RegisteredPlayer {
   return {
     id: player.id,
+    accountPublicId: player.accountPublicId,
     name: player.name,
     avatarUrl: player.avatarUrl,
     avatarTheme: player.avatarTheme,
@@ -373,6 +421,7 @@ export function GlobalStatsHub() {
   const [countryQuery, setCountryQuery] = useState("");
   const [activeTab, setActiveTab] = useState<StatsTab>("players");
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
+  const [achievementToasts, setAchievementToasts] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
 
   const copy = useMemo(
@@ -384,6 +433,7 @@ export function GlobalStatsHub() {
             intro:
               "Здесь собирается история клуба: зарегистрированные игроки, будущие личные достижения и статистика стран за годы участия. Подробные показатели игроков начнут считаться после финала, когда появятся реальные прогнозы сезона.",
             search: "Найти игрока",
+            searchAction: "Найти",
             myStats: "Моя карточка",
             players: "Игроки",
             achievements: "Ачивки",
@@ -421,6 +471,7 @@ export function GlobalStatsHub() {
             intro:
               "This is the club history hub: registered players, future personal achievements, and country records across Eurovision years. Detailed player stats start after the final, once this season has real predictions.",
             search: "Find player",
+            searchAction: "Search",
             myStats: "My card",
             players: "Players",
             achievements: "Achievements",
@@ -464,34 +515,45 @@ export function GlobalStatsHub() {
         const loadedRooms = roomsPayload.rooms.length ? roomsPayload.rooms : [FALLBACK_ROOM];
         const statsResults = await Promise.allSettled(loadedRooms.map((room) => fetchSeasonStats(room.slug)));
         const byId = new Map<string, RegisteredPlayer>();
+        const scorePriorityById = new Map<string, number>();
+        const officialFinalRoom = roomsPayload.officialRooms?.final || "";
         const accountKey = account ? normalizePlayerName(account.publicName, getDisplayName) : "";
 
         statsResults.forEach((result, index) => {
           if (result.status !== "fulfilled") return;
-          const roomName = loadedRooms[index]?.name || result.value.roomName;
+          const sourceRoom = loadedRooms[index];
+          const roomName = sourceRoom?.name || result.value.roomName;
+          const scorePriority = sourceRoom?.slug === officialFinalRoom ? 2 : 1;
           result.value.players.forEach((player) => {
-            const key = normalizePlayerName(player.name, getDisplayName) || player.id;
+            const key = player.accountPublicId || normalizePlayerName(player.name, getDisplayName) || player.id;
             const existing = byId.get(key);
             if (existing) {
               existing.rooms = Array.from(new Set([...existing.rooms, roomName]));
               existing.submittedStages = Math.max(existing.submittedStages, player.submittedStages);
-              existing.totalPoints += player.totalPoints;
-              existing.exactMatchCount += player.exactMatchCount;
-              existing.closeMatchCount += player.closeMatchCount;
-              existing.averageDistance = existing.averageDistance == null
-                ? player.averageDistance
-                : player.averageDistance == null
-                  ? existing.averageDistance
-                  : Number(((existing.averageDistance + player.averageDistance) / 2).toFixed(2));
               existing.achievements = Array.from(new Set([...existing.achievements, ...(player.achievements || [])]));
               existing.achievementProgress = mergeAchievementProgress(existing.achievementProgress, player.achievementProgress || []);
+              const existingPriority = scorePriorityById.get(key) || 0;
+              const shouldUseScore = scorePriority > existingPriority
+                || (scorePriority === existingPriority && player.totalPoints > existing.totalPoints);
+              if (shouldUseScore) {
+                existing.totalPoints = player.totalPoints;
+                existing.exactMatchCount = player.exactMatchCount;
+                existing.closeMatchCount = player.closeMatchCount;
+                existing.averageDistance = player.averageDistance;
+                scorePriorityById.set(key, scorePriority);
+              }
               return;
             }
             byId.set(key, playerFromSeason(player, roomName));
+            scorePriorityById.set(key, scorePriority);
           });
         });
 
-        if (account && !byId.has(accountKey)) {
+        const accountAlreadyLoaded = account
+          ? Array.from(byId.values()).some((player) => normalizePlayerName(player.name, getDisplayName) === accountKey)
+          : false;
+
+        if (account && !accountAlreadyLoaded && !byId.has(accountKey)) {
           byId.set(accountKey || account.id, playerFromAccount(account));
         }
 
@@ -500,8 +562,13 @@ export function GlobalStatsHub() {
         setPlayers(Array.from(byId.values()).sort((left, right) => getDisplayName(left.name).localeCompare(getDisplayName(right.name), language === "ru" ? "ru" : "en")));
       } catch (error) {
         console.error(error);
-        if (active && account) {
-          setPlayers([playerFromAccount(account)]);
+        if (active) {
+          setPlayers((current) => {
+            if (current.length) {
+              return current;
+            }
+            return account ? [playerFromAccount(account)] : current;
+          });
         }
       } finally {
         if (active) setLoading(false);
@@ -526,6 +593,11 @@ export function GlobalStatsHub() {
     || (accountNameKey ? players.find((player) => normalizePlayerName(player.name, getDisplayName) === accountNameKey) : null)
     || players[0]
     || null;
+  const accountPlayer = account
+    ? players.find((player) => player.id === account.id || player.accountPublicId === account.id)
+      || (accountNameKey ? players.find((player) => normalizePlayerName(player.name, getDisplayName) === accountNameKey) : null)
+      || null
+    : null;
   const countryStats = useMemo(
     () => [...EUROVISION_COUNTRY_STATS].sort((left, right) => right.wins - left.wins || right.top10 - left.top10),
     [],
@@ -546,6 +618,58 @@ export function GlobalStatsHub() {
       || (right.progress?.progress || 0) - (left.progress?.progress || 0))
     .slice(0, 6);
 
+  useEffect(() => {
+    if (!account || !accountPlayer || typeof window === "undefined") return;
+    const unlockedKeys = accountPlayer.achievementProgress
+      .filter((achievement) => achievement.unlocked)
+      .map((achievement) => achievement.key);
+    if (!unlockedKeys.length) return;
+
+    const storageKey = `mep_seen_achievements_${account.id}`;
+    let seenKeys: string[] = [];
+    try {
+      const stored = window.localStorage.getItem(storageKey);
+      seenKeys = stored ? JSON.parse(stored) : [];
+    } catch {
+      seenKeys = [];
+    }
+
+    const freshKeys = unlockedKeys.filter((key) => !seenKeys.includes(key));
+    if (!freshKeys.length) return;
+
+    const freshAchievements = freshKeys
+      .map((key) => ACHIEVEMENTS.find((achievement) => achievement.key === key))
+      .filter((achievement): achievement is Achievement => Boolean(achievement))
+      .slice(0, 3);
+
+    if (!freshAchievements.length) return;
+    window.localStorage.setItem(storageKey, JSON.stringify(Array.from(new Set([...seenKeys, ...freshKeys]))));
+    setAchievementToasts(freshAchievements);
+
+    const timeout = window.setTimeout(() => setAchievementToasts([]), 8200);
+    return () => window.clearTimeout(timeout);
+  }, [account, accountPlayer]);
+
+  function handleSearchSubmit(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+    if (activeTab === "countries") {
+      const firstCountry = filteredCountries[0];
+      if (firstCountry && typeof window !== "undefined") {
+        window.location.href = `/stats/countries/${firstCountry.code.toLowerCase()}`;
+      }
+      return;
+    }
+
+    const firstPlayer = filteredPlayers[0];
+    if (firstPlayer) {
+      setActiveTab("players");
+      setSelectedPlayerId(firstPlayer.id);
+      window.requestAnimationFrame(() => {
+        document.getElementById("stats-player-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }
+
   return (
     <div className="stats-page-safe grid min-w-0 gap-5">
       <section className="glass-panel ghost-grid home-hero-compact min-w-0 rounded-shell border border-white/10">
@@ -556,7 +680,7 @@ export function GlobalStatsHub() {
             <p className="mt-4 max-w-3xl text-sm leading-7 text-arenaMuted md:text-base">{copy.intro}</p>
           </div>
 
-          <div className="show-panel grid min-w-0 gap-3 p-4">
+          <form className="show-panel grid min-w-0 gap-3 p-4" onSubmit={handleSearchSubmit}>
             <label className="grid gap-2 text-sm text-arenaMuted">
               <span>{activeTab === "countries" ? copy.countrySearch : copy.search}</span>
               <div className="relative">
@@ -572,9 +696,20 @@ export function GlobalStatsHub() {
                   }}
                   className="arena-input arena-search-input"
                   placeholder={activeTab === "countries" ? copy.countrySearch : copy.search}
+                  inputMode="search"
+                  enterKeyHint="search"
                 />
               </div>
             </label>
+            <button
+              type="submit"
+              className="arena-button-secondary inline-flex min-h-11 items-center justify-center gap-2 px-4 text-sm"
+              disabled={activeTab === "countries" ? filteredCountries.length === 0 : filteredPlayers.length === 0}
+            >
+              <Search size={15} />
+              {copy.searchAction}
+              <ArrowRight size={15} />
+            </button>
             {account ? (
               <button type="button" className="arena-button-room inline-flex min-h-11 items-center justify-center gap-2 px-4 text-sm" onClick={() => {
                 setActiveTab("players");
@@ -584,7 +719,7 @@ export function GlobalStatsHub() {
                 {copy.myStats}
               </button>
             ) : null}
-          </div>
+          </form>
         </div>
       </section>
 
@@ -658,7 +793,7 @@ export function GlobalStatsHub() {
             </div>
           </div>
 
-          <div className="show-card min-w-0 overflow-hidden p-5 md:p-6">
+          <div id="stats-player-card" className="show-card min-w-0 scroll-mt-24 overflow-hidden p-5 md:p-6">
             {selectedPlayer ? (
               <>
                 <div className="grid min-w-0 gap-5 md:grid-cols-[auto_1fr]">
@@ -751,6 +886,27 @@ export function GlobalStatsHub() {
             ))}
           </div>
         </section>
+      ) : null}
+
+      {achievementToasts.length ? (
+        <div className="achievement-toast-stack" role="status" aria-live="polite">
+          {achievementToasts.map((achievement) => (
+            <div key={achievement.key} className="achievement-toast show-panel">
+              <AchievementArtwork achievement={achievement} unlocked compact />
+              <div className="min-w-0">
+                <p className="label-copy text-[10px] uppercase tracking-[0.22em] text-arenaBeam">
+                  {language === "ru" ? "Новая ачивка" : "New achievement"}
+                </p>
+                <p className="mt-1 truncate text-sm font-black text-white">
+                  {language === "ru" ? achievement.titleRu : achievement.titleEn}
+                </p>
+                <p className="mt-1 line-clamp-2 text-xs leading-5 text-arenaMuted">
+                  {language === "ru" ? achievement.textRu : achievement.textEn}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : null}
     </div>
   );
@@ -876,15 +1032,12 @@ function AchievementBadgeCard({
   progress?: AchievementProgress;
   compact?: boolean;
 }) {
-  const Icon = achievement.icon;
   const percent = Math.round((progress?.progress || 0) * 100);
   const unlocked = Boolean(progress?.unlocked);
   return (
-    <div className={`show-panel achievement-card min-w-0 ${compact ? "p-3" : "p-4"} ${unlocked ? "ring-1 ring-arenaBeam/35" : "opacity-75"}`}>
-      <div className="flex min-w-0 items-center gap-3">
-        <div className={`achievement-icon bg-gradient-to-br ${achievement.tone}`}>
-          <Icon size={compact ? 17 : 20} />
-        </div>
+    <div className={`show-panel achievement-card min-w-0 ${compact ? "achievement-card-compact p-3" : "p-4"} ${unlocked ? "achievement-card-unlocked" : "achievement-card-locked"}`}>
+      <div className="achievement-card-content flex min-w-0 items-center gap-3">
+        <AchievementArtwork achievement={achievement} unlocked={unlocked} compact={compact} />
         <div className="min-w-0">
           <p className="truncate text-sm font-black text-white md:text-base">{language === "ru" ? achievement.titleRu : achievement.titleEn}</p>
           <p className="mt-1 line-clamp-2 text-xs leading-5 text-arenaMuted">{language === "ru" ? achievement.textRu : achievement.textEn}</p>
@@ -894,12 +1047,45 @@ function AchievementBadgeCard({
         <span>{unlocked ? (language === "ru" ? "Получено" : "Unlocked") : (language === "ru" ? "Закрыто" : "Locked")}</span>
         <span>{percent}%</span>
       </div>
-      <div className="mt-2 h-1.5 rounded-full bg-white/[0.06]">
+      <div className="achievement-progress-track mt-2">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-arenaPulse to-arenaBeam transition-[width] duration-500"
+          className="achievement-progress-fill transition-[width] duration-500"
           style={{ width: `${percent}%` }}
         />
       </div>
+    </div>
+  );
+}
+
+function AchievementArtwork({
+  achievement,
+  unlocked,
+  compact = false,
+}: {
+  achievement: Achievement;
+  unlocked: boolean;
+  compact?: boolean;
+}) {
+  const Icon = achievement.icon;
+  const art = ACHIEVEMENT_ART[achievement.key] || DEFAULT_ACHIEVEMENT_ART;
+  const style = {
+    "--achievement-primary": art.primary,
+    "--achievement-secondary": art.secondary,
+    "--achievement-accent": art.accent,
+  } as CSSProperties;
+
+  return (
+    <div
+      className={`achievement-art achievement-art-${art.pattern} ${compact ? "achievement-art-compact" : ""} ${unlocked ? "achievement-art-unlocked" : "achievement-art-locked"}`}
+      style={style}
+      aria-hidden="true"
+    >
+      <span className="achievement-art-ring" />
+      <span className="achievement-art-orbit achievement-art-orbit-one" />
+      <span className="achievement-art-orbit achievement-art-orbit-two" />
+      <span className="achievement-art-symbol">
+        <Icon size={compact ? 18 : 24} strokeWidth={2.4} />
+      </span>
     </div>
   );
 }

@@ -28,6 +28,8 @@ export interface RoomSummary {
   isTemporary?: boolean;
   passwordRequired?: boolean;
   eventCompletedAt?: string | null;
+  stageCompletedAt?: string | null;
+  completedStages?: Record<StageKey, string | null>;
 }
 
 export interface ShowState {
@@ -145,6 +147,7 @@ export interface AccountProfile {
   emoji: string;
   avatarUrl: string | null;
   avatarTheme: AvatarTheme;
+  hasPassword?: boolean;
   authProviders?: string[];
   publicDisplayMode: PublicDisplayMode;
   publicDisplayOptIn: boolean;
@@ -187,6 +190,7 @@ export interface AchievementProgress {
 
 export interface PlayerSeasonStats {
   id: string;
+  accountPublicId?: string;
   rank: number;
   name: string;
   emoji: string;
@@ -219,6 +223,36 @@ export interface SeasonStatsPayload {
     leaderPoints: number;
   };
   players: PlayerSeasonStats[];
+}
+
+export interface PlayerArchiveStage {
+  stage: StageKey;
+  completedAt: string | null;
+  points: number;
+  exactMatchCount: number;
+  closeMatchCount: number;
+  entries: Array<{
+    code: string;
+    predictedRank: number;
+    officialRank: number | null;
+    country: string;
+    artist: string;
+    song: string;
+    flagUrl: string;
+  }>;
+}
+
+export interface PlayerArchivePayload {
+  id: string;
+  name: string;
+  emoji: string;
+  avatarUrl?: string | null;
+  avatarTheme?: AvatarTheme | null;
+  rank: number;
+  totalPoints: number;
+  exactMatchCount: number;
+  closeMatchCount: number;
+  stages: Record<StageKey, PlayerArchiveStage | null>;
 }
 
 export interface AdminSessionPayload {
@@ -257,11 +291,50 @@ export interface AdminRoomSnapshot {
     submittedCount: number;
     lockedCount: number;
     revealedCount: number;
+    completedAt?: string | null;
     expectedEntries: number;
     currentEntries: number;
     lineupReady: boolean;
     qualificationCutoff?: number | null;
   }>;
+}
+
+export interface AdminPredictionAuditEntry {
+  id: string;
+  at: string;
+  type: "prediction_submit" | "results_publish" | "stage_window" | "stage_complete";
+  roomSlug: string | null;
+  stage: StageKey;
+  accountId: string | null;
+  accountName: string | null;
+  accepted: boolean;
+  reason: string | null;
+  overwritten: boolean;
+  rankingLength: number;
+  rankingHash: string | null;
+  ipHash: string | null;
+  userAgent: string | null;
+  open: boolean | null;
+  updated: number | null;
+  suspicious: boolean;
+  suspiciousReason: "after_stage_fixed" | "after_results_started" | null;
+}
+
+export interface AdminPredictionAuditPayload {
+  roomSlug: string;
+  stage: StageKey;
+  firstResultsAt: string | null;
+  stageClosedAt: string | null;
+  windowOpen: boolean;
+  summary: {
+    entries: number;
+    submissions: number;
+    acceptedSubmissions: number;
+    deniedSubmissions: number;
+    overwrittenAccounts: number;
+    suspicious: number;
+  };
+  entries: AdminPredictionAuditEntry[];
 }
 
 export interface AdminUserEntry {

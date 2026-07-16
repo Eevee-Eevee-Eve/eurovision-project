@@ -102,19 +102,19 @@ export function AuthCard({
   const authMethodCopy = language === "ru"
     ? {
         title: "Способ входа",
-        google: "Google",
         yandex: "Яндекс",
         email: "Почта",
         emailHint: "Email и пароль",
         privacy: "Берём только базовый профиль: email, имя и аватар.",
+        googleMigration: "Вход через Google отключён. Если раньше входил через Google, укажи тот же email и нажми «Забыли пароль», чтобы создать пароль без потери аккаунта.",
       }
     : {
         title: "Sign-in method",
-        google: "Google",
         yandex: "Yandex",
         email: "Email",
         emailHint: "Email and password",
         privacy: "We only request a basic profile: email, name, and avatar.",
+        googleMigration: "Google sign-in is disabled. If you used Google before, enter the same email and use “Forgot password” to create a password without losing the account.",
       };
 
   async function handleSubmit() {
@@ -207,16 +207,7 @@ export function AuthCard({
         {!forcedMode && mode !== "requestReset" && mode !== "applyReset" ? (
           <div className="grid gap-3">
             <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaMuted">{authMethodCopy.title}</p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <a
-                className="group flex min-h-14 items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/[0.055] px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.09]"
-                href={getOAuthStartUrl("google", { roomSlug, returnTo })}
-              >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg font-black shadow-glow">
-                  <span className="bg-[linear-gradient(90deg,#4285f4,#34a853,#fbbc05,#ea4335)] bg-clip-text text-transparent">G</span>
-                </span>
-                <span className="min-w-0">{authMethodCopy.google}</span>
-              </a>
+            <div className="grid gap-3 sm:grid-cols-2">
               <a
                 className="group flex min-h-14 items-center gap-3 rounded-[1.25rem] border border-white/10 bg-white/[0.055] px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.09]"
                 href={getOAuthStartUrl("yandex", { roomSlug, returnTo })}
@@ -238,6 +229,7 @@ export function AuthCard({
               </button>
             </div>
             <p className="text-xs leading-6 text-arenaMuted">{authMethodCopy.privacy}</p>
+            <p className="rounded-[1.25rem] border border-arenaBeam/20 bg-arenaBeam/10 px-4 py-3 text-xs leading-6 text-arenaMuted">{authMethodCopy.googleMigration}</p>
           </div>
         ) : null}
 

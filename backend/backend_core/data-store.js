@@ -35,10 +35,12 @@ function createEmptyState(createRoomState, rooms) {
     deletedCatalogRooms: {},
     roomAccessSessions: {},
     contestCompletedAt: null,
+    stageCompletedAt: {},
     officialRooms: {},
     roomOverrides: {},
     globalPredictionWindows: null,
     globalStageCountdowns: {},
+    predictionAudit: [],
     roomStates: rooms.reduce((acc, room) => {
       acc[room.slug] = createRoomState();
       return acc;
@@ -75,10 +77,12 @@ function loadState(createRoomState, rooms) {
       deletedCatalogRooms: raw.deletedCatalogRooms && typeof raw.deletedCatalogRooms === 'object' ? raw.deletedCatalogRooms : {},
       roomAccessSessions: raw.roomAccessSessions || {},
       contestCompletedAt: raw.contestCompletedAt || null,
+      stageCompletedAt: raw.stageCompletedAt && typeof raw.stageCompletedAt === 'object' ? raw.stageCompletedAt : {},
       officialRooms: raw.officialRooms && typeof raw.officialRooms === 'object' ? raw.officialRooms : {},
       roomOverrides: raw.roomOverrides && typeof raw.roomOverrides === 'object' ? raw.roomOverrides : {},
       globalPredictionWindows: raw.globalPredictionWindows || null,
       globalStageCountdowns: raw.globalStageCountdowns || {},
+      predictionAudit: Array.isArray(raw.predictionAudit) ? raw.predictionAudit : [],
       roomStates,
     };
   } catch (error) {
@@ -365,6 +369,7 @@ function toAccountProfile(account) {
     emoji: account.emoji,
     avatarUrl: account.avatarUrl || null,
     avatarTheme: getAvatarTheme(account.id, label),
+    hasPassword: Boolean(account.passwordHash && account.passwordSalt),
     publicDisplayMode: account.publicDisplayMode,
     publicDisplayOptIn: account.publicDisplayOptIn,
     authProviders: Object.keys(account.oauthIdentities || {}),

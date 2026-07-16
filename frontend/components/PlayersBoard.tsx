@@ -1,32 +1,42 @@
 'use client';
 
-import { motion } from "framer-motion";
-import { Medal, Radio, Trophy, Users } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Medal, Radio, Trophy, Users, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createRoomSocket, fetchLeaderboard, fetchRoom } from "../lib/api";
+import { createRoomSocket, fetchLeaderboard, fetchPlayerArchive, fetchRoom } from "../lib/api";
 import { useDeviceTier } from "../lib/device";
-import type { BoardKey, LeaderboardEntry, RoomDetails, StageKey } from "../lib/types";
+import { resolveMediaUrl } from "../lib/media";
+import type { BoardKey, LeaderboardEntry, PlayerArchivePayload, RoomDetails, StageKey } from "../lib/types";
 import { BoardSwitch } from "./BoardSwitch";
 import { useLanguage } from "./LanguageProvider";
 import { MovementPill } from "./MovementPill";
 import { UserAvatar } from "./UserAvatar";
 
-const rowTransition = {
-  type: "spring",
-  stiffness: 260,
-  damping: 28,
-  mass: 0.82,
+const playerRowTransition = {
+  type: "tween",
+  duration: 1.55,
+  ease: [0.2, 0, 0, 1],
+} as const;
+
+const reducedRowTransition = {
+  type: "tween",
+  duration: 0,
 } as const;
 
 export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKey: BoardKey }) {
   const [room, setRoom] = useState<RoomDetails | null>(null);
   const [rows, setRows] = useState<LeaderboardEntry[]>([]);
   const [movement, setMovement] = useState<Record<string, number | null>>({});
+  const [selectedArchive, setSelectedArchive] = useState<PlayerArchivePayload | null>(null);
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const [archiveError, setArchiveError] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const previousRanks = useRef<Record<string, number>>({});
   const { copy, getBoardLabel, getDisplayName, getStageLabel, language } = useLanguage();
   const { isPhone, isDesktop } = useDeviceTier();
+  const prefersReducedMotion = useReducedMotion();
+  const rowTransition = prefersReducedMotion ? reducedRowTransition : playerRowTransition;
 
   const emptyMessage = language === "ru"
     ? "В этой комнате пока нет зарегистрированных участников или видимых результатов."
@@ -93,18 +103,32 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
   }, [rows]);
 
   useEffect(() => {
-    if (!Object.values(movement).some((delta) => typeof delta === "number" && delta !== 0)) {
+    if (prefersReducedMotion || !Object.values(movement).some((delta) => typeof delta === "number" && delta !== 0)) {
       return;
     }
-    const timeout = window.setTimeout(() => setMovement({}), 1300);
+    const timeout = window.setTimeout(() => setMovement({}), 2300);
     return () => window.clearTimeout(timeout);
-  }, [movement]);
+  }, [movement, prefersReducedMotion]);
 
   function getMatchCount(row: LeaderboardEntry) {
     if (boardKey === "overall") {
       return (Object.keys(row.stages) as StageKey[]).reduce((sum, stage) => sum + row.stages[stage].exactMatches.length, 0);
     }
     return row.stages[boardKey].exactMatches.length;
+  }
+
+  async function openPlayerArchive(playerId: string) {
+    setArchiveLoading(true);
+    setArchiveError("");
+    try {
+      const payload = await fetchPlayerArchive(roomSlug, playerId);
+      setSelectedArchive(payload);
+    } catch (playerError) {
+      console.error(playerError);
+      setArchiveError(language === "ru" ? "Не удалось открыть профиль игрока." : "Unable to open player profile.");
+    } finally {
+      setArchiveLoading(false);
+    }
   }
 
   const leader = rows[0] || null;
@@ -219,7 +243,16 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
               key={row.id}
               layout="position"
               transition={rowTransition}
-              className={`show-card scoreboard-motion-row ${isMoving ? "scoreboard-motion-row-moving" : ""} overflow-hidden ${featured ? "p-5 md:p-6 xl:col-span-2" : "p-4 md:p-5"}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => void openPlayerArchive(row.id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  void openPlayerArchive(row.id);
+                }
+              }}
+              className={`show-card scoreboard-motion-row cursor-pointer ${isMoving ? "live-player-row-moving" : ""} overflow-hidden transition-colors hover:border-cyan-200/18 hover:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-arenaBeam/30 ${featured ? "p-5 md:p-6 xl:col-span-2" : "p-4 md:p-5"}`}
             >
               <div className={`flex gap-4 ${featured ? "items-start" : "items-center"}`}>
                 <div className={`show-rank shrink-0 ${isPhone ? "h-14 w-14" : featured ? "h-20 w-20" : "h-16 w-16"}`}>
@@ -271,6 +304,136 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
           );
         })}
       </section>
+
+      {archiveError ? (
+        <div className="rounded-[1.2rem] bg-rose-400/10 p-4 text-sm text-rose-100">{archiveError}</div>
+      ) : null}
+
+      {archiveLoading ? (
+        <div className="fixed inset-0 z-[10000] grid place-items-center bg-black/60 px-4 backdrop-blur-sm">
+          <div className="show-card p-5 text-sm text-arenaMuted">
+            {language === "ru" ? "Открываю профиль игрока..." : "Opening player profile..."}
+          </div>
+        </div>
+      ) : null}
+
+      {selectedArchive ? (
+        <div className="fixed inset-0 z-[10000] overflow-y-auto bg-black/68 px-3 py-6 backdrop-blur-sm md:px-6">
+          <div className="mx-auto max-w-5xl">
+            <section className="show-card p-5 md:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-4">
+                  <UserAvatar
+                    name={getDisplayName(selectedArchive.name)}
+                    avatarUrl={selectedArchive.avatarUrl}
+                    avatarTheme={selectedArchive.avatarTheme}
+                    className="h-14 w-14 shrink-0 md:h-16 md:w-16"
+                    textClass="text-base"
+                  />
+                  <div className="min-w-0">
+                    <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">
+                      {language === "ru" ? "Профиль игрока" : "Player profile"}
+                    </p>
+                    <h3 className="display-copy mt-2 truncate text-3xl font-black text-white md:text-4xl">
+                      {getDisplayName(selectedArchive.name)}
+                    </h3>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="show-chip text-[11px] uppercase tracking-[0.18em] text-arenaBeam">
+                        #{selectedArchive.rank}
+                      </span>
+                      <span className="show-chip text-[11px] uppercase tracking-[0.18em] text-white">
+                        {selectedArchive.totalPoints} {copy.common.points.toLowerCase()}
+                      </span>
+                      <span className="show-chip text-[11px] uppercase tracking-[0.18em] text-arenaMuted">
+                        {selectedArchive.exactMatchCount} {language === "ru" ? "точных" : "exact"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedArchive(null)}
+                  className="arena-button-secondary inline-flex h-11 w-11 items-center justify-center px-0"
+                  aria-label={language === "ru" ? "Закрыть" : "Close"}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="show-divider my-5" />
+
+              <div className="grid gap-4">
+                {(["semi1", "semi2", "final"] as const).map((stage) => {
+                  const stageArchive = selectedArchive.stages[stage];
+                  return (
+                    <section key={`${selectedArchive.id}-${stage}`} className="show-panel p-4 md:p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaPulse">
+                            {getStageLabel(stage)}
+                          </p>
+                          <h4 className="mt-2 text-xl font-semibold text-white">
+                            {stageArchive
+                              ? (language === "ru" ? "Отправленный прогноз" : "Submitted ballot")
+                              : (language === "ru" ? "Пока нет открытого прогноза" : "No public ballot yet")}
+                          </h4>
+                        </div>
+                        {stageArchive ? (
+                          <div className="flex flex-wrap gap-2">
+                            <span className="show-chip text-[11px] uppercase tracking-[0.18em] text-white">
+                              {stageArchive.points} {copy.common.points.toLowerCase()}
+                            </span>
+                            <span className="show-chip text-[11px] uppercase tracking-[0.18em] text-arenaBeam">
+                              {stageArchive.exactMatchCount} {language === "ru" ? "точных" : "exact"}
+                            </span>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {stageArchive ? (
+                        <div className="mt-4 max-h-[26rem] overflow-y-auto pr-1">
+                          <div className="grid gap-2">
+                            {stageArchive.entries.map((entry) => (
+                              <div key={`${selectedArchive.id}-${stage}-${entry.code}`} className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-[1rem] border border-white/8 bg-white/[0.035] px-3 py-2.5">
+                                <span className="show-rank h-8 w-8 text-sm">#{entry.predictedRank}</span>
+                                <span className="h-7 w-7 overflow-hidden rounded-full border border-white/10 bg-white/10">
+                                  {entry.flagUrl ? (
+                                    <img
+                                      src={resolveMediaUrl(entry.flagUrl) || undefined}
+                                      alt={entry.country}
+                                      width={28}
+                                      height={28}
+                                      className="h-full w-full object-cover"
+                                      loading="lazy"
+                                    />
+                                  ) : null}
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-semibold text-white">{entry.country}</p>
+                                  <p className="truncate text-xs text-arenaMuted">{entry.artist}{entry.song ? ` - ${entry.song}` : ""}</p>
+                                </div>
+                                <span className="show-chip px-2 py-1 text-[10px] text-arenaMuted">
+                                  {language === "ru" ? "итог" : "official"}: {entry.officialRank ? `#${entry.officialRank}` : "-"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-3 text-sm leading-6 text-arenaMuted">
+                          {language === "ru"
+                            ? "Прогноз появится здесь после того, как этап будет зафиксирован админом и игрок действительно отправил свой порядок."
+                            : "The ballot appears here after the stage is fixed by the admin and the player submitted an order."}
+                        </p>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

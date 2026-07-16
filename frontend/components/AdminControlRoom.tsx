@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, Check, Clock3, KeyRound, Lock, LogOut, MonitorPlay, Pencil, RefreshCw, RotateCcw, Search, Settings2, ShieldCheck, Trash2, Trophy, Unlock, Users, X } from "lucide-react";
+import { Activity, BellRing, Check, Clock3, KeyRound, Lock, LogOut, MonitorPlay, Pencil, RefreshCw, RotateCcw, Search, Settings2, ShieldCheck, Trash2, Trophy, Unlock, Users, X } from "lucide-react";
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   closeAdminRoom,
   completeContest,
+  completeStageResults,
   createRoomSocket,
   fetchActs,
+  fetchAdminPredictionAudit,
   fetchAdminRoomState,
   grantParticipantSubmissionOverride,
   fetchAdminSession,
@@ -17,6 +19,7 @@ import {
   loginAdminSession,
   logoutAdminSession,
   publishStageResults,
+  remindMissingSubmissions,
   removeParticipant,
   revokeParticipantSubmissionOverride,
   resetParticipant,
@@ -32,7 +35,7 @@ import {
 } from "../lib/api";
 import { resolveMediaUrl } from "../lib/media";
 import { STAGE_OPTIONS } from "../lib/rooms";
-import type { ActEntry, AdminRoomSnapshot, AdminSessionPayload, AdminUserEntry, RoomSummary, ShowHighlightMode, StageKey } from "../lib/types";
+import type { ActEntry, AdminPredictionAuditPayload, AdminRoomSnapshot, AdminSessionPayload, AdminUserEntry, RoomSummary, ShowHighlightMode, StageKey } from "../lib/types";
 import { BrandLogo } from "./BrandLogo";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useLanguage } from "./LanguageProvider";
@@ -49,6 +52,10 @@ type AdminTab = "rooms" | "voting" | "participants" | "technical";
 
 function isStageKey(value: string | null): value is StageKey {
   return value === "semi1" || value === "semi2" || value === "final";
+}
+
+function isAdminTab(value: string | null): value is AdminTab {
+  return value === "rooms" || value === "voting" || value === "participants" || value === "technical";
 }
 
 function toNumericString(value: string) {
@@ -268,6 +275,7 @@ export function AdminControlRoom() {
   const [editingRoomSlug, setEditingRoomSlug] = useState("");
   const [editingRoomName, setEditingRoomName] = useState("");
   const [snapshot, setSnapshot] = useState<AdminRoomSnapshot | null>(null);
+  const [predictionAudit, setPredictionAudit] = useState<AdminPredictionAuditPayload | null>(null);
   const [users, setUsers] = useState<AdminUserEntry[]>([]);
   const [rows, setRows] = useState<EditableResultRow[]>([]);
   const [adminKey, setAdminKey] = useState("");
@@ -302,8 +310,8 @@ export function AdminControlRoom() {
           loginText: "Введи ключ или отдельный логин организатора, чтобы открыть панель управления.",
           loginButton: "Открыть панель",
           keyPlaceholder: "Ключ организатора",
-          roomsLabel: "Комната-превью",
-          stageLabel: "Этап",
+          roomsLabel: "Комната этапа",
+          stageLabel: "Рабочий этап",
           scoringLabel: "Профиль очков",
           mainAdmin: "Главный админ",
           roomAdmin: "Админ комнаты",
@@ -323,10 +331,10 @@ export function AdminControlRoom() {
           countdownCheckDeadline: "Понимаю, что в ноль этап закроется автоматически.",
           countdownCheckManual: "Понимаю, что опоздавшим потом нужен личный допуск.",
           countdownConfirmAction: "Запустить отсчёт",
-          publishButton: "Отправить результаты",
-          loadPublished: "Загрузить опубликованное",
-          clearResults: "Сбросить итоги",
-          clearResultsConfirm: "Сбросить опубликованные итоги этого этапа во всех комнатах?",
+          publishButton: "Опубликовать таблицу",
+          loadPublished: "Вернуть эфир",
+          clearResults: "Очистить эфир этапа",
+          clearResultsConfirm: "Очистить опубликованные итоги этого этапа во всех комнатах? Это уберёт страны и очки из эфира этапа.",
           resultsCleared: "Итоги этапа сброшены.",
           stageWindowOpen: "Окно голосования открыто",
           stageWindowClosed: "Окно голосования закрыто",
@@ -351,15 +359,15 @@ export function AdminControlRoom() {
           outLabel: "Вне проходной зоны",
           noData: "Данных ещё нет",
           participantDesk: "Участники комнаты",
-          participantDeskText: "Для каждого игрока можно отдельно сбросить текущий этап, очистить все этапы или временно убрать доступ к комнате.",
-          resetStage: "Сбросить этап",
-          resetAll: "Сбросить всё",
-          grantLatePass: "Дать ещё 5 минут",
-          extendLatePass: "Продлить ещё на 5 минут",
-          revokeLatePass: "Снять допуск",
+          participantDeskText: "Здесь видно, кто сдал текущий этап. Можно напомнить несдавшим, открыть игроку 5 минут, сбросить ответы или убрать участника из комнаты.",
+          resetStage: "Сбросить этот этап",
+          resetAll: "Сбросить все этапы",
+          grantLatePass: "Открыть на 5 мин",
+          extendLatePass: "Продлить на 5 мин",
+          revokeLatePass: "Закрыть допуск",
           latePassActive: "Личный допуск",
-          removeUser: "Убрать из комнаты",
-          restoreUser: "Вернуть доступ",
+          removeUser: "Кикнуть",
+          restoreUser: "Вернуть",
           removedState: "Удалён",
           activeState: "Активен",
           hardReset: "Полный сброс комнаты",
@@ -370,10 +378,23 @@ export function AdminControlRoom() {
           closeRoomConfirm: "Закрыть и удалить эту комнату? Это действие нельзя отменить.",
           closeRoomDone: "Комната закрыта.",
           completeContest: "Завершить конкурс",
-          completeContestText: "После публикации полного финала фиксирует сезон и начисляет игрокам доступные ачивки.",
-          completeContestConfirm: "Завершить конкурс и открыть ачивки? Перед этим финальная таблица должна быть опубликована полностью.",
+          completeContestText: "\u041f\u043e\u0441\u043b\u0435 \u0444\u0438\u043a\u0441\u0430\u0446\u0438\u0438 \u0432\u0441\u0435\u0445 \u044d\u0442\u0430\u043f\u043e\u0432 \u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0435\u0442 \u0441\u0435\u0437\u043e\u043d \u0438 \u043d\u0430\u0447\u0438\u0441\u043b\u044f\u0435\u0442 \u0438\u0433\u0440\u043e\u043a\u0430\u043c \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0435 \u0430\u0447\u0438\u0432\u043a\u0438.",
+          completeContestConfirm: "\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u043a\u043e\u043d\u043a\u0443\u0440\u0441 \u0438 \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u0430\u0447\u0438\u0432\u043a\u0438? \u041f\u0435\u0440\u0435\u0434 \u044d\u0442\u0438\u043c \u0432\u0441\u0435 \u044d\u0442\u0430\u043f\u044b \u0434\u043e\u043b\u0436\u043d\u044b \u0431\u044b\u0442\u044c \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u044b \u0438 \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d\u044b.",
           completeContestDone: "Конкурс завершён, ачивки рассчитаны.",
           contestCompleted: "Конкурс завершён",
+          fixStage: "\u0417\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0438 \u0437\u0430\u043a\u0440\u044b\u0442\u044c \u044d\u0442\u0430\u043f",
+          fixStageConfirm: "\u0417\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u044d\u0442\u0430\u043f, \u0437\u0430\u043a\u0440\u044b\u0442\u044c \u0435\u0433\u043e \u0434\u043b\u044f \u043e\u0442\u0432\u0435\u0442\u043e\u0432 \u0438 \u043f\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u0430\u0442\u044c \u0441\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0443? \u041f\u0435\u0440\u0435\u0434 \u044d\u0442\u0438\u043c \u043f\u043e\u043b\u043d\u0430\u044f \u0442\u0430\u0431\u043b\u0438\u0446\u0430 \u044d\u0442\u0430\u043f\u0430 \u0443\u0436\u0435 \u0434\u043e\u043b\u0436\u043d\u0430 \u0431\u044b\u0442\u044c \u0432\u0438\u0434\u043d\u0430 \u0432 \u044d\u0444\u0438\u0440\u0435.",
+          fixStageDone: "\u042d\u0442\u0430\u043f \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d \u0438 \u0437\u0430\u043a\u0440\u044b\u0442, \u0441\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430 \u043f\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u0430\u043d\u0430.",
+          stageFixed: "\u042d\u0442\u0430\u043f \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u043d",
+          stageNotFixed: "\u041d\u0443\u0436\u043d\u0430 \u0444\u0438\u043a\u0441\u0430\u0446\u0438\u044f",
+          stageWorkflow: "\u0421\u0442\u0430\u0442\u0443\u0441 \u044d\u0442\u0430\u043f\u0430",
+          stageWorkflowText: "\u0412\u0432\u043e\u0434 \u0447\u0435\u0440\u0435\u0437 Enter \u0441\u0440\u0430\u0437\u0443 \u043e\u0431\u043d\u043e\u0432\u043b\u044f\u0435\u0442 \u044d\u0444\u0438\u0440 \u0438 \u0441\u0447\u0451\u0442 \u0438\u0433\u0440\u043e\u043a\u043e\u0432. \u041a\u043d\u043e\u043f\u043a\u0430 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438 \u2014 \u0440\u0443\u0447\u043d\u0430\u044f \u0441\u0442\u0440\u0430\u0445\u043e\u0432\u043a\u0430; \u0444\u0438\u043a\u0441\u0430\u0446\u0438\u044f \u043d\u0443\u0436\u043d\u0430 \u0432 \u043a\u043e\u043d\u0446\u0435 \u0434\u043b\u044f \u0441\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0438.",
+          resultsFull: "\u0418\u0442\u043e\u0433\u0438 \u043f\u043e\u043b\u043d\u044b\u0435",
+          resultsPartial: "\u0418\u0442\u043e\u0433\u0438 \u043d\u0435\u043f\u043e\u043b\u043d\u044b\u0435",
+          submittedCurrentStage: "\u0421\u0434\u0430\u043b \u044d\u0442\u0430\u043f",
+          notSubmittedCurrentStage: "\u041d\u0435 \u0441\u0434\u0430\u043b \u044d\u0442\u0430\u043f",
+          remindMissing: "\u041d\u0430\u043f\u043e\u043c\u043d\u0438\u0442\u044c \u043d\u0435\u0441\u0434\u0430\u0432\u0448\u0438\u043c",
+          reminderSent: (count: number) => count > 0 ? `\u041d\u0430\u043f\u043e\u043c\u043d\u0438\u043b \u043d\u0435\u0441\u0434\u0430\u0432\u0448\u0438\u043c: ${count}.` : "\u041d\u0430 \u044d\u0442\u043e\u043c \u044d\u0442\u0430\u043f\u0435 \u0432\u0441\u0435 \u0443\u0436\u0435 \u0441\u0434\u0430\u043b\u0438.",
           projector: "Проектор",
           playersBoard: "Таблица игроков",
           seasonStats: "Сезонная статистика",
@@ -400,10 +421,11 @@ export function AdminControlRoom() {
           participantsTab: "Участники",
           technicalTab: "Техблок",
           officialRoomsTitle: "Официальные слоты этапов",
-          officialRoomsText: "Эти слоты помогают быстро открыть нужную комнату для полуфинала или финала. Официальные результаты публикуются глобально для всех комнат.",
+          officialRoomsText: "Здесь назначается основная комната для каждого этапа: из неё берётся список стран. Места и баллы вводятся во вкладке «Голосование» и публикуются во все комнаты.",
           roomsListTitle: "Все комнаты",
           roomSearchPlaceholder: "Найти комнату",
           openRoomAdmin: "Открыть",
+          openOfficialVoting: "Ввести результаты",
           renameRoom: "Переименовать",
           saveRoomName: "Сохранить",
           cancelRoomName: "Отмена",
@@ -424,8 +446,8 @@ export function AdminControlRoom() {
           loginText: "Enter the organizer key or dedicated organizer login to open the admin panel.",
           loginButton: "Open panel",
           keyPlaceholder: "Organizer key",
-          roomsLabel: "Preview room",
-          stageLabel: "Stage",
+          roomsLabel: "Stage room",
+          stageLabel: "Working stage",
           scoringLabel: "Scoring profile",
           mainAdmin: "Main admin",
           roomAdmin: "Room admin",
@@ -445,10 +467,10 @@ export function AdminControlRoom() {
           countdownCheckDeadline: "I understand the stage will auto-close at zero.",
           countdownCheckManual: "I understand late people will need a personal override afterwards.",
           countdownConfirmAction: "Start countdown",
-          publishButton: "Send results",
-          loadPublished: "Load published",
-          clearResults: "Clear results",
-          clearResultsConfirm: "Clear published results for this stage in every room?",
+          publishButton: "Publish table",
+          loadPublished: "Restore live data",
+          clearResults: "Clear stage live data",
+          clearResultsConfirm: "Clear published results for this stage in every room? This removes countries and scores from the live stage.",
           resultsCleared: "Stage results cleared.",
           stageWindowOpen: "Voting window is open",
           stageWindowClosed: "Voting window is closed",
@@ -473,15 +495,15 @@ export function AdminControlRoom() {
           outLabel: "Outside the qualification zone",
           noData: "No points yet",
           participantDesk: "Room participants",
-          participantDeskText: "For each player you can reset the current stage, clear all stages, or temporarily remove room access.",
-          resetStage: "Reset stage",
-          resetAll: "Reset all",
-          grantLatePass: "Give 5 more minutes",
-          extendLatePass: "Extend by 5 minutes",
-          revokeLatePass: "Revoke access",
+          participantDeskText: "See who has submitted this stage. You can remind missing players, open 5 minutes for one player, reset ballots, or remove a participant.",
+          resetStage: "Reset this stage",
+          resetAll: "Reset all stages",
+          grantLatePass: "Open 5 min",
+          extendLatePass: "Extend 5 min",
+          revokeLatePass: "Close access",
           latePassActive: "Personal access",
-          removeUser: "Remove from room",
-          restoreUser: "Restore access",
+          removeUser: "Kick",
+          restoreUser: "Restore",
           removedState: "Removed",
           activeState: "Active",
           hardReset: "Full room reset",
@@ -492,10 +514,23 @@ export function AdminControlRoom() {
           closeRoomConfirm: "Close and delete this room? This cannot be undone.",
           closeRoomDone: "Room closed.",
           completeContest: "Complete contest",
-          completeContestText: "After the full final is published, completes the season and awards calculated achievements.",
-          completeContestConfirm: "Complete the contest and unlock achievements? The full final ranking must already be published.",
+          completeContestText: "After every stage is fixed, completes the season and awards calculated achievements.",
+          completeContestConfirm: "Complete the contest and unlock achievements? Every stage must already be sent and fixed.",
           completeContestDone: "Contest completed, achievements calculated.",
           contestCompleted: "Contest completed",
+          fixStage: "Lock for stats",
+          fixStageConfirm: "Fix this stage and recalculate stats? The full stage table must already be live.",
+          fixStageDone: "Stage fixed, stats recalculated.",
+          stageFixed: "Stage fixed",
+          stageNotFixed: "Needs fixing",
+          stageWorkflow: "Stage status",
+          stageWorkflowText: "Enter updates the live screen and player scores immediately. Publish table is a manual fallback; lock the stage only at the end for stats.",
+          resultsFull: "Results complete",
+          resultsPartial: "Results incomplete",
+          submittedCurrentStage: "Submitted stage",
+          notSubmittedCurrentStage: "Missing stage",
+          remindMissing: "Remind missing",
+          reminderSent: (count: number) => count > 0 ? `Reminder sent to missing players: ${count}.` : "Everyone has already submitted this stage.",
           projector: "Projector",
           playersBoard: "Players board",
           seasonStats: "Season stats",
@@ -522,10 +557,11 @@ export function AdminControlRoom() {
           participantsTab: "Participants",
           technicalTab: "Technical",
           officialRoomsTitle: "Official stage slots",
-          officialRoomsText: "These slots make it quick to open the room used for each semi-final or final. Official result publishing is global for every room.",
+          officialRoomsText: "Assign the main room for each stage here: its country list is used for that stage. Places and points are entered on the Voting tab and published to every room.",
           roomsListTitle: "All rooms",
           roomSearchPlaceholder: "Find room",
           openRoomAdmin: "Open",
+          openOfficialVoting: "Enter results",
           renameRoom: "Rename",
           saveRoomName: "Save",
           cancelRoomName: "Cancel",
@@ -543,7 +579,7 @@ export function AdminControlRoom() {
   const adminUx = useMemo(() => (
     language === "ru"
       ? {
-          stageTabsHint: "Выбери этап, который сейчас ведёшь. Официальные итоги отправляются глобально во все комнаты.",
+          stageTabsHint: "Переключает этап работы. У главного админа автоматически открывается официальная комната этого этапа.",
           scoringUnifiedTitle: "Единая система очков",
           scoringUnifiedHint: "Этот профиль применяется ко всем комнатам, чтобы статистика сезона считалась одинаково.",
           scoringRecommended: "Рекомендую «Стандартный»: финал считает близость к месту и даёт бонусы за победителя, топ-3 и топ-10; полуфиналы отдельно считают проход в финал.",
@@ -557,18 +593,18 @@ export function AdminControlRoom() {
             classic: "Простой 3-2-1",
             precision: "Точный",
           } as Record<string, string>,
-          publishMode: "Публикация по Enter",
+          publishMode: "Enter сразу публикует",
           publishHintFinal: "Вводи Жюри, Зрителей или Сумму спокойно: зрители увидят изменения только после Enter или кнопки отправки.",
           publishHintSemi: "Введи место и нажми Enter: занятое место сдвинет остальные страны ниже, дублей не будет.",
-          draftSaved: "Черновик сохранён. До Enter или отправки зрители его не видят.",
+          draftSaved: "Есть черновик в поле. Нажми Enter или ручную публикацию.",
           semiWaiting: "Полуфинал пока в черновике: заполни места всем странам без дублей.",
           countryColumn: "Страна",
           publishedColumn: "На экране",
           roomToolsTitle: "Комната и участники",
-          roomToolsText: "Здесь можно кикнуть участника, вернуть доступ, сбросить ответы, закрыть временную комнату или полностью очистить её данные.",
+          roomToolsText: "Здесь видно, кто сдал текущий этап. Можно напомнить несдавшим, открыть 5 минут, сбросить ответы или убрать участника.",
         }
       : {
-          stageTabsHint: "Choose the stage you are running now. Official results are sent globally to every room.",
+          stageTabsHint: "Switches the working stage. For the main admin, the official room for that stage opens automatically.",
           scoringUnifiedTitle: "Unified scoring",
           scoringUnifiedHint: "This profile is applied to every room so season stats are counted consistently.",
           scoringRecommended: "Recommended: Standard. The final uses placement accuracy plus winner/top bonuses; semi-finals score qualification separately.",
@@ -582,15 +618,15 @@ export function AdminControlRoom() {
             classic: "Simple 3-2-1",
             precision: "Precision",
           } as Record<string, string>,
-          publishMode: "Publish on Enter",
+          publishMode: "Enter publishes live",
           publishHintFinal: "Enter Jury, Tele, or Total calmly: viewers see changes only after Enter or the send button.",
           publishHintSemi: "Enter a place and press Enter: an occupied place moves following countries down, without duplicates.",
-          draftSaved: "Draft saved. Viewers do not see it until Enter or sending.",
+          draftSaved: "Draft in the field. Press Enter or publish manually.",
           semiWaiting: "Semi-final is still a draft: fill every place without duplicates.",
           countryColumn: "Country",
           publishedColumn: "On screen",
           roomToolsTitle: "Room and participants",
-          roomToolsText: "Kick or restore participants, reset ballots, close a temporary room, or clear its data.",
+          roomToolsText: "See who submitted this stage. Remind missing players, open 5 minutes, reset ballots, or remove a participant.",
         }
   ), [language]);
 
@@ -617,6 +653,14 @@ export function AdminControlRoom() {
       getStageLabel(room.defaultStage),
     ].filter(Boolean).some((value) => String(value).toLowerCase().includes(query)));
   }, [getStageLabel, roomSearch, rooms]);
+  const displayedUsers = useMemo(() => (
+    users.slice().sort((left, right) => {
+      const leftSubmitted = left.submittedStages.includes(selectedStage);
+      const rightSubmitted = right.submittedStages.includes(selectedStage);
+      if (leftSubmitted !== rightSubmitted) return leftSubmitted ? 1 : -1;
+      return getDisplayName(left.name).localeCompare(getDisplayName(right.name), language === "ru" ? "ru" : "en");
+    })
+  ), [getDisplayName, language, selectedStage, users]);
   const adminTabs = useMemo<Array<{ key: AdminTab; label: string }>>(() => [
     { key: "rooms", label: copy.roomsTab },
     { key: "voting", label: copy.votingTab },
@@ -624,6 +668,10 @@ export function AdminControlRoom() {
     { key: "technical", label: copy.technicalTab },
   ], [copy]);
   const selectedStageOverview = snapshot?.stageOverview[selectedStage];
+  const selectedStageResultsFull = Boolean(
+    selectedStageOverview && selectedStageOverview.revealedCount >= selectedStageOverview.expectedEntries,
+  );
+  const selectedStageFixedAt = selectedStageOverview?.completedAt || null;
   const selectedStageCountdown = snapshot?.submissionCountdowns?.[selectedStage] || null;
   const isSemiStage = isSemiStageValue(selectedStage);
   const qualificationCutoff = selectedStageOverview?.qualificationCutoff ?? null;
@@ -697,6 +745,70 @@ export function AdminControlRoom() {
     : 0;
   const countdownLabel = selectedStageCountdown ? formatCountdown(countdownRemainingMs) : null;
   const countdownChecksReady = countdownChecks.scope && countdownChecks.deadline && countdownChecks.manualRescue;
+  const auditCopy = useMemo(() => (
+    language === "ru"
+      ? {
+          title: "Контроль отправок",
+          text: "Журнал новых отправок и пересдач. Подсветка появится, если прогноз принят после начала публикации результатов.",
+          empty: "Новых записей пока нет. Журнал начнёт наполняться после ближайших отправок.",
+          accepted: "принято",
+          denied: "отклонено",
+          overwritten: "пересдача",
+          suspicious: "проверить",
+          submissions: "отправок",
+          deniedSubmissions: "отказов",
+          overwrittenAccounts: "пересдавали",
+          windowOpen: "приём открыт",
+          windowClosed: "приём закрыт",
+          eventLabels: {
+            prediction_submit: "Прогноз",
+            results_publish: "Публикация результатов",
+            stage_window: "Окно приёма",
+            stage_complete: "Фиксация этапа",
+          } as Record<string, string>,
+          reasonLabels: {
+            submissions_closed: "приём закрыт",
+            stage_completed: "этап зафиксирован",
+            invalid_ranking: "ошибка в расстановке",
+            lineup_incomplete: "список неполный",
+            countdown_finished: "таймер завершился",
+            auto_closed_by_results: "закрыто при вводе результатов",
+            after_results_started: "после старта результатов",
+            after_stage_fixed: "после фиксации этапа",
+          } as Record<string, string>,
+        }
+      : {
+          title: "Submission control",
+          text: "Audit log for new submissions and overwrites. It flags accepted ballots after result publishing starts.",
+          empty: "No new audit entries yet. The log will fill from the next submissions.",
+          accepted: "accepted",
+          denied: "denied",
+          overwritten: "overwrite",
+          suspicious: "check",
+          submissions: "submissions",
+          deniedSubmissions: "denied",
+          overwrittenAccounts: "overwrites",
+          windowOpen: "submissions open",
+          windowClosed: "submissions closed",
+          eventLabels: {
+            prediction_submit: "Ballot",
+            results_publish: "Results publish",
+            stage_window: "Submission window",
+            stage_complete: "Stage fixed",
+          } as Record<string, string>,
+          reasonLabels: {
+            submissions_closed: "submissions closed",
+            stage_completed: "stage fixed",
+            invalid_ranking: "invalid ranking",
+            lineup_incomplete: "lineup incomplete",
+            countdown_finished: "countdown finished",
+            auto_closed_by_results: "closed by results entry",
+            after_results_started: "after results started",
+            after_stage_fixed: "after stage fixed",
+          } as Record<string, string>,
+        }
+  ), [language]);
+  const auditEntries = predictionAudit?.entries.slice(0, 8) || [];
   const showCopy = useMemo(() => (
     language === "ru"
       ? {
@@ -757,14 +869,16 @@ export function AdminControlRoom() {
     setLoadingPanel(true);
     setError("");
     try {
-      const [snapshotPayload, usersPayload, actsPayload, resultsPayload] = await Promise.all([
+      const [snapshotPayload, usersPayload, actsPayload, resultsPayload, auditPayload] = await Promise.all([
         fetchAdminRoomState(selectedRoom),
         fetchAdminUsers(selectedRoom),
         fetchActs(selectedRoom, selectedStage),
         fetchStageResults(selectedRoom, selectedStage),
+        fetchAdminPredictionAudit(selectedRoom, selectedStage),
       ]);
       setSnapshot(snapshotPayload);
       setUsers(usersPayload);
+      setPredictionAudit(auditPayload);
       setRows(buildEditableRows(actsPayload.acts, resultsPayload.results, selectedRoom, selectedStage, preferPublished));
       setScoringProfiles(snapshotPayload.scoringProfiles);
       setDraftDirty(false);
@@ -793,14 +907,11 @@ export function AdminControlRoom() {
         });
         setScoringProfiles(payload.scoringProfiles);
         setContestCompletedAt(payload.contestCompletedAt || null);
-        if (payload.role === "main") {
-          setActiveAdminTab("rooms");
-        }
-
         const roomFromQuery = searchParams.get("room");
         const roomFromStorage = typeof window !== "undefined" ? window.localStorage.getItem("admin_room_slug") : null;
         const stageFromQuery = searchParams.get("stage");
         const stageFromStorage = typeof window !== "undefined" ? window.localStorage.getItem("admin_stage_key") : null;
+        const tabFromQuery = searchParams.get("tab");
 
         const nextRoom = payload.rooms.some((room) => room.slug === roomFromQuery)
           ? roomFromQuery || ""
@@ -815,6 +926,7 @@ export function AdminControlRoom() {
 
         setSelectedRoom(nextRoom);
         setSelectedStage(nextStage);
+        setActiveAdminTab(isAdminTab(tabFromQuery) ? tabFromQuery : (payload.role === "main" ? "rooms" : "voting"));
       } catch (loadError) {
         if (!active) return;
         console.error(loadError);
@@ -846,8 +958,9 @@ export function AdminControlRoom() {
     const next = new URLSearchParams(searchParams.toString());
     next.set("room", selectedRoom);
     next.set("stage", selectedStage);
+    next.set("tab", activeAdminTab);
     router.replace(`/admin?${next.toString()}`, { scroll: false });
-  }, [router, searchParams, selectedRoom, selectedStage]);
+  }, [activeAdminTab, router, searchParams, selectedRoom, selectedStage]);
 
   useEffect(() => {
     setCountdownConfirmOpen(false);
@@ -944,12 +1057,58 @@ export function AdminControlRoom() {
     });
   }
 
-  async function handleResultInputCommit(code: string, field: "place" | "jury" | "tele" | "total") {
+  function applyResultFieldValue(
+    sourceRows: EditableResultRow[],
+    code: string,
+    field: "place" | "jury" | "tele" | "total",
+    value: string,
+  ) {
+    const sanitized = toNumericString(value);
+
+    return sourceRows.map((row) => {
+      if (row.code !== code) return row;
+
+      if (field === "place") {
+        return {
+          ...row,
+          place: rowToNumber(sanitized) > 0 ? sanitized : "",
+        };
+      }
+
+      if (field === "total") {
+        return {
+          ...row,
+          total: sanitized,
+        };
+      }
+
+      const nextJury = field === "jury" ? sanitized : row.jury;
+      const nextTele = field === "tele" ? sanitized : row.tele;
+      const nextTotal = nextJury === "" && nextTele === ""
+        ? ""
+        : String(rowToNumber(nextJury) + rowToNumber(nextTele));
+
+      return {
+        ...row,
+        jury: nextJury,
+        tele: nextTele,
+        total: nextTotal,
+      };
+    });
+  }
+
+  async function handleResultInputCommit(code: string, field: "place" | "jury" | "tele" | "total", currentValue?: string) {
     if (!selectedRoom) return;
 
-    let rowsToPublish = rows;
+    let rowsToPublish = currentValue === undefined
+      ? rows
+      : applyResultFieldValue(rows, code, field, currentValue);
+
     if (isSemiStage && field === "place") {
-      rowsToPublish = reorderSemiRows(rows, code);
+      rowsToPublish = reorderSemiRows(rowsToPublish, code);
+    }
+
+    if (currentValue !== undefined || (isSemiStage && field === "place")) {
       setRows(rowsToPublish);
       writeDraft(selectedRoom, selectedStage, rowsToPublish);
     }
@@ -959,8 +1118,9 @@ export function AdminControlRoom() {
 
   function handleResultInputKeyDown(event: KeyboardEvent<HTMLInputElement>, code: string, field: "place" | "jury" | "tele" | "total") {
     if (event.key === "Enter") {
+      const value = event.currentTarget.value;
       event.currentTarget.blur();
-      void handleResultInputCommit(code, field);
+      void handleResultInputCommit(code, field, value);
     }
   }
 
@@ -1245,6 +1405,22 @@ export function AdminControlRoom() {
     );
   }
 
+  async function handleSubmissionReminder() {
+    if (!selectedRoom) return;
+    setPendingAction("submission-reminder");
+    setError("");
+    setStatusText("");
+    try {
+      const payload = await remindMissingSubmissions(selectedRoom, selectedStage);
+      setStatusText(copy.reminderSent(payload.missingCount));
+    } catch (reminderError) {
+      console.error(reminderError);
+      setError(reminderError instanceof Error ? reminderError.message : copy.reloadFailed);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
   async function handleRoomReset() {
     if (!selectedRoom) return;
     if (!window.confirm(copy.confirmRoomReset)) {
@@ -1253,6 +1429,36 @@ export function AdminControlRoom() {
 
     await handleParticipantAction("room-reset", () => resetRoomState(selectedRoom), copy.roomResetDone);
     clearDraft(selectedRoom, selectedStage);
+  }
+
+  async function handleCompleteStage() {
+    if (!isMainAdmin) return;
+    if (!window.confirm(copy.fixStageConfirm)) {
+      return;
+    }
+
+    setPendingAction("stage-complete");
+    setError("");
+    setStatusText("");
+    try {
+      await completeStageResults(selectedStage);
+      await loadPanelData(true);
+      setStatusText(copy.fixStageDone);
+    } catch (completeError) {
+      console.error(completeError);
+      const payload = (completeError as { payload?: { missingRooms?: string[] } })?.payload;
+      if (payload?.missingRooms?.length) {
+        setError(
+          language === "ru"
+            ? `Этап не зафиксирован: не во всех комнатах опубликована полная таблица. Не хватает: ${payload.missingRooms.join(", ")}. Сначала нажми «Отправить результаты».`
+            : `Stage was not fixed: not every room has a full published table. Missing: ${payload.missingRooms.join(", ")}. Send results first.`,
+        );
+      } else {
+        setError(completeError instanceof Error ? completeError.message : copy.reloadFailed);
+      }
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   async function handleCompleteContest() {
@@ -1346,13 +1552,30 @@ export function AdminControlRoom() {
       setOfficialRooms(payload.officialRooms);
       setSelectedRoom(roomSlug);
       setSelectedStage(stage);
-      setStatusText(copy.officialRoomUpdated);
+      setStatusText(`${copy.officialRoomUpdated} ${language === "ru" ? "Чтобы ввести места или баллы, нажми «Ввести результаты»." : "Use Enter results to add places or points."}`);
     } catch (saveError) {
       console.error(saveError);
       setError(saveError instanceof Error ? saveError.message : copy.reloadFailed);
     } finally {
       setPendingAction(null);
     }
+  }
+
+  function handleStageSelect(stage: StageKey) {
+    const officialSlug = officialRooms[stage];
+    if (isMainAdmin && officialSlug) {
+      setSelectedRoom(officialSlug);
+    }
+    setSelectedStage(stage);
+  }
+
+  function openOfficialStage(stage: StageKey, roomSlug?: string) {
+    const nextRoom = roomSlug || officialRooms[stage] || selectedRoom;
+    if (nextRoom) {
+      setSelectedRoom(nextRoom);
+    }
+    setSelectedStage(stage);
+    setActiveAdminTab("voting");
   }
 
   async function handleDeleteRoomFromList(room: RoomSummary) {
@@ -1577,7 +1800,7 @@ export function AdminControlRoom() {
                           ? "bg-arenaSurfaceMax text-white shadow-glow"
                           : "bg-white/5 text-arenaMuted hover:bg-white/10 hover:text-white"
                       }`}
-                      onClick={() => setSelectedStage(stage.key)}
+                      onClick={() => handleStageSelect(stage.key)}
                     >
                       <span className="label-copy uppercase tracking-[0.22em]">{getStageLabel(stage.key)}</span>
                     </button>
@@ -1644,16 +1867,26 @@ export function AdminControlRoom() {
             {isMainAdmin ? (
               <div className="show-card p-5 md:p-6">
                 <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{copy.officialRoomsTitle}</p>
-                <h2 className="display-copy mt-3 text-3xl font-black">{copy.roomsTab}</h2>
+                <h2 className="display-copy mt-3 text-3xl font-black">{language === "ru" ? "Официальные комнаты" : "Official rooms"}</h2>
                 <p className="mt-3 text-sm leading-6 text-arenaMuted">{copy.officialRoomsText}</p>
                 <div className="mt-4 grid gap-2">
                   {STAGE_OPTIONS.map((stage) => {
                     const officialSlug = officialRooms[stage.key] || rooms[0]?.slug || "";
                     return (
-                      <label key={`official-${stage.key}`} className="show-panel p-3">
-                        <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{getStageLabel(stage.key)}</p>
+                      <div key={`official-${stage.key}`} className="show-panel p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{getStageLabel(stage.key)}</p>
+                          <button
+                            type="button"
+                            className="arena-button-secondary px-3 py-2 text-xs"
+                            onClick={() => openOfficialStage(stage.key, officialSlug)}
+                          >
+                            <MonitorPlay size={15} />
+                            {copy.openOfficialVoting}
+                          </button>
+                        </div>
                         <select
-                          className="arena-input mt-2 h-11"
+                          className="arena-input admin-official-select mt-2"
                           value={officialSlug}
                           disabled={pendingAction === `official-room-${stage.key}`}
                           onChange={(event) => void handleOfficialRoomChange(stage.key, event.target.value)}
@@ -1662,7 +1895,7 @@ export function AdminControlRoom() {
                             <option key={`${stage.key}-${room.slug}`} value={room.slug}>{getRoomName(room.slug, room.name)}</option>
                           ))}
                         </select>
-                      </label>
+                      </div>
                     );
                   })}
                 </div>
@@ -1797,8 +2030,8 @@ export function AdminControlRoom() {
                   <p className="mt-2 text-sm text-arenaMuted">
                     {activeAdminTab === "voting"
                       ? (language === "ru"
-                        ? `Этап: ${getStageLabel(selectedStage)}. Комната-превью: ${selectedRoomMeta?.name || selectedRoom}.`
-                        : `Stage: ${getStageLabel(selectedStage)}. Preview room: ${selectedRoomMeta?.name || selectedRoom}.`)
+                        ? `Этап: ${getStageLabel(selectedStage)}. Комната этапа: ${selectedRoomMeta?.name || selectedRoom}.`
+                        : `Stage: ${getStageLabel(selectedStage)}. Stage room: ${selectedRoomMeta?.name || selectedRoom}.`)
                       : snapshot?.predictionWindows[selectedStage] ? copy.stageWindowOpen : copy.stageWindowClosed}
                   </p>
                 </div>
@@ -1915,6 +2148,28 @@ export function AdminControlRoom() {
                   </div>
                 ))}
               </div>
+
+              {isMainAdmin ? (
+                <div className="mt-3 rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="label-copy text-[11px] uppercase tracking-[0.24em] text-arenaBeam">{copy.stageWorkflow}</p>
+                      <p className="mt-1 text-xs text-arenaMuted">{copy.stageWorkflowText}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <span className={`show-chip text-[11px] uppercase tracking-[0.18em] ${snapshot?.predictionWindows[selectedStage] ? "text-amber-100" : "text-emerald-100"}`}>
+                        {snapshot?.predictionWindows[selectedStage] ? copy.stageWindowOpen : copy.stageWindowClosed}
+                      </span>
+                      <span className={`show-chip text-[11px] uppercase tracking-[0.18em] ${selectedStageResultsFull ? "text-emerald-100" : "text-arenaMuted"}`}>
+                        {selectedStageResultsFull ? copy.resultsFull : copy.resultsPartial}
+                      </span>
+                      <span className={`show-chip text-[11px] uppercase tracking-[0.18em] ${selectedStageFixedAt ? "text-emerald-100" : "text-rose-100"}`}>
+                        {selectedStageFixedAt ? copy.stageFixed : copy.stageNotFixed}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {activeAdminTab === "voting" ? (
@@ -2047,6 +2302,16 @@ export function AdminControlRoom() {
                     <Settings2 size={16} />
                     {copy.publishButton}
                   </button>
+                  <button
+                    type="button"
+                    className="arena-button-secondary px-5 py-3 text-sm"
+                    disabled={Boolean(pendingAction) || !selectedStageResultsFull}
+                    onClick={() => void handleCompleteStage()}
+                    title={!selectedStageResultsFull ? copy.resultsPartial : undefined}
+                  >
+                    <Check size={16} />
+                    {copy.fixStage}
+                  </button>
                 </div>
               </div>
 
@@ -2140,40 +2405,113 @@ export function AdminControlRoom() {
             {activeAdminTab === "participants" || activeAdminTab === "voting" ? (
               <>
             <div className="show-card p-4 md:p-5">
-              <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{adminUx.roomToolsTitle}</p>
-              <h2 className="display-copy mt-2 text-2xl font-black">{selectedRoomMeta?.seasonLabel || selectedRoomMeta?.name}</h2>
-              <p className="mt-2 text-sm text-arenaMuted">{adminUx.roomToolsText}</p>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaPulse">{adminUx.roomToolsTitle}</p>
+                  <h2 className="display-copy mt-2 text-2xl font-black">{selectedRoomMeta?.seasonLabel || selectedRoomMeta?.name}</h2>
+                  <p className="mt-2 text-sm text-arenaMuted">{adminUx.roomToolsText}</p>
+                </div>
+                <button
+                  type="button"
+                  className="arena-button-secondary px-4 py-3 text-xs"
+                  disabled={pendingAction === "submission-reminder"}
+                  onClick={() => void handleSubmissionReminder()}
+                >
+                  <BellRing size={16} />
+                  {copy.remindMissing}
+                </button>
+              </div>
             </div>
 
-            <div className="show-scroll grid max-h-[min(30rem,58vh)] gap-1.5 overflow-y-auto pr-1">
-              {users.map((user) => (
-                <div key={user.id} className="show-panel px-3 py-2">
-                  <div className="grid gap-2 2xl:grid-cols-[minmax(0,1fr)_auto] 2xl:items-center">
+            <div className="show-card p-4 md:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaBeam">{auditCopy.title}</p>
+                  <p className="mt-2 text-sm text-arenaMuted">{auditCopy.text}</p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.16em]">
+                  <span className={`show-chip ${predictionAudit?.windowOpen ? "text-amber-100" : "text-emerald-100"}`}>
+                    {predictionAudit?.windowOpen ? <Unlock size={13} /> : <Lock size={13} />}
+                    {predictionAudit?.windowOpen ? auditCopy.windowOpen : auditCopy.windowClosed}
+                  </span>
+                  <span className="show-chip text-arenaBeam">
+                    {predictionAudit?.summary.acceptedSubmissions ?? 0} {auditCopy.submissions}
+                  </span>
+                  <span className="show-chip text-amber-100">
+                    {predictionAudit?.summary.overwrittenAccounts ?? 0} {auditCopy.overwrittenAccounts}
+                  </span>
+                  <span className={`show-chip ${(predictionAudit?.summary.suspicious || 0) > 0 ? "text-rose-100" : "text-arenaMuted"}`}>
+                    {(predictionAudit?.summary.suspicious || 0) > 0 ? <ShieldCheck size={13} /> : null}
+                    {predictionAudit?.summary.suspicious ?? 0} {auditCopy.suspicious}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-2">
+                {auditEntries.length ? auditEntries.map((entry) => (
+                  <div key={entry.id} className={`show-panel px-3 py-2 ${entry.suspicious ? "border-rose-300/25 bg-rose-500/10" : ""}`}>
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="show-chip text-arenaBeam">
+                        <Activity size={13} />
+                        {auditCopy.eventLabels[entry.type] || entry.type}
+                      </span>
+                      {entry.type === "prediction_submit" ? (
+                        <span className={`show-chip ${entry.accepted ? "text-emerald-100" : "text-amber-100"}`}>
+                          {entry.accepted ? auditCopy.accepted : auditCopy.denied}
+                        </span>
+                      ) : entry.open !== null ? (
+                        <span className={`show-chip ${entry.open ? "text-amber-100" : "text-emerald-100"}`}>
+                          {entry.open ? auditCopy.windowOpen : auditCopy.windowClosed}
+                        </span>
+                      ) : null}
+                      {entry.overwritten ? <span className="show-chip text-amber-100">{auditCopy.overwritten}</span> : null}
+                      {entry.suspicious ? <span className="show-chip text-rose-100">{auditCopy.reasonLabels[entry.suspiciousReason || ""] || auditCopy.suspicious}</span> : null}
+                      <span className="min-w-0 truncate font-semibold text-white">{entry.accountName || entry.roomSlug || selectedRoom}</span>
+                      <span className="text-arenaMuted">{new Date(entry.at).toLocaleString(language === "ru" ? "ru-RU" : "en-US")}</span>
+                      {entry.reason ? <span className="text-arenaMuted">{auditCopy.reasonLabels[entry.reason] || entry.reason}</span> : null}
+                      {entry.ipHash ? <span className="text-arenaMuted">ip:{entry.ipHash}</span> : null}
+                    </div>
+                  </div>
+                )) : (
+                  <p className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-arenaMuted">{auditCopy.empty}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="show-scroll grid max-h-[min(34rem,62vh)] gap-2 overflow-y-auto pr-1">
+              {displayedUsers.map((user) => {
+                const submittedCurrentStage = user.submittedStages.includes(selectedStage);
+                return (
+                <div key={user.id} className={`show-panel admin-participant-row px-3 py-2.5 ${submittedCurrentStage ? "" : "border-amber-200/14 bg-amber-300/[0.035]"}`}>
+                  <div className="grid gap-2 xl:grid-cols-[minmax(18rem,1fr)_minmax(30rem,auto)] xl:items-center">
                     <div className="min-w-0">
-                      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className={`show-chip px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] ${user.removed ? "border-rose-300/20 bg-rose-400/15 text-rose-100" : "text-arenaBeam"}`}>
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+                        <span className={`show-chip admin-chip-compact text-[10px] uppercase tracking-[0.18em] ${user.removed ? "border-rose-300/20 bg-rose-400/15 text-rose-100" : "text-arenaBeam"}`}>
                           {user.removed ? copy.removedState : copy.activeState}
                         </span>
-                        <p className="min-w-0 max-w-[18rem] truncate text-sm font-semibold text-white md:text-base">{getDisplayName(user.name)}</p>
+                        <span className={`show-chip admin-chip-compact text-[10px] uppercase tracking-[0.18em] ${submittedCurrentStage ? "border-emerald-300/20 bg-emerald-400/10 text-emerald-100" : "border-amber-200/20 bg-amber-300/10 text-amber-100"}`}>
+                          {submittedCurrentStage ? copy.submittedCurrentStage : copy.notSubmittedCurrentStage}
+                        </span>
+                        <p className="admin-participant-name min-w-0 truncate text-sm font-semibold leading-tight text-white md:text-base">{getDisplayName(user.name)}</p>
                         {user.submittedStages.map((stage) => (
-                          <span key={`${user.id}-${stage}`} className="show-chip px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-arenaMuted">
+                          <span key={`${user.id}-${stage}`} className="show-chip admin-chip-compact text-[10px] uppercase tracking-[0.18em] text-arenaMuted">
                             {getStageLabel(stage)}
                           </span>
                         ))}
                         {user.submissionOverrides[selectedStage] ? (
-                          <span className="show-chip px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-emerald-100">
+                          <span className="show-chip admin-chip-compact text-[10px] uppercase tracking-[0.18em] text-emerald-100">
                             <Unlock size={13} />
                             {copy.latePassActive}
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-0.5 truncate text-[11px] text-arenaMuted">{user.firstName} {user.lastName}</p>
+                      <p className="sr-only">{user.firstName} {user.lastName}</p>
                     </div>
 
-                  <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4 2xl:w-[28rem]">
+                  <div className="admin-participant-actions grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 2xl:w-[min(58rem,60vw)]">
                     <button
                       type="button"
-                      className="arena-button-secondary min-h-9 px-3 py-1.5 text-[11px]"
+                      className="arena-button-secondary admin-action-button"
                       disabled={Boolean(pendingAction)}
                       onClick={() => void handleParticipantAction(`reset-stage-${user.id}`, () => resetParticipant(selectedRoom, user.id, selectedStage), copy.participantReset(selectedStage))}
                     >
@@ -2181,7 +2519,7 @@ export function AdminControlRoom() {
                     </button>
                     <button
                       type="button"
-                      className="arena-button-secondary min-h-9 px-3 py-1.5 text-[11px]"
+                      className="arena-button-secondary admin-action-button"
                       disabled={Boolean(pendingAction)}
                       onClick={() => void handleParticipantAction(`reset-all-${user.id}`, () => resetParticipant(selectedRoom, user.id), copy.participantReset(null))}
                     >
@@ -2191,21 +2529,21 @@ export function AdminControlRoom() {
                       user.submissionOverrides[selectedStage] ? (
                         <button
                           type="button"
-                          className="arena-button-secondary min-h-9 px-3 py-1.5 text-[11px]"
+                          className="arena-button-secondary admin-action-button"
                           disabled={Boolean(pendingAction)}
                           onClick={() => void handleParticipantLatePass(user.id, true)}
                         >
-                          <Unlock size={16} />
+                          <Unlock size={14} />
                           {copy.revokeLatePass}
                         </button>
                       ) : (
                         <button
                           type="button"
-                          className="arena-button-primary min-h-9 px-3 text-[11px]"
+                          className="arena-button-secondary admin-action-button"
                           disabled={Boolean(pendingAction)}
                           onClick={() => void handleParticipantLatePass(user.id)}
                         >
-                          <Unlock size={16} />
+                          <Unlock size={14} />
                           {copy.grantLatePass}
                         </button>
                       )
@@ -2213,7 +2551,7 @@ export function AdminControlRoom() {
                     {user.removed ? (
                       <button
                         type="button"
-                        className="arena-button-primary min-h-9 px-3 text-[11px]"
+                        className="arena-button-secondary admin-action-button"
                         disabled={Boolean(pendingAction)}
                         onClick={() => void handleParticipantAction(`restore-${user.id}`, () => restoreParticipant(selectedRoom, user.id), copy.participantRestored)}
                       >
@@ -2222,7 +2560,7 @@ export function AdminControlRoom() {
                     ) : (
                       <button
                         type="button"
-                        className="min-h-9 rounded-full bg-rose-500/15 px-3 py-1.5 text-[11px] font-semibold text-rose-100 transition hover:bg-rose-500/25"
+                        className="admin-action-button rounded-full bg-rose-500/15 font-semibold text-rose-100 transition hover:bg-rose-500/25"
                         disabled={Boolean(pendingAction)}
                         onClick={() => {
                           const confirmed = window.confirm(language === "ru" ? "Удалить участника из комнаты?" : "Remove this participant from the room?");
@@ -2237,7 +2575,8 @@ export function AdminControlRoom() {
                   </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
               </>
             ) : null}

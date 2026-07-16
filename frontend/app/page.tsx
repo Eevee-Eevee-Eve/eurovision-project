@@ -40,7 +40,7 @@ export default function Home() {
       } catch (error) {
         if (!active) return;
         console.error(error);
-        setRooms([FALLBACK_ROOM]);
+        setRooms((current) => current.length ? current : [FALLBACK_ROOM]);
         setLoadError(
           language === "ru"
             ? "Список комнат сейчас недоступен. Ниже всё равно можно создать новую комнату."
@@ -169,6 +169,56 @@ export default function Home() {
     });
   }, [getRoomCityLabel, getRoomName, getStageLabel, roomSearch, rooms]);
 
+  const completedStages = useMemo(
+    () => ({
+      semi1: Boolean(rooms.find((room) => room.completedStages?.semi1 || room.defaultStage === "semi1" && room.stageCompletedAt)?.completedStages?.semi1 || rooms.find((room) => room.defaultStage === "semi1")?.stageCompletedAt),
+      semi2: Boolean(rooms.find((room) => room.completedStages?.semi2 || room.defaultStage === "semi2" && room.stageCompletedAt)?.completedStages?.semi2 || rooms.find((room) => room.defaultStage === "semi2")?.stageCompletedAt),
+      final: Boolean(rooms.find((room) => room.completedStages?.final || room.defaultStage === "final" && room.stageCompletedAt)?.completedStages?.final || rooms.find((room) => room.defaultStage === "final")?.stageCompletedAt),
+    }),
+    [rooms],
+  );
+  const stageOptions = useMemo(
+    () => (["semi1", "semi2", "final"] as RoomSummary["defaultStage"][]).map((stage) => ({
+      stage,
+      label: getStageLabel(stage),
+      closed: completedStages[stage],
+    })),
+    [completedStages, getStageLabel],
+  );
+  const selectedStageClosed = completedStages[roomStage];
+  const allStagesClosed = stageOptions.every((option) => option.closed);
+  const hasClosedRooms = rooms.some((room) => Boolean(room.stageCompletedAt || room.completedStages?.[room.defaultStage]));
+  const hasOpenRooms = rooms.some((room) => !Boolean(room.stageCompletedAt || room.completedStages?.[room.defaultStage]));
+  const archiveCopy = language === "ru"
+    ? {
+        title: hasOpenRooms ? "Комнаты и итоги" : "Итоги этапов",
+        text: "Открытые комнаты доступны для голосования. Закрытые этапы остаются доступными только для просмотра итогов.",
+        stageClosed: "Этап закрыт",
+        viewResults: "Смотреть итоги",
+        archiveStage: "Архив",
+        createClosed: "Этот этап уже закрыт. Новые комнаты для него создать нельзя, но итоги можно смотреть.",
+        allClosed: "Все этапы закрыты. Новые комнаты уже не создаются, архив итогов остаётся доступен.",
+      }
+    : {
+        title: hasOpenRooms ? "Rooms and results" : "Stage results",
+        text: "Open rooms are available for voting. Closed stages stay available in results-only mode.",
+        stageClosed: "Stage closed",
+        viewResults: "View results",
+        archiveStage: "Archive",
+        createClosed: "This stage is already closed. New rooms cannot be created, but results remain available.",
+        allClosed: "All stages are closed. New rooms can no longer be created, but the results archive is available.",
+      };
+
+  useEffect(() => {
+    if (!selectedStageClosed) {
+      return;
+    }
+    const nextOpenStage = stageOptions.find((option) => !option.closed)?.stage;
+    if (nextOpenStage) {
+      setRoomStage(nextOpenStage);
+    }
+  }, [selectedStageClosed, stageOptions]);
+
   const renderRoomIcon = (room: RoomSummary) => {
     const Icon = room.defaultStage === "final" ? Trophy : room.defaultStage === "semi2" ? Radio : MonitorPlay;
 
@@ -199,6 +249,11 @@ export default function Home() {
       return;
     }
 
+    if (completedStages[roomStage]) {
+      setCreateError(archiveCopy.createClosed);
+      return;
+    }
+
     setCreatePending(true);
     setCreateError("");
 
@@ -223,6 +278,8 @@ export default function Home() {
             ? "На один аккаунт можно создать максимум 3 комнаты."
             : "Each account can create up to 3 rooms.",
         );
+      } else if (error instanceof ApiError && error.code === "STAGE_CLOSED") {
+        setCreateError(archiveCopy.createClosed);
       } else {
         setCreateError(error instanceof Error ? error.message : "Unable to create room.");
       }
@@ -288,12 +345,12 @@ export default function Home() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-3xl">
               <p className="label-copy text-[11px] uppercase tracking-[0.32em] text-arenaMuted">
-                {text.activeRoomsTitle}
+                {hasClosedRooms ? archiveCopy.title : text.activeRoomsTitle}
               </p>
               <h2 className="display-copy mt-2 text-2xl font-black text-white">
-                {text.activeRoomsTitle}
+                {hasClosedRooms ? archiveCopy.title : text.activeRoomsTitle}
               </h2>
-              <p className="mt-3 text-sm leading-7 text-arenaMuted">{text.activeRoomsText}</p>
+              <p className="mt-3 text-sm leading-7 text-arenaMuted">{hasClosedRooms ? archiveCopy.text : text.activeRoomsText}</p>
             </div>
             <label className="grid min-w-[min(100%,22rem)] gap-2 text-sm text-arenaMuted">
               <span>{text.roomSearchLabel}</span>
@@ -314,8 +371,11 @@ export default function Home() {
 
           <div className="mt-5 grid gap-3">
             {filteredRooms.length ? (
-              filteredRooms.map((room) => (
-                <div key={room.slug} className="show-panel p-4">
+              filteredRooms.map((room) => {
+                const roomStageCompletedAt = room.stageCompletedAt || room.completedStages?.[room.defaultStage] || null;
+                const roomClosed = Boolean(roomStageCompletedAt);
+                return (
+                <div key={room.slug} className={`show-panel p-4 ${roomClosed ? "room-card-archived" : ""}`}>
                   <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
                     <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
                       {renderRoomIcon(room)}
@@ -326,8 +386,14 @@ export default function Home() {
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2 text-xs">
                           <span className="show-chip">
-                            {text.currentStage}: {getStageLabel(room.defaultStage)}
+                            {roomClosed ? archiveCopy.archiveStage : text.currentStage}: {getStageLabel(room.defaultStage)}
                           </span>
+                          {roomClosed ? (
+                            <span className="show-chip room-closed-chip text-amber-100">
+                              <Lock size={12} />
+                              {language === "ru" ? "Завершено" : "Completed"}
+                            </span>
+                          ) : null}
                           {room.isTemporary ? <span className="show-chip">{text.temporary}</span> : null}
                           {room.passwordRequired ? (
                             <span className="show-chip">
@@ -341,11 +407,11 @@ export default function Home() {
 
                     {account ? (
                       <Link
-                        href={`/${room.slug}`}
+                        href={roomClosed ? `/${room.slug}/live/${room.defaultStage}` : `/${room.slug}`}
                         className="arena-button-room inline-flex h-11 w-full items-center justify-center gap-2 px-5 text-xs sm:w-auto"
                       >
-                        <ArrowRight size={15} />
-                        {text.openRoom}
+                        {roomClosed ? <Lock size={15} /> : <ArrowRight size={15} />}
+                        {roomClosed ? (language === "ru" ? "Смотреть итоги" : "View results") : text.openRoom}
                       </Link>
                     ) : (
                       <button
@@ -359,7 +425,8 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-              ))
+                );
+              })
             ) : (
               <div className="show-panel p-4 text-sm text-arenaMuted">
                 {roomSearch.trim() ? text.roomSearchEmpty : text.noRooms}
@@ -412,12 +479,19 @@ export default function Home() {
                       onChange={(event) => setRoomStage(event.target.value as RoomSummary["defaultStage"])}
                       className="arena-input arena-select home-input-create"
                     >
-                      <option value="semi1">{getStageLabel("semi1")}</option>
-                      <option value="semi2">{getStageLabel("semi2")}</option>
-                      <option value="final">{getStageLabel("final")}</option>
+                      {stageOptions.map((option) => (
+                        <option key={option.stage} value={option.stage} disabled={option.closed}>
+                          {option.label}{option.closed ? ` - ${archiveCopy.stageClosed}` : ""}
+                        </option>
+                      ))}
                     </select>
                   </span>
                 </label>
+                {selectedStageClosed || allStagesClosed ? (
+                  <div className="rounded-[1.2rem] border border-amber-200/15 bg-amber-300/10 px-4 py-3 text-sm leading-6 text-amber-100">
+                    {allStagesClosed ? archiveCopy.allClosed : archiveCopy.createClosed}
+                  </div>
+                ) : null}
                 <label className="grid gap-2 text-sm text-arenaMuted">
                   <span>{text.createPasswordLabel}</span>
                   <span className="relative block">
@@ -448,7 +522,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => void handleCreateRoom()}
-                  disabled={createPending}
+                  disabled={createPending || selectedStageClosed || allStagesClosed}
                   className="arena-button-primary inline-flex h-12 items-center justify-center gap-2 px-5 text-sm"
                 >
                   <PlusCircle size={16} />
