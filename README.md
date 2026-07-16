@@ -115,6 +115,24 @@ Containers will be available on:
 - Legacy URLs redirect to the Next.js frontend; backend public files are limited to stage catalogs and media
 - Password recovery emails are intentionally disabled in production until a real mail provider is integrated; local development still exposes a preview reset link
 
+## Production State Backup
+
+The production state backup contains accounts, rooms, predictions, results, statistics, achievements, and uploaded avatars. It is downloaded from the Docker volume, verified, and encrypted locally with AES-256 before the plaintext archive is removed.
+
+```powershell
+.\scripts\backup-prod-state.ps1 -PasswordFile "$env:USERPROFILE\.config\morozoveuroparty\backup.key"
+```
+
+Verify an encrypted backup without restoring it:
+
+```powershell
+.\scripts\verify-prod-backup.ps1 `
+  -BackupPath "D:\MorozovEuroParty-Backups\encrypted\morozoveuroparty-runtime-YYYYMMDD-HHMMSS.tar.gz.mepbak" `
+  -PasswordFile "$env:USERPROFILE\.config\morozoveuroparty\backup.key"
+```
+
+Keep the password or key outside the repository and save a second copy in a password manager. Without it, encrypted backups cannot be restored.
+
 ## Frontend Env
 
 Set these in `frontend/.env.local` before public launch:
