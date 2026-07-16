@@ -946,6 +946,9 @@ function CountryCard({
 }) {
   const fallbackGradient = `linear-gradient(135deg, ${country.wins ? "rgba(255, 99, 194, 0.2)" : "rgba(129, 236, 255, 0.14)"}, rgba(36, 36, 58, 0.96))`;
   const heroPhoto = country.heroPhoto || country.highlightPhoto;
+  const cardPhoto = country.heroPhoto
+    ? country.heroPhoto.replace("/country-heroes/", "/country-heroes/thumbs/")
+    : heroPhoto;
   const hasCuratedHero = Boolean(country.heroPhoto);
   const yearRange = country.firstYear === country.latestYear ? String(country.firstYear) : `${country.firstYear}-${country.latestYear}`;
   const winYears = country.winYears.length ? country.winYears.slice(-4).join(", ") : language === "ru" ? "пока без побед" : "no wins yet";
@@ -965,10 +968,12 @@ function CountryCard({
   return (
     <Link href={`/stats/countries/${country.code.toLowerCase()}`} className="country-history-card show-panel block min-w-0 overflow-hidden transition hover:-translate-y-0.5 hover:bg-white/[0.075]">
       <div className="country-history-media" style={{ background: fallbackGradient }}>
-        {heroPhoto ? (
+        {cardPhoto ? (
           <img
-            src={heroPhoto}
+            src={cardPhoto}
             alt=""
+            width={640}
+            height={400}
             className={`country-history-photo ${hasCuratedHero ? "country-history-photo-curated" : "country-history-photo-fallback"}`}
             loading="lazy"
             onError={(event) => {

@@ -3,7 +3,9 @@
   "version": "2.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test test/*.test.js",
+    "check": "node --check server.js && npm test"
   },
   "dependencies": {
     "compression": "^1.8.1",
@@ -13,5 +15,8 @@
     "helmet": "^7.0.0",
     "nodemailer": "^9.0.3",
     "socket.io": "^4.8.3"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }

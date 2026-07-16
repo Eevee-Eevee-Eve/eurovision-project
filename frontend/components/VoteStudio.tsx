@@ -553,11 +553,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     }
   }
 
-  function persistNotes(nextNotes: Record<string, ActNote>) {
-    setNotes(nextNotes);
-    saveNotes(roomSlug, stageKey, nextNotes);
-  }
-
   function updateNote(code: string, patch: Partial<ActNote>) {
     setNotes((current) => {
       const previous = current[code] || { tones: [], text: "" };
@@ -611,11 +606,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
   function openActCard(code: string) {
     setPlacePickerOpen(false);
     setSelectedActCode(code);
-  }
-
-  function openActPlacePicker(code: string) {
-    setSelectedActCode(code);
-    setPlacePickerOpen(true);
   }
 
   function moveArtistBy(code: string, delta: number) {
@@ -734,13 +724,6 @@ export function VoteStudio({ roomSlug, stageKey }: { roomSlug: string; stageKey:
     }
 
     return `#${rank} · ${getCountryName(act.code, act.country)}`;
-  }
-
-  function getNoteSummaryText(note?: ActNote | null) {
-    const tags = getNoteTags(note);
-    if (!note || (!note.text.trim() && !tags.length)) return null;
-    if (note.text.trim()) return note.text.trim();
-    return tags.map((tone) => resolvedNoteTagLabels[tone]).join(" · ");
   }
 
   function getActLinks(act: ActEntry | null) {

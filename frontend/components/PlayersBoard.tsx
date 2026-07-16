@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useReducedMotion } from "framer-motion";
-import { Medal, Radio, Trophy, Users, X } from "lucide-react";
+import { Medal, Radio, Trophy, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createRoomSocket, fetchLeaderboard, fetchPlayerArchive, fetchRoom } from "../lib/api";
 import { useDeviceTier } from "../lib/device";
@@ -34,7 +34,7 @@ export function PlayersBoard({ roomSlug, boardKey }: { roomSlug: string; boardKe
   const [error, setError] = useState("");
   const previousRanks = useRef<Record<string, number>>({});
   const { copy, getBoardLabel, getDisplayName, getStageLabel, language } = useLanguage();
-  const { isPhone, isDesktop } = useDeviceTier();
+  const { isPhone } = useDeviceTier();
   const prefersReducedMotion = useReducedMotion();
   const rowTransition = prefersReducedMotion ? reducedRowTransition : playerRowTransition;
 

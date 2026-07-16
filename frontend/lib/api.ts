@@ -1,6 +1,5 @@
 import { io } from "socket.io-client";
 import type {
-  ActEntry,
   AdminPredictionAuditPayload,
   AdminRoomSnapshot,
   AdminSessionPayload,

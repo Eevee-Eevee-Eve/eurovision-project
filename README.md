@@ -4,7 +4,7 @@ Mobile-first Eurovision room voting with a Neon Arena frontend, live stage board
 
 ## Requirements
 
-- Node.js 20+ with `npm`
+- Node.js 22 LTS with `npm` (see `.nvmrc`)
 - Docker Desktop optional, if you want to run everything via containers
 
 ## Project Layout
@@ -12,7 +12,7 @@ Mobile-first Eurovision room voting with a Neon Arena frontend, live stage board
 ```text
 eurovision_project/
 |-- backend/
-|   `-- backend_core/   # Express + Socket.IO API, stage catalog, legacy static pages
+|   `-- backend_core/   # Express + Socket.IO API, stage catalog, and runtime media
 `-- frontend/           # Next.js room portal, vote flow, acts guide, live boards
 ```
 
@@ -44,7 +44,7 @@ Useful backend routes:
 - `http://localhost:4000/api/rooms`
 - `http://localhost:4000/api/acts?room=neon-arena&stage=final`
 - `http://localhost:4000/api/leaderboard?room=neon-arena`
-- `http://localhost:4000/admin.html`
+- `http://localhost:3000/admin`
 
 ### 2. Frontend
 
@@ -56,6 +56,19 @@ npm run dev
 ```
 
 Frontend runs on `http://localhost:3000`.
+
+Quality checks:
+
+```powershell
+npm run check
+npm run build
+```
+
+Media optimization:
+
+```powershell
+npm run media:optimize
+```
 
 Main app routes:
 
@@ -96,9 +109,10 @@ Containers will be available on:
 ## Current Limitations
 
 - Data is persisted to a local JSON state file, but not yet migrated to a real database
+- `backend/backend_core/data/app-state.json` is runtime data and must not be committed; use the encrypted production backup flow for real state
 - The room list is still seeded in code, not in a database
 - Final-stage act context is implemented, but semi-final national-selection placement still needs a curated data source to be fully accurate
-- Legacy static pages in `backend/backend_core/public` still exist alongside the new frontend
+- Legacy URLs redirect to the Next.js frontend; backend public files are limited to stage catalogs and media
 - Password recovery emails are intentionally disabled in production until a real mail provider is integrated; local development still exposes a preview reset link
 
 ## Frontend Env

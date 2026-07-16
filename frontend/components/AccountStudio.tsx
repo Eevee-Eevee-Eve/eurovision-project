@@ -8,6 +8,7 @@ import {
   changePassword,
   deleteAccount,
   deleteAccountAvatar,
+  getOAuthStartUrl,
   logoutAccount,
   updateAccountProfile,
   uploadAccountAvatar,
@@ -219,7 +220,9 @@ export function AccountStudio() {
         passwordReadyText: accountCopy.account.securityText,
         setPassword: "Создать пароль",
         providers: "Привязанные способы входа",
-        yandexHint: "Если войдёшь через Яндекс с тем же email, он привяжется к этому аккаунту автоматически.",
+        yandexHint: "Привязка выполняется только из открытого аккаунта. Email в Яндексе должен совпадать с email профиля.",
+        connectYandex: "Привязать Яндекс",
+        yandexConnected: "Яндекс привязан",
       }
     : {
         passwordMissingTitle: "Create a password for this account",
@@ -227,8 +230,11 @@ export function AccountStudio() {
         passwordReadyText: accountCopy.account.securityText,
         setPassword: "Create password",
         providers: "Linked sign-in methods",
-        yandexHint: "If you sign in with Yandex using the same email, it will link to this account automatically.",
+        yandexHint: "Linking only starts from this signed-in account. The Yandex email must match the profile email.",
+        connectYandex: "Connect Yandex",
+        yandexConnected: "Yandex connected",
       };
+  const hasYandexProvider = account.authProviders?.includes("yandex") ?? false;
   const openAvatarPreview = () => {
     if (resolvedAvatarUrl) {
       setAvatarPreviewOpen(true);
@@ -352,6 +358,21 @@ export function AccountStudio() {
               {securityCopy.providers}: <span className="text-arenaBeam">{account.authProviders.join(", ")}</span>
             </p>
           ) : null}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            {hasYandexProvider ? (
+              <span className="inline-flex min-h-11 items-center rounded-full border border-arenaBeam/25 bg-arenaBeam/10 px-4 text-sm font-semibold text-arenaBeam">
+                {securityCopy.yandexConnected}
+              </span>
+            ) : (
+              <a
+                className="arena-button-secondary inline-flex min-h-11 items-center px-5 text-sm"
+                href={getOAuthStartUrl("yandex", { returnTo: "/account" })}
+              >
+                {securityCopy.connectYandex}
+              </a>
+            )}
+            <p className="max-w-2xl text-xs leading-5 text-arenaMuted">{securityCopy.yandexHint}</p>
+          </div>
           <div className="mt-5 grid gap-3">
             {hasPassword ? (
               <input className="arena-input" type="password" placeholder={accountCopy.auth.currentPassword} value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} />

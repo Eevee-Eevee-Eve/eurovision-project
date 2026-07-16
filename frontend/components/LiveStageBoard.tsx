@@ -2,7 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { Maximize2, Minimize2, Sparkles, Trophy, Users } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoomSocket, fetchLeaderboard, fetchRoom, fetchStageResults } from "../lib/api";
 import { useDeviceTier } from "../lib/device";
 import { resolveMediaUrl } from "../lib/media";
@@ -75,21 +75,21 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   const activeShowActCode = activeShowState?.currentActCode || "";
   const stageAccentActive = activeShowHighlight === "stage";
 
-  const commitDisplayResults = (nextResults: ActEntry[]) => {
+  const commitDisplayResults = useCallback((nextResults: ActEntry[]) => {
     displayResultsRef.current = nextResults;
     setDisplayResults(nextResults);
-  };
+  }, []);
 
-  const commitRankSnapshot = (nextResults: ActEntry[]) => {
+  const commitRankSnapshot = useCallback((nextResults: ActEntry[]) => {
     previousRanks.current = nextResults.reduce<Record<string, number>>((acc, act) => {
       if (act.rank) {
         acc[act.code] = act.rank;
       }
       return acc;
     }, {});
-  };
+  }, []);
 
-  const clearCountryTimers = () => {
+  const clearCountryTimers = useCallback(() => {
     if (countryMoveTimeout.current) {
       window.clearTimeout(countryMoveTimeout.current);
       countryMoveTimeout.current = null;
@@ -98,9 +98,9 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
       window.clearTimeout(countryClearTimeout.current);
       countryClearTimeout.current = null;
     }
-  };
+  }, []);
 
-  const applyResultsUpdate = (nextResults: ActEntry[], animate = true) => {
+  const applyResultsUpdate = useCallback((nextResults: ActEntry[], animate = true) => {
     clearCountryTimers();
     setResults(nextResults);
 
@@ -167,7 +167,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
       countryMoveTimeout.current = null;
       countryClearTimeout.current = null;
     }, 2920);
-  };
+  }, [clearCountryTimers, commitDisplayResults, commitRankSnapshot, prefersReducedMotion]);
 
   useEffect(() => {
     let active = true;
@@ -215,7 +215,7 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
       clearCountryTimers();
       socket.close();
     };
-  }, [language, prefersReducedMotion, roomSlug, stageKey]);
+  }, [applyResultsUpdate, clearCountryTimers, language, roomSlug, stageKey]);
 
   useEffect(() => {
     const nextMovement = leaders.reduce<Record<string, number | null>>((acc, row) => {
@@ -559,7 +559,6 @@ export function LiveStageBoard({ roomSlug, stageKey }: { roomSlug: string; stage
   const renderStageDesktopRow = (act: ActEntry) => {
     const isQualifier = isSemi && typeof act.rank === "number" && act.rank > 0 && (!qualificationCutoff || act.rank <= qualificationCutoff);
     const rowDelta = movement[act.code] ?? null;
-    const isMoving = typeof rowDelta === "number" && rowDelta !== 0;
     const isHighlighted = Boolean(countryHighlight[act.code]);
     const isTopThree = typeof act.rank === "number" && act.rank > 0 && act.rank <= 3;
     const isCutoffRow = isSemi && qualificationCutoff != null && act.rank === qualificationCutoff;

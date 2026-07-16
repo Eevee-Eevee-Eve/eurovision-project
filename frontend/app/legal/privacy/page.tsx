@@ -35,6 +35,14 @@ export default function PrivacyPage() {
             <div className="show-panel p-4">
               <p className="label-copy text-[11px] uppercase tracking-[0.28em] text-arenaBeam">{legalCopy.contactLabel}</p>
               <p className="mt-3 text-sm text-white">{legalConfig.operatorContact}</p>
+              <a
+                href={legalConfig.operatorTelegramUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex text-sm font-semibold text-arenaBeam underline-offset-4 hover:underline"
+              >
+                Telegram: @SergeiMorozov
+              </a>
               {!contactConfigured ? (
                 <p className="mt-3 text-xs text-amber-200">
                   {legalCopy.productionTip}

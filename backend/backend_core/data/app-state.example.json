@@ -1,0 +1,18 @@
+{
+  "accounts": {},
+  "emailToAccountId": {},
+  "sessions": {},
+  "adminSessions": {},
+  "passwordResets": {},
+  "dynamicRooms": {},
+  "deletedCatalogRooms": {},
+  "roomAccessSessions": {},
+  "contestCompletedAt": null,
+  "stageCompletedAt": {},
+  "officialRooms": {},
+  "roomOverrides": {},
+  "globalPredictionWindows": null,
+  "globalStageCountdowns": {},
+  "predictionAudit": [],
+  "roomStates": {}
+}

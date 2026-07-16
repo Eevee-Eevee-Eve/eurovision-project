@@ -17,7 +17,7 @@ const AUTH_CARD_ID = "home-auth-card";
 export default function Home() {
   const router = useRouter();
   const { account, loading } = useAccount();
-  const { language, getDisplayName, getRoomName, getRoomCityLabel, getStageLabel } = useLanguage();
+  const { language, getRoomName, getRoomCityLabel, getStageLabel } = useLanguage();
   const [rooms, setRooms] = useState<RoomSummary[]>([FALLBACK_ROOM]);
   const [loadError, setLoadError] = useState("");
   const [roomSearch, setRoomSearch] = useState("");

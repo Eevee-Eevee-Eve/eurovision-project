@@ -32,7 +32,7 @@ function deriveActThumbnailUrl(value?: string | null) {
     return null;
   }
 
-  return `${match[1]}thumbs/${match[2]}.jpg`;
+  return `${match[1]}thumbs/${match[2]}.webp`;
 }
 
 export function resolveActImageUrls(value?: string | null) {

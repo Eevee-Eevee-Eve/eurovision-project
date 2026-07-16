@@ -14,3 +14,7 @@ eurovision_project_code_*.tar.gz
 eurovision_frontend_update_*.tar.gz
 backend/backend_core/.env
 .deploy-keys/
+backend/backend_core/data/app-state.json
+deploy-*.tar.gz
+remote-*.prod.tsx
+/estateline-automation/

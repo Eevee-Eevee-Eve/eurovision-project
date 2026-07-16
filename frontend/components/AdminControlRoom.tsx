@@ -299,6 +299,8 @@ export function AdminControlRoom() {
   const [draftDirty, setDraftDirty] = useState(false);
   const suppressResultsRefreshCountRef = useRef(0);
   const draftVersionRef = useRef(0);
+  const panelRequestIdRef = useRef(0);
+  const socketRefreshTimerRef = useRef<number | null>(null);
 
   const copy = useMemo(() => (
     language === "ru"
@@ -866,6 +868,7 @@ export function AdminControlRoom() {
       return;
     }
 
+    const requestId = ++panelRequestIdRef.current;
     setLoadingPanel(true);
     setError("");
     try {
@@ -876,6 +879,9 @@ export function AdminControlRoom() {
         fetchStageResults(selectedRoom, selectedStage),
         fetchAdminPredictionAudit(selectedRoom, selectedStage),
       ]);
+      if (requestId !== panelRequestIdRef.current) {
+        return;
+      }
       setSnapshot(snapshotPayload);
       setUsers(usersPayload);
       setPredictionAudit(auditPayload);
@@ -883,10 +889,15 @@ export function AdminControlRoom() {
       setScoringProfiles(snapshotPayload.scoringProfiles);
       setDraftDirty(false);
     } catch (loadError) {
+      if (requestId !== panelRequestIdRef.current) {
+        return;
+      }
       console.error(loadError);
       setError(loadError instanceof Error ? loadError.message : copy.reloadFailed);
     } finally {
-      setLoadingPanel(false);
+      if (requestId === panelRequestIdRef.current) {
+        setLoadingPanel(false);
+      }
     }
   }, [authenticated, copy.reloadFailed, selectedRoom, selectedStage]);
 
@@ -1002,7 +1013,13 @@ export function AdminControlRoom() {
         suppressResultsRefreshCountRef.current -= 1;
         return;
       }
-      void loadPanelData();
+      if (socketRefreshTimerRef.current !== null) {
+        window.clearTimeout(socketRefreshTimerRef.current);
+      }
+      socketRefreshTimerRef.current = window.setTimeout(() => {
+        socketRefreshTimerRef.current = null;
+        void loadPanelData();
+      }, 120);
     };
 
     socket.on("toggle", refresh);
@@ -1010,6 +1027,10 @@ export function AdminControlRoom() {
     socket.on("leaderboardUpdate", refresh);
 
     return () => {
+      if (socketRefreshTimerRef.current !== null) {
+        window.clearTimeout(socketRefreshTimerRef.current);
+        socketRefreshTimerRef.current = null;
+      }
       socket.close();
     };
   }, [authenticated, loadPanelData, selectedRoom]);
