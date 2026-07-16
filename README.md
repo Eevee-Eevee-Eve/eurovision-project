@@ -121,6 +121,8 @@ The production state backup contains accounts, rooms, predictions, results, stat
 
 By default, encrypted copies are written both to `D:\MorozovEuroParty-Backups\encrypted` when drive `D:` is available and to `%USERPROFILE%\MorozovEuroParty-Backups\encrypted` on drive `C:`.
 
+After every successful backup, automatic rotation runs in both directories. It keeps the latest backup for each of the last 7 backup days, 4 ISO weeks, and 6 calendar months. The retention sets overlap, so a weekly or monthly backup can also count as a daily backup. Rotation only removes current `.mepbak` files that have a matching `.sha256` file; legacy or unknown backup formats are left untouched.
+
 ```powershell
 .\scripts\backup-prod-state.ps1 -PasswordFile "$env:USERPROFILE\.config\morozoveuroparty\backup.key"
 ```
@@ -134,6 +136,14 @@ Verify an encrypted backup without restoring it:
 ```
 
 Keep the password or key outside the repository and save a second copy in a password manager. Without it, encrypted backups cannot be restored.
+
+Preview rotation without deleting anything:
+
+```powershell
+.\scripts\rotate-prod-backups.ps1 `
+  -Directory "D:\MorozovEuroParty-Backups\encrypted","$env:USERPROFILE\MorozovEuroParty-Backups\encrypted" `
+  -Daily 7 -Weekly 4 -Monthly 6 -WhatIf
+```
 
 ## Frontend Env
 

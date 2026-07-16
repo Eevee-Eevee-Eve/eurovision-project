@@ -95,6 +95,7 @@ else {
 }
 $remotePlainPath = "$RemoteBackupDir/$archiveName"
 $remoteTarget = "$User@$HostName"
+$createdRemotePath = ""
 
 $remoteScript = @"
 set -eu
@@ -157,6 +158,17 @@ try {
     }
 
     ssh -i $KeyPath -o BatchMode=yes $remoteTarget "rm -f '$createdRemotePath'"
+    $createdRemotePath = ""
+
+    $rotationDirectories = @($DownloadDirectory)
+    if ($SecondaryDownloadDirectory.Trim()) {
+        $rotationDirectories += $SecondaryDownloadDirectory
+    }
+    & (Join-Path $PSScriptRoot "rotate-prod-backups.ps1") `
+        -Directory $rotationDirectories `
+        -Daily 7 `
+        -Weekly 4 `
+        -Monthly 6
 
     Write-Host "Encrypted backup created and verified:"
     Write-Host $encryptedPath
@@ -167,6 +179,9 @@ try {
     Write-Host "Accounts, rooms, predictions, statistics, achievements, and uploads are included."
 }
 finally {
+    if ($createdRemotePath) {
+        ssh -i $KeyPath -o BatchMode=yes $remoteTarget "rm -f '$createdRemotePath'" 2>$null
+    }
     Remove-Item Env:MEP_BACKUP_PASSWORD -ErrorAction SilentlyContinue
     $password = $null
     if (Test-Path -LiteralPath $tempDirectory) {
