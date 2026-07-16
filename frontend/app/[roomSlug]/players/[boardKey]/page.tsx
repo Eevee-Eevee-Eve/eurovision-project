@@ -3,22 +3,23 @@ import { PlayersBoard } from "../../../../components/PlayersBoard";
 import { RoomChrome } from "../../../../components/RoomChrome";
 import { isBoardKey, isStageKey } from "../../../../lib/rooms";
 
-export default function PlayersBoardPage({
+export default async function PlayersBoardPage({
   params,
 }: {
-  params: { roomSlug: string; boardKey: string };
+  params: Promise<{ roomSlug: string; boardKey: string }>;
 }) {
-  if (!isBoardKey(params.boardKey)) {
+  const { roomSlug, boardKey } = await params;
+  if (!isBoardKey(boardKey)) {
     notFound();
   }
 
   return (
     <RoomChrome
-      roomSlug={params.roomSlug}
-      stageKey={isStageKey(params.boardKey) ? params.boardKey : undefined}
+      roomSlug={roomSlug}
+      stageKey={isStageKey(boardKey) ? boardKey : undefined}
       pageKey="players"
     >
-      <PlayersBoard roomSlug={params.roomSlug} boardKey={params.boardKey} />
+      <PlayersBoard roomSlug={roomSlug} boardKey={boardKey} />
     </RoomChrome>
   );
 }

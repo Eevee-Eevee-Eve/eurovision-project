@@ -5,8 +5,9 @@ import { resolveCountryStatsParam } from "../../../../lib/country-stories";
 
 export const dynamic = "force-dynamic";
 
-export default function CountryStatsPage({ params }: { params: { countryCode: string } }) {
-  const country = resolveCountryStatsParam(params.countryCode, EUROVISION_COUNTRY_STATS);
+export default async function CountryStatsPage({ params }: { params: Promise<{ countryCode: string }> }) {
+  const { countryCode } = await params;
+  const country = resolveCountryStatsParam(countryCode, EUROVISION_COUNTRY_STATS);
 
   if (!country) {
     notFound();

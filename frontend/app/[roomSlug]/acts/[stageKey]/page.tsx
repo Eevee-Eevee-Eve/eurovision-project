@@ -1,14 +1,15 @@
 import { notFound, redirect } from "next/navigation";
 import { isStageKey } from "../../../../lib/rooms";
 
-export default function ActsStagePage({
+export default async function ActsStagePage({
   params,
 }: {
-  params: { roomSlug: string; stageKey: string };
+  params: Promise<{ roomSlug: string; stageKey: string }>;
 }) {
-  if (!isStageKey(params.stageKey)) {
+  const { roomSlug, stageKey } = await params;
+  if (!isStageKey(stageKey)) {
     notFound();
   }
 
-  redirect(`/${params.roomSlug}/vote/${params.stageKey}`);
+  redirect(`/${roomSlug}/vote/${stageKey}`);
 }

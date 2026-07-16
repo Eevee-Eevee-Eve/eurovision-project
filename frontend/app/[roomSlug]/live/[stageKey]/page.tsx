@@ -3,22 +3,23 @@ import { LiveStageBoard } from "../../../../components/LiveStageBoard";
 import { RoomChrome } from "../../../../components/RoomChrome";
 import { isStageKey } from "../../../../lib/rooms";
 
-export default function LiveStagePage({
+export default async function LiveStagePage({
   params,
 }: {
-  params: { roomSlug: string; stageKey: string };
+  params: Promise<{ roomSlug: string; stageKey: string }>;
 }) {
-  if (!isStageKey(params.stageKey)) {
+  const { roomSlug, stageKey } = await params;
+  if (!isStageKey(stageKey)) {
     notFound();
   }
 
   return (
     <RoomChrome
-      roomSlug={params.roomSlug}
-      stageKey={params.stageKey}
+      roomSlug={roomSlug}
+      stageKey={stageKey}
       pageKey="live"
     >
-      <LiveStageBoard roomSlug={params.roomSlug} stageKey={params.stageKey} />
+      <LiveStageBoard roomSlug={roomSlug} stageKey={stageKey} />
     </RoomChrome>
   );
 }

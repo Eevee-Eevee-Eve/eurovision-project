@@ -2,7 +2,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "4000:4000"
+      - "127.0.0.1:4000:4000"
     env_file:
       - ./deploy-secrets.local.env
     environment:
@@ -24,7 +24,7 @@ services:
         NEXT_PUBLIC_DATA_RETENTION: "Account data, ballots, and room standings are kept until the host resets the room or archives the season."
         NEXT_PUBLIC_PUBLIC_DISPLAY_NOTICE: "Public scoreboards show only the selected profile fields: nickname, avatar, and room scores."
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       NEXT_PUBLIC_API_BASE: "https://api.morozoveuroparty.ru"
       NEXT_PUBLIC_OPERATOR_NAME: "Morozov Euro Party"

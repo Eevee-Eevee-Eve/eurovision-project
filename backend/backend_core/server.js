@@ -170,7 +170,7 @@ const corsOrigin = (origin, callback) => {
   if (!origin || allowedOrigins.has(origin)) {
     return callback(null, true);
   }
-  return callback(new Error('Origin not allowed'));
+  return callback(null, false);
 };
 
 const io = new IOServer(server, {
@@ -963,6 +963,48 @@ app.use(rateLimit({
   legacyHeaders: false,
 }));
 
+function createSensitiveRouteLimiter({ windowMs, max, message }) {
+  return rateLimit({
+    windowMs,
+    max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+    message: { error: message },
+  });
+}
+
+const adminLoginLimiter = createSensitiveRouteLimiter({
+  windowMs: 15 * 60_000,
+  max: 5,
+  message: 'Too many admin sign-in attempts. Try again later.',
+});
+const accountLoginLimiter = createSensitiveRouteLimiter({
+  windowMs: 15 * 60_000,
+  max: 10,
+  message: 'Too many sign-in attempts. Try again later.',
+});
+const accountRegistrationLimiter = createSensitiveRouteLimiter({
+  windowMs: 60 * 60_000,
+  max: 12,
+  message: 'Too many registration attempts. Try again later.',
+});
+const passwordResetLimiter = createSensitiveRouteLimiter({
+  windowMs: 60 * 60_000,
+  max: 5,
+  message: 'Too many password recovery attempts. Try again later.',
+});
+const passwordChangeLimiter = createSensitiveRouteLimiter({
+  windowMs: 60 * 60_000,
+  max: 10,
+  message: 'Too many password change attempts. Try again later.',
+});
+const roomPasswordLimiter = createSensitiveRouteLimiter({
+  windowMs: 15 * 60_000,
+  max: 15,
+  message: 'Too many room password attempts. Try again later.',
+});
+
 function persistState() {
   pruneExpiredState(state);
   pruneExpiredAdminSessions();
@@ -1246,12 +1288,16 @@ function getAdminAuthMethods() {
 }
 
 function isAdminCredentialLoginValid(email, password) {
-  return Boolean(
-    ADMIN_EMAIL
-    && ADMIN_PASSWORD
-    && normalizeEmail(email) === ADMIN_EMAIL
-    && String(password || '') === ADMIN_PASSWORD,
-  );
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    return false;
+  }
+  const normalizedEmail = normalizeEmail(email);
+  const suppliedPassword = String(password || '');
+  const emailMatches = normalizedEmail.length === ADMIN_EMAIL.length
+    && crypto.timingSafeEqual(Buffer.from(normalizedEmail), Buffer.from(ADMIN_EMAIL));
+  const passwordMatches = suppliedPassword.length === ADMIN_PASSWORD.length
+    && crypto.timingSafeEqual(Buffer.from(suppliedPassword), Buffer.from(ADMIN_PASSWORD));
+  return emailMatches && passwordMatches;
 }
 
 function getPasswordResetMode() {
@@ -1285,9 +1331,11 @@ function normalizeReturnTo(value) {
 function createOAuthState(provider, req) {
   const token = crypto.randomBytes(24).toString('base64url');
   const roomSlug = normalizeRoomSlug(req.query.roomSlug);
+  const auth = getAuthenticatedRequest(req);
   oauthStates.set(token, {
     provider,
     roomSlug,
+    accountId: auth?.account?.id || null,
     returnTo: normalizeReturnTo(req.query.returnTo),
     createdAt: Date.now(),
     expiresAt: Date.now() + OAUTH_STATE_TTL_MS,
@@ -1453,19 +1501,33 @@ function createAccountFromOAuthProfile(profile) {
   return account;
 }
 
-function getOrCreateOAuthAccount(profile) {
+function getOrCreateOAuthAccount(profile, explicitAccountId = null) {
   if (!profile.subject || !validateEmail(profile.email)) {
     throw new Error('Provider did not return a usable email profile.');
   }
 
   const existingByIdentity = findAccountByOAuthIdentity(profile.provider, profile.subject);
   if (existingByIdentity) {
+    if (explicitAccountId && existingByIdentity.id !== explicitAccountId) {
+      throw new Error('This provider profile is already linked to another account.');
+    }
     return attachOAuthIdentity(existingByIdentity, profile);
+  }
+
+  if (explicitAccountId) {
+    const explicitAccount = getAccountById(explicitAccountId);
+    if (!explicitAccount) {
+      throw new Error('The signed-in account no longer exists.');
+    }
+    if (normalizeEmail(explicitAccount.email) !== normalizeEmail(profile.email)) {
+      throw new Error('The provider email must match the signed-in account email.');
+    }
+    return attachOAuthIdentity(explicitAccount, profile);
   }
 
   const existingByEmail = getAccountByEmail(profile.email);
   if (existingByEmail) {
-    return attachOAuthIdentity(existingByEmail, profile);
+    throw new Error('An account with this email already exists. Sign in with your password first, then connect the provider from your account.');
   }
 
   return createAccountFromOAuthProfile(profile);
@@ -2673,7 +2735,7 @@ app.get('/api/auth/oauth/:provider/callback', async (req, res) => {
     }
 
     const profile = await fetchOAuthProfile(provider, accessToken);
-    const account = getOrCreateOAuthAccount(profile);
+    const account = getOrCreateOAuthAccount(profile, oauthState.accountId);
 
     if (oauthState.roomSlug) {
       const membership = ensureRoomMembership(oauthState.roomSlug, account);
@@ -2719,12 +2781,17 @@ app.get('/api/admin/session', (req, res) => {
   });
 });
 
-app.post('/api/admin/session', (req, res) => {
+app.post('/api/admin/session', adminLoginLimiter, (req, res) => {
   const key = String(req.body.key || '').trim();
   const email = normalizeEmail(req.body.email);
   const password = String(req.body.password || '');
 
-  const validByKey = Boolean(ADMIN_KEY && key && key === ADMIN_KEY);
+  const validByKey = Boolean(
+    ADMIN_KEY
+    && key
+    && key.length === ADMIN_KEY.length
+    && crypto.timingSafeEqual(Buffer.from(key), Buffer.from(ADMIN_KEY)),
+  );
   const validByCredentials = isAdminCredentialLoginValid(email, password);
 
   if (!validByKey && !validByCredentials) {
@@ -2756,7 +2823,7 @@ app.post('/api/admin/logout', (req, res) => {
   return res.json({ ok: true });
 });
 
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', accountRegistrationLimiter, (req, res) => {
   const email = normalizeEmail(req.body.email);
   const password = String(req.body.password || '');
   const firstName = sanitizeText(req.body.firstName, 64);
@@ -2816,7 +2883,7 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', accountLoginLimiter, (req, res) => {
   const email = normalizeEmail(req.body.email);
   const password = String(req.body.password || '');
   const roomSlug = normalizeRoomSlug(req.body.roomSlug);
@@ -2862,7 +2929,7 @@ app.post('/api/auth/logout', (req, res) => {
   return res.json({ ok: true });
 });
 
-app.post('/api/auth/request-reset', (req, res) => {
+app.post('/api/auth/request-reset', passwordResetLimiter, (req, res) => {
   const email = normalizeEmail(req.body.email);
   const passwordResetMode = getPasswordResetMode();
   if (!validateEmail(email)) {
@@ -2917,7 +2984,7 @@ app.post('/api/auth/request-reset', (req, res) => {
   });
 });
 
-app.post('/api/auth/reset-password', (req, res) => {
+app.post('/api/auth/reset-password', passwordResetLimiter, (req, res) => {
   const token = sanitizeText(req.body.token, 256);
   const password = String(req.body.password || '');
 
@@ -2952,7 +3019,7 @@ app.post('/api/auth/reset-password', (req, res) => {
   return res.json({ ok: true, account: toAccountProfile(account) });
 });
 
-app.post('/api/auth/change-password', requireAuth, (req, res) => {
+app.post('/api/auth/change-password', passwordChangeLimiter, requireAuth, (req, res) => {
   const currentPassword = String(req.body.currentPassword || '');
   const nextPassword = String(req.body.nextPassword || '');
   const hasPassword = Boolean(req.account.passwordSalt && req.account.passwordHash);
@@ -2968,6 +3035,11 @@ app.post('/api/auth/change-password', requireAuth, (req, res) => {
   req.account.passwordSalt = nextHash.salt;
   req.account.passwordHash = nextHash.hash;
   req.account.updatedAt = new Date().toISOString();
+  Object.entries(state.sessions).forEach(([key, session]) => {
+    if (session.accountId === req.account.id && key !== req.session.tokenHash) {
+      delete state.sessions[key];
+    }
+  });
   persistState();
 
   return res.json({ ok: true, account: toAccountProfile(req.account) });
@@ -3102,6 +3174,12 @@ app.post('/api/rooms', requireAuth, (req, res) => {
   if (name.length > 64) {
     return res.status(400).json({ error: 'Room name is too long', code: 'ROOM_NAME_TOO_LONG' });
   }
+  if (password && password.length < 6) {
+    return res.status(400).json({
+      error: 'Room password must be at least 6 characters long',
+      code: 'ROOM_PASSWORD_TOO_SHORT',
+    });
+  }
   if (hasRoomNameConflict(name)) {
     return res.status(409).json({ error: 'A room with this name already exists', code: 'ROOM_NAME_TAKEN' });
   }
@@ -3162,7 +3240,7 @@ app.get('/api/rooms/resolve', (req, res) => {
   return res.json({ room: toPublicRoomSummary(matches[0]) });
 });
 
-app.post('/api/rooms/:roomSlug/access', (req, res) => {
+app.post('/api/rooms/:roomSlug/access', roomPasswordLimiter, (req, res) => {
   const roomSlug = normalizeRoomSlug(req.params.roomSlug);
   if (!roomSlug) {
     return res.status(404).json({ error: 'Unknown room' });

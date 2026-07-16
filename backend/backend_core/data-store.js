@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { v4: uuidv4 } = require('uuid');
 
 const DATA_DIR = path.join(__dirname, 'data');
 const STATE_FILE = path.join(DATA_DIR, 'app-state.json');
@@ -20,8 +19,10 @@ const AVATAR_EXTENSIONS = {
 };
 
 function ensureStorage() {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.mkdirSync(AVATAR_DIR, { recursive: true });
+  fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
+  fs.mkdirSync(AVATAR_DIR, { recursive: true, mode: 0o755 });
+  fs.chmodSync(DATA_DIR, 0o700);
+  fs.chmodSync(AVATAR_DIR, 0o755);
 }
 
 function createEmptyState(createRoomState, rooms) {
@@ -94,8 +95,10 @@ function loadState(createRoomState, rooms) {
 function saveState(state) {
   ensureStorage();
   const tempFile = `${STATE_FILE}.tmp`;
-  fs.writeFileSync(tempFile, JSON.stringify(state, null, 2), 'utf8');
+  fs.writeFileSync(tempFile, JSON.stringify(state, null, 2), { encoding: 'utf8', mode: 0o600 });
+  fs.chmodSync(tempFile, 0o600);
   fs.renameSync(tempFile, STATE_FILE);
+  fs.chmodSync(STATE_FILE, 0o600);
 }
 
 function normalizeEmail(value) {
@@ -278,6 +281,24 @@ function writeAvatarImage(accountId, dataUrl) {
     return { ok: false, error: 'Avatar image is too large' };
   }
 
+  const hasExpectedSignature = (
+    (mimeType === 'image/jpeg'
+      && buffer.length >= 3
+      && buffer[0] === 0xff
+      && buffer[1] === 0xd8
+      && buffer[2] === 0xff)
+    || (mimeType === 'image/png'
+      && buffer.length >= 8
+      && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])))
+    || (mimeType === 'image/webp'
+      && buffer.length >= 12
+      && buffer.subarray(0, 4).toString('ascii') === 'RIFF'
+      && buffer.subarray(8, 12).toString('ascii') === 'WEBP')
+  );
+  if (!hasExpectedSignature) {
+    return { ok: false, error: 'Image content does not match its declared format' };
+  }
+
   ensureStorage();
   const extension = AVATAR_EXTENSIONS[mimeType];
   const fileName = `${accountId}.${extension}`;
@@ -330,7 +351,7 @@ function buildAccountRecord(payload) {
   const passwordData = payload.password ? hashPassword(payload.password) : null;
   const now = new Date().toISOString();
   const account = {
-    id: uuidv4(),
+    id: crypto.randomUUID(),
     email,
     passwordSalt: passwordData?.salt || null,
     passwordHash: passwordData?.hash || null,

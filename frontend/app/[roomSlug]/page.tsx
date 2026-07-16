@@ -1,13 +1,14 @@
 import { RoomChrome } from "../../components/RoomChrome";
 import { RoomLanding } from "../../components/RoomLanding";
 
-export default function RoomPage({ params }: { params: { roomSlug: string } }) {
+export default async function RoomPage({ params }: { params: Promise<{ roomSlug: string }> }) {
+  const { roomSlug } = await params;
   return (
     <RoomChrome
-      roomSlug={params.roomSlug}
+      roomSlug={roomSlug}
       pageKey="room"
     >
-      <RoomLanding roomSlug={params.roomSlug} />
+      <RoomLanding roomSlug={roomSlug} />
     </RoomChrome>
   );
 }

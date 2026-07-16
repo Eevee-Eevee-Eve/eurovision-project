@@ -3,22 +3,23 @@ import { RoomChrome } from "../../../../components/RoomChrome";
 import { VoteStudio } from "../../../../components/VoteStudio";
 import { isStageKey } from "../../../../lib/rooms";
 
-export default function VoteStagePage({
+export default async function VoteStagePage({
   params,
 }: {
-  params: { roomSlug: string; stageKey: string };
+  params: Promise<{ roomSlug: string; stageKey: string }>;
 }) {
-  if (!isStageKey(params.stageKey)) {
+  const { roomSlug, stageKey } = await params;
+  if (!isStageKey(stageKey)) {
     notFound();
   }
 
   return (
     <RoomChrome
-      roomSlug={params.roomSlug}
-      stageKey={params.stageKey}
+      roomSlug={roomSlug}
+      stageKey={stageKey}
       pageKey="vote"
     >
-      <VoteStudio roomSlug={params.roomSlug} stageKey={params.stageKey} />
+      <VoteStudio roomSlug={roomSlug} stageKey={stageKey} />
     </RoomChrome>
   );
 }
